@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.0.9'
+__version__ = '2.0.9.1'
 __license__ = 'For fun :)'
 
 import os
@@ -1087,6 +1087,8 @@ class vtAPI():
                     print '\n[-] Status {ip}: {verb_msg}\n'.format(verb_msg=jdata['verbose_msg'], ip=ip)
 
             elif jdata['response_code'] == 1:
+                if jdata.get('verbose_msg'):
+                    print '\n[+] IP:', ip
 
                 if jdata.get('asn') and ((kwargs.get('asn') or 'asn' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
@@ -1167,6 +1169,8 @@ class vtAPI():
                     print '\n[!] Status : {verb_msg} : {domain}\n'.format(verb_msg=jdata['verbose_msg'], domain=domain)
 
             if jdata.get('response_code') and jdata['response_code'] == 1:
+                if jdata.get('verbose_msg'):
+                    print '\n[+] Domain:', domain
                 if jdata.get('categories') and ((kwargs.get('categories') or 'categories' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
                         return_json.update({'categories': jdata['return_json']})
@@ -1503,7 +1507,7 @@ class vtAPI():
                 if response.status_code == 404:
                         print '\n[!] File not found\n'
                         return
-
+                print '[?] If this is not the same hash, something wrong happend', hashlib.md5(response.content).hexdigest()
                 if kwargs.get('name'):
                     name = kwargs.get('name')
                 else:
