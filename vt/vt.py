@@ -37,6 +37,19 @@ try:
 except (AttributeError, ImportError):
      pass
 
+try:
+    import pefile
+    import peutils
+    PEFILE = True
+except ImportError:
+    PEFILE = False
+
+try:
+    import magic
+    MAGIC = True
+except:
+    MAGIC = False
+
 
 def private_api_access_error():
     print '\n[!] You don\'t have permission for this operation, Looks like you trying to access to PRIVATE API functions\n'
@@ -281,15 +294,13 @@ def parse_report(jdata, **kwargs):
         plist = [[]]
 
         for x in sorted(jdata.get('scans')):
-
-            plist.append([x,
-                          'True' if jdata['scans'][x]['detected'] else 'False',
-                          jdata['scans'][x]['result'] if jdata[
-                              'scans'][x]['result'] else ' -- ',
+            if jdata['scans'][x].get('detected'):
+                plist.append([x,
+                          'True',
+                          jdata['scans'][x]['result'] if jdata['scans'][x]['result'] else ' -- ',
                           jdata['scans'][x]['version'] if  'version' in jdata['scans'][x] and jdata['scans'][x]['version'] else ' -- ',
                           jdata['scans'][x]['update'] if 'update' in jdata['scans'][x] and jdata['scans'][x]['update'] else ' -- '
                           ])
-
         av_size, result_size, version = get_adequate_table_sizes(
             jdata['scans'])
 
@@ -646,7 +657,13 @@ class vtAPI():
                                     if child.get('detection_ration'):
                                         print '\tDetection ration: \n\tDetected: {0}\n\tTotal {1}'.format(child['detection_ration'][0], child['detection_ration'])
                                     if child.get('filename'):
-                                        print '\tFilename: {0}'.format(child['filename'])
+                                        try:
+                                            print '\tFilename: {0}'.format(child['filename'])
+                                        except:
+                                            try:
+                                                print '\tFilename: {0}'.format(child['filename'].encode('utf-8'))
+                                            except:
+                                                print '\t[-]Name decode error'
                                     if child.get('sha256'):
                                         print '\tsha256: {0}'.format(child['sha256'])
                                     if child.get('size'):
@@ -721,14 +738,30 @@ class vtAPI():
                 if jdata.get('scans') and kwargs.get('verbose'):
 
                     plist = [[]]
-                    for x in jdata['scans']:
-                        plist.append([x,  'True' if jdata['scans'][x][
-                                     'detected'] else 'False', jdata['scans'][x]['result']])
+
+                    for x in sorted(jdata.get('scans')):
+                        if jdata['scans'][x].get('detected'):
+                              plist.append([x,
+                              'True',
+                              jdata['scans'][x]['result'] if jdata['scans'][x]['result'] else ' -- ',
+                              jdata['scans'][x]['version'] if  'version' in jdata['scans'][x] and jdata['scans'][x]['version'] else ' -- ',
+                              jdata['scans'][x]['update'] if 'update' in jdata['scans'][x] and jdata['scans'][x]['update'] else ' -- '
+                              ])
+
+                    av_size, result_size, version = get_adequate_table_sizes(jdata['scans'])
+
+                    if version == 9:
+                        version_align = 'c'
+
+                    else:
+                        version_align = 'l'
 
                     pretty_print_special(plist,
-                                         ['Name', 'Detected', 'Result'],
-                                         [30, 9, 55],
-                                         ['l', 'c', 'l'])
+                                         ['Vendor name', 'Detected', 'Result',
+                                             'Version', 'Last Update'],
+                                         [av_size, 9, result_size, version, 12],
+                                         ['r', 'c', 'l', version_align, 'c']
+                                         )
 
                     del plist
 
@@ -831,6 +864,82 @@ class vtAPI():
                         print '[+] Check rescan result with sha256 in few minuts : \n\tSHA256 : {sha256}'.format(sha256=jdata['sha256'])
                     if jdata.get('permalink'):
                         print '\tPermanent link : {permalink}\n'.format(permalink=jdata['permalink'])
+
+    def fileInfo(self, *args,  **kwargs):
+        if PEFILE:
+            files = kwargs.get('value')
+            for file in files:
+                try:
+                    pe = pefile.PE(file)
+                except pefile.PEFormatError:
+                    print '[-] Not PE file'
+                    return
+
+                print "\nName: {0}".format(file.split("/")[-1])
+
+                print "\n[+] Hashes"
+                print "MD5: {0}".format(pe.sections[0].get_hash_md5())
+                print "SHA1: {0}".format(pe.sections[0].get_hash_sha1())
+                print "SHA256: {0}".format(pe.sections[0].get_hash_sha256())
+                print "SHA512: {0}".format(pe.sections[0].get_hash_sha512())
+                print 'ImpHash: {0}'.format(pe.get_imphash())
+
+                if pe.FILE_HEADER.TimeDateStamp:
+                    print "\n[+]  Created"
+                    val = pe.FILE_HEADER.TimeDateStamp
+                    ts = '0x%-8X' % (val)
+                    try:
+                        ts += ' [%s UTC]' % time.asctime(time.gmtime(val))
+                        that_year = time.gmtime(val)[0]
+                        this_year = time.gmtime(time.time())[0]
+                        if that_year < 2000 or that_year > this_year:
+                                ts += " [SUSPICIOUS]"
+                    except:
+                        ts += ' [SUSPICIOUS]'
+                    if ts:
+                        print '    ', ts
+
+                if pe.sections:
+                    print "\n[+] Sections"
+                    for section in pe.sections:
+                        print '    {0}: {1}'.format(section.Name, section.SizeOfRawData)
+
+                if pe.DIRECTORY_ENTRY_IMPORT:
+                    print "\n[+] Imports"
+                    for entry in pe.DIRECTORY_ENTRY_IMPORT:
+                      print '   ', entry.dll
+                      for imp in entry.imports:
+                        print '\t', hex(imp.address), imp.name
+
+                try:
+                    if pe.IMAGE_DIRECTORY_ENTRY_EXPORT.symbols:
+                        print "\n[+] Exports"
+                        for exp in pe.IMAGE_DIRECTORY_ENTRY_EXPORT.symbols:
+                            print hex(pe.OPTIONAL_HEADER.ImageBase + exp.address), exp.name, exp.ordinal
+                except:
+                    pass
+
+                if MAGIC and pe:
+                    try:
+                        ms = magic.from_file(file)
+                        if ms:
+                            print "\n[+] File type"
+                            ms = magic.from_file(file)
+                            print '    ',ms
+                    except:
+                        pass
+
+                if kwargs.get('userdb') and os.path.exists(kwargs.get('userdb')):
+
+                    signatures = peutils.SignatureDatabase(kwargs.get('userdb'))
+                    if signatures.match(pe, ep_only = True) != None:
+                        print "\n[+] Packer"
+                        print  '\t', signatures.match(pe, ep_only = True)[0]
+                    else:
+                        pack = peutils.is_probably_packed(pe)
+                        if pack == 1:
+                            print "\n[+] Packer"
+                            print "\t[+] Based on the sections entropy check! file is possibly packed"
 
     def fileScan(self, *args,  **kwargs):
         """
@@ -1994,6 +2103,10 @@ def main():
 
     opt = argparse.ArgumentParser(
         'value', description='Scan/Search/ReScan/JSON parse')
+    opt.add_argument('-fi', '--file-info', action='store_true',
+        help='Get PE file info, all data extracted offline, for work you need have installed PEUTILS library')
+    opt.add_argument('-udb', '--userdb', action='store',
+        help='Path to your userdb file, works with --file-info option only')
     opt.add_argument('value', nargs='*', help='Enter the Hash, Path to File(s) or Url(s)')
     opt.add_argument('-fs', '--file-search', action='store_true',
         help='File(s) search, this option, don\'t upload file to VirusTotal, just search by hash, support linux name wildcard, example: /home/user/*malware*, if file was scanned, you will see scan info, for full scan report use verbose mode, and dump if you want save already scanned samples')
@@ -2188,6 +2301,9 @@ def main():
     if options.get('files'):
         options.update({'scan': True})
         vt.fileScan(**options)
+
+    elif options['file_info']:
+        vt.fileInfo(**options)
 
     elif options['file_search']:
         options.update({'scan': False})
