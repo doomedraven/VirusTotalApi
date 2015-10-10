@@ -1,5 +1,6 @@
 **11.10.2015**
 * email template friendly output added, see -et or --email-template option
+* fileInfo function(-fi) - return some basic PE file information as md5, sha1, sha256, sha512,Imphash, FileType, Sections, Imports, Exports, Created date,can be passed userdb signatures file with -udb or --userdb
 
 **01.10.2015**
 * download bug fix, in some PCs consume too much CPU
