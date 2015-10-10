@@ -1,4 +1,4 @@
-*11.10.2015**
+**11.10.2015**
 * email template friendly output added, see -et or --email-template option
 
 **01.10.2015**
