@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.0.9.1'
+__version__ = '2.0.9.3'
 __license__ = 'For fun :)'
 
 import os
@@ -54,7 +54,6 @@ except:
 def private_api_access_error():
     print '\n[!] You don\'t have permission for this operation, Looks like you trying to access to PRIVATE API functions\n'
     sys.exit()
-
 
 def get_adequate_table_sizes(scans, short=False, short_list=False):
 
@@ -104,10 +103,12 @@ def get_adequate_table_sizes(scans, short=False, short_list=False):
 
     return av_size_f, result_f, version_f
 
-
-def pretty_print(block, headers, sizes=False, align=False):
+def pretty_print(block, headers, sizes=False, align=False, email=False):
 
     tab = tt.Texttable()
+
+    if email:
+        tab.set_deco(tt.Texttable.HEADER)
 
     if isinstance(block, list):
         plist = []
@@ -145,9 +146,12 @@ def pretty_print(block, headers, sizes=False, align=False):
 
     print tab.draw()
 
-
-def pretty_print_special(rows, headers, sizes=False, align=False):
+def pretty_print_special(rows, headers, sizes=False, align=False, email=False):
     tab = tt.Texttable()
+
+    if email:
+        tab.set_deco(tt.Texttable.HEADER)
+
     tab.add_rows(rows)
 
     if sizes:
@@ -159,7 +163,6 @@ def pretty_print_special(rows, headers, sizes=False, align=False):
     tab.header(headers)
 
     print '\n', tab.draw()
-
 
 def is_file(value):
     try:
@@ -183,7 +186,6 @@ def is_file(value):
         print '\n[!] You need to provide some arguments\n'
         sys.exit()
 
-
 def jsondump(jdata, sha1):
 
     jsondumpfile = open('VTDL_{name}.json'.format(name=sha1), 'w')
@@ -191,7 +193,6 @@ def jsondump(jdata, sha1):
     jsondumpfile.close()
 
     print '\n\tJSON Written to File -- VTDL_{sha1}.json\n'.format(sha1=sha1)
-
 
 def load_file(file_path):
 
@@ -234,9 +235,10 @@ def get_detections(scans, **kwargs):
                              ['Vendor name',  'Result',
                                  'Version', 'Last Update'],
                              [av_size, result_size, version, 11],
-                             ['r', 'l', 'l', 'c']
+                             ['r', 'l', 'l', 'c'],
+                             False,
+                             kwargs.get('email_template')
                              )
-
 
 def dump_csv(filename, scans):
 
@@ -258,7 +260,6 @@ def dump_csv(filename, scans):
     f.close()
 
     print '\n\tCSV file dumped as: VTDL{0}.csv'.format(filename)
-
 
 def parse_report(jdata, **kwargs):
     filename = ''
@@ -314,7 +315,9 @@ def parse_report(jdata, **kwargs):
                              ['Vendor name', 'Detected', 'Result',
                                  'Version', 'Last Update'],
                              [av_size, 9, result_size, version, 12],
-                             ['r', 'c', 'l', version_align, 'c']
+                             ['r', 'c', 'l', version_align, 'c'],
+                             False,
+                             kwargs.get('email_template')
                              )
         del plist
 
@@ -329,7 +332,6 @@ def parse_report(jdata, **kwargs):
         print "\n\tPermanent Link : {0}\n".format(jdata.get('permalink'))
 
     return True
-
 
 # Static variable decorator for function
 def static_var(varname, value):
@@ -602,14 +604,14 @@ class vtAPI():
                                   sub_plist = [[]]
                                   for key in data.keys():
                                       sub_plist.append([key, data[key]])
-                                  pretty_print_special(sub_plist, ['Name', 'Value'])
+                                  pretty_print_special(sub_plist, ['Name', 'Value'], False, False, kwargs.get('email_template'))
                                   del sub_plist
                             else:
                                 plist.append(
                                     [sig, jdata['additional_info']['sigcheck'][sig].encode('utf-8')] # texttable unicode fail
                                 )
 
-                        pretty_print_special(plist, ['Name', 'Value'])
+                        pretty_print_special(plist, ['Name', 'Value'], False, False, kwargs.get('email_template'))
                         del plist
 
                     if jdata['additional_info'].get('exiftool') and kwargs.get('verbose'):
@@ -621,7 +623,7 @@ class vtAPI():
                             plist.append(
                                 [exiftool, jdata['additional_info']['exiftool'][exiftool]])
 
-                        pretty_print_special(plist, ['Name', 'Value'])
+                        pretty_print_special(plist, ['Name', 'Value'], False, False, kwargs.get('email_template'))
                         del plist
 
                     if jdata['additional_info'].get('sections') and kwargs.get('verbose'):
@@ -629,7 +631,8 @@ class vtAPI():
                                              ['Name', 'Virtual address', 'Virtual size',
                                                  'Raw size', 'Entropy', 'MD5'],
                                              [10, 10, 10, 10, 10, 35],
-                                             ['c', 'c', 'c', 'c', 'c', 'c']
+                                             ['c', 'c', 'c', 'c', 'c', 'c'],
+                                             kwargs.get('email_template')
                                              )
 
                     if jdata['additional_info'].get('imports') and kwargs.get('verbose'):
@@ -760,7 +763,8 @@ class vtAPI():
                                          ['Vendor name', 'Detected', 'Result',
                                              'Version', 'Last Update'],
                                          [av_size, 9, result_size, version, 12],
-                                         ['r', 'c', 'l', version_align, 'c']
+                                         ['r', 'c', 'l', version_align, 'c'],
+                                         kwargs.get('email_template')
                                          )
 
                     del plist
@@ -1228,7 +1232,8 @@ class vtAPI():
                     else:
                         print '\n[+] Lastest domain resolved\n'
                         pretty_print(sorted(jdata['resolutions'], key=methodcaller(
-                            'get', 'last_resolved'), reverse=True), ['last_resolved', 'hostname']
+                            'get', 'last_resolved'), reverse=True), ['last_resolved', 'hostname'],
+                            False, False, kwargs.get('email_template')
                         )
 
 
@@ -1344,7 +1349,7 @@ class vtAPI():
                             plist.append(
                                 [jdata_part, jdata['WOT domain info'][jdata_part]])
                         pretty_print_special(
-                            plist, ['Name', 'Value'], [25, 20], ['c', 'c'])
+                            plist, ['Name', 'Value'], [25, 20], ['c', 'c'], kwargs.get('email_template'))
                         del plist
                 if jdata.get('Webutation domain info') and ((kwargs.get('webutation_domain') or 'webutation_domain' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
@@ -1357,7 +1362,7 @@ class vtAPI():
                                 [jdata_part, jdata['Webutation domain info'][jdata_part]]
                                 )
                         pretty_print_special(
-                            plist, ['Name', 'Value'], [25, 20], ['c', 'c'])
+                            plist, ['Name', 'Value'], [25, 20], ['c', 'c'], kwargs.get('email_template'))
                         del plist
                 if jdata.get('whois') and ((kwargs.get('whois') or 'whois' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
@@ -1382,7 +1387,7 @@ class vtAPI():
                         return_json.update({'pcaps': jdata['pcaps']})
                     else:
                         print '\n'
-                        pretty_print(jdata['pcaps'], ['pcaps'], [70], ['c'])
+                        pretty_print(jdata['pcaps'], ['pcaps'], [70], ['c'], kwargs.get('email_template'))
                 if jdata.get('resolutions') and ((kwargs.get('passive_dns') or 'passive_dns' in args)  or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
                         return_json.update({'passive_dns': jdata['resolutions']})
@@ -1392,7 +1397,8 @@ class vtAPI():
                             'get', 'last_resolved'), reverse=True),
                             ['last_resolved', 'ip_address'],
                             [25, 20],
-                            ['c', 'c']
+                            ['c', 'c'],
+                            kwargs.get('email_template')
                             )
                 if kwargs.get('walk'):
                     filter_ip = list()
@@ -1479,7 +1485,8 @@ class vtAPI():
                 plist,
                 ['Label', 'AV Detections', 'Id', 'Size'],
                 [40, 15, 80, 8],
-                ['l', 'c', 'l', 'c']
+                ['l', 'c', 'l', 'c'],
+                kwargs.get('email_template')
             )
 
         if dump:
@@ -1713,7 +1720,7 @@ class vtAPI():
                               [key, 'True' if jdata[0]['report'][key][0] else 'False', jdata[0]['report'][key][1], jdata[0]['report'][key][2]]
                             )
                         pretty_print_special(
-                            plist, ['Vendor name', 'Detection', 'Version', 'Update'])
+                            plist, ['Vendor name', 'Detection', 'Version', 'Update'], False, False, kwargs.get('email_template'))
                     if vt_file.get('link'):
                         print '\nLink : {link}'.format(link=vt_file['link'])
 
@@ -1743,14 +1750,14 @@ class vtAPI():
                                     [key, '\n'.join(vt_file['additional_info'][key])])
                             else:
                                 plist.append([key, vt_file['additional_info'][key]])
-                        pretty_print_special(plist, ['Name', 'Value'], [40, 70])
+                        pretty_print_special(plist, ['Name', 'Value'], [40, 70], False, kwargs.get('email_template'))
 
                     if vt_file.get('scans'):
                         plist = [[]]
                         for key in vt_file['scans']:
                             plist.append([key, 'True' if vt_file['scans'][key]['detected'] else 'False', vt_file['scans'][key]['result']])
 
-                        pretty_print_special(plist, ['Vendor name', 'Detection', 'Result'])
+                        pretty_print_special(plist, ['Vendor name', 'Detection', 'Result'], False, False, kwargs.get('email_template'))
                     if vt_file.get('permalink'):
                         print '\nPermanent link : {link}\n'.format(link=vt_file['permalink'])
 
@@ -1822,14 +1829,14 @@ class vtAPI():
                 if kwargs.get('return_json'):
                     return_json.update({'hosts': jdata['network']['hosts']})
                 else:
-                    pretty_print(jdata['network']['hosts'], ['hosts'])
+                    pretty_print(jdata['network']['hosts'], ['hosts'], False, False, kwargs.get('email_template'))
 
             if jdata['network']['dns']:
                 if kwargs.get('return_json'):
                     return_json.update({'dns': jdata['network']['dns']})
                 else:
                     print '\nDNS requests\n'
-                    pretty_print(jdata['network']['dns'],   ['ip', 'hostname'])
+                    pretty_print(jdata['network']['dns'],   ['ip', 'hostname'], False, False, kwargs.get('email_template'))
 
             if jdata['network']['tcp']:
                 if kwargs.get('return_json'):
@@ -1844,7 +1851,7 @@ class vtAPI():
                             unique.append(
                                 [block['src'], block['dst'], block['sport'], block['dport']]
                             )
-                    pretty_print_special(unique,   ['src', 'dst', 'sport', 'dport'])
+                    pretty_print_special(unique,   ['src', 'dst', 'sport', 'dport'], False, False, kwargs.get('email_template'))
                     del unique
 
             if jdata['network']['udp']:
@@ -1860,7 +1867,9 @@ class vtAPI():
                                 )
                     pretty_print_special(
                       unique,
-                      ['src', 'dst', 'sport', 'dport']
+                      ['src', 'dst', 'sport', 'dport'],
+                      False, False,
+                      kwargs.get('email_template')
                       )
                     del unique
 
@@ -1918,7 +1927,7 @@ class vtAPI():
                                 else:
                                     plist.append([key, process_part[key]])
                             pretty_print_special(
-                                plist, ['Name', 'Value'], [10, 50])
+                                plist, ['Name', 'Value'], [10, 50], False, kwargs.get('email_template'))
                             del plist
 
                         print '\n' + '=' * 20 + ' FIN ' + '=' * 20
@@ -1939,7 +1948,7 @@ class vtAPI():
                         if jdata['behavior']['summary']['files']:
                             print '\n[+] Opened files\n'
                             pretty_print(
-                                sorted(jdata['behavior']['summary']['files']), ['files'], [100])
+                                sorted(jdata['behavior']['summary']['files']), ['files'], [100], False, kwargs.get('email_template'))
 
                 if jdata['behavior']['summary'].get('keys'):
                     if kwargs.get('return_json'):
@@ -1947,7 +1956,7 @@ class vtAPI():
                     else:
                         print '\n[+] Set keys\n'
                         pretty_print(
-                            sorted(jdata['behavior']['summary']['keys']), ['keys'], [100])
+                            sorted(jdata['behavior']['summary']['keys']), ['keys'], [100], False, kwargs.get('email_template'))
 
                 if jdata['behavior']['summary'].get('mutexes') is not None and jdata['behavior']['summary']['mutexes'] != [u'(null)'] and jdata['behavior']['summary']['mutexes']:
                     if kwargs.get('return_json'):
@@ -1955,7 +1964,8 @@ class vtAPI():
                     else:
                         print '\n[+] Created mutexes\n'
                         pretty_print(
-                            sorted(jdata['behavior']['summary']['mutexes']), ['mutexes'], [100]
+                            sorted(jdata['behavior']['summary']['mutexes']), ['mutexes'], [100],
+                            False, kwargs.get('email_template')
                             )
 
         if kwargs.get('dump') is True:
@@ -1982,7 +1992,7 @@ class vtAPI():
             else:
                 print '\n[+] Latest detected files that were downloaded from this domain/ip\n'
                 pretty_print(sorted(jdata['detected_downloaded_samples'], key=methodcaller('get', 'date'), reverse=True), [
-                             'positives', 'total', 'date', 'sha256'], [15, 10, 20, 70], ['c', 'c', 'c', 'c'])
+                             'positives', 'total', 'date', 'sha256'], [15, 10, 20, 70], ['c', 'c', 'c', 'c'], kwargs.get('email_template'))
 
         if jdata.get('undetected_downloaded_samples') and ((kwargs.get('undetected_downloaded_samples') or 'undetected_downloaded_samples' in args) or kwargs.get('verbose')):
             if kwargs.get('return_json'):
@@ -1990,7 +2000,7 @@ class vtAPI():
             else:
                 print '\n[+] Latest undetected files that were downloaded from this domain/ip\n'
                 pretty_print(sorted(jdata['undetected_downloaded_samples'], key=methodcaller('get', 'date'), reverse=True), [
-                             'positives', 'total', 'date', 'sha256'], [15, 10, 20, 70], ['c', 'c', 'c', 'c'])
+                             'positives', 'total', 'date', 'sha256'], [15, 10, 20, 70], ['c', 'c', 'c', 'c'], kwargs.get('email_template'))
 
         if jdata.get('detected_communicating_samples') and ((kwargs.get('detected_communicated') or 'detected_communicated' in args) or kwargs.get('verbose')):
             if kwargs.get('return_json'):
@@ -1998,7 +2008,7 @@ class vtAPI():
             else:
                 print '\n[+] Latest detected files that communicate with this domain/ip\n'
                 pretty_print(sorted(jdata['detected_communicating_samples'], key=methodcaller('get', 'scan_date'), reverse=True), [
-                             'positives', 'total', 'date', 'sha256'], [15, 10, 20, 70], ['c', 'c', 'c', 'c'])
+                             'positives', 'total', 'date', 'sha256'], [15, 10, 20, 70], ['c', 'c', 'c', 'c'], kwargs.get('email_template'))
 
         if jdata.get('undetected_communicating_samples') and ((kwargs.get('undetected_communicating_samples') or 'undetected_communicating_samples' in args) or kwargs.get('verbose')):
             if kwargs.get('return_json'):
@@ -2006,7 +2016,7 @@ class vtAPI():
             else:
                 print '\n[+] Latest undetected files that communicate with this domain/ip\n'
                 pretty_print(sorted(jdata['undetected_communicating_samples'], key=methodcaller('get', 'date'), reverse=True), [
-                             'positives', 'total', 'date', 'sha256'], [15, 10, 20, 70], ['c', 'c', 'c', 'c'])
+                             'positives', 'total', 'date', 'sha256'], [15, 10, 20, 70], ['c', 'c', 'c', 'c'], kwargs.get('email_template'))
 
         if jdata.get('detected_referrer_samples') and ((kwargs.get('detected_referrer_samples') or 'detected_referrer_samples' in args) or kwargs.get('verbose')):
             if kwargs.get('return_json'):
@@ -2014,7 +2024,7 @@ class vtAPI():
             else:
                 print '\n[+] Latest detected referrer files\n'
                 pretty_print(sorted(jdata['detected_referrer_samples']), [
-                             'positives', 'total',  'sha256'], [15, 10, 70], ['c', 'c', 'c'])
+                             'positives', 'total',  'sha256'], [15, 10, 70], ['c', 'c', 'c'], kwargs.get('email_template'))
 
         if jdata.get('undetected_referrer_samples') and ((kwargs.get('undetected_referrer_samples') or 'undetected_referrer_samples' in args) or kwargs.get('verbose')):
             if kwargs.get('return_json'):
@@ -2022,7 +2032,7 @@ class vtAPI():
             else:
                 print '\n[+] Latest undetected referrer files\n'
                 pretty_print(sorted(jdata['undetected_referrer_samples']), [
-                             'positives', 'total',  'sha256'], [15, 10, 70], ['c', 'c', 'c'])
+                             'positives', 'total',  'sha256'], [15, 10, 70], ['c', 'c', 'c'], kwargs.get('email_template'))
 
         if jdata.get('detected_urls') and ((kwargs.get('detected_urls') or 'detected_urls' in args) or kwargs.get('verbose')):
             if kwargs.get('return_json'):
@@ -2036,7 +2046,7 @@ class vtAPI():
 
                 print '\n[+] Latest detected URLs\n'
                 pretty_print(sorted(jdata['detected_urls'], key=methodcaller('get', 'scan_date'), reverse=True), [
-                             'positives', 'total', 'scan_date', 'url'], [9, 5, 20, url_size], ['c', 'c', 'c', 'l'])
+                             'positives', 'total', 'scan_date', 'url'], [9, 5, 20, url_size], ['c', 'c', 'c', 'l'], kwargs.get('email_template'))
 
         if kwargs.get('return_json'):
             return return_json
@@ -2126,7 +2136,8 @@ def main():
         help='A md5/sha1/sha256 hash for which you want to retrieve the most recent report. You may also specify a scan_id (sha256-timestamp as returned by the scan API) to access a specific report. You can also specify a space separated list made up of a combination of hashes and scan_ids Public API up to 4 items/Private API up to 25 items, this allows you to perform a batch request with one single call.')
     opt.add_argument('-si', '--search-intelligence', action='store_true',
         help='Search query, help can be found here - https://www.virustotal.com/intelligence/help/')
-
+    opt.add_argument('-et', '--email-template', action='store_true',
+        help='Table format template for email')
     if api_type:
         allinfo_opt = opt.add_argument_group('All information related')
         allinfo_opt.add_argument('-rai', '--report-all-info', action='store_true',
