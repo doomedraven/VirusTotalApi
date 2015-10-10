@@ -1,3 +1,6 @@
+*11.10.2015**
+* email template friendly output added, see -et or --email-template option
+
 **01.10.2015**
 * download bug fix, in some PCs consume too much CPU
 * now you can specify in config which AV engines you prefer
