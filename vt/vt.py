@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.0.9.3'
+__version__ = '2.0.9.4'
 __license__ = 'For fun :)'
 
 import os
@@ -316,7 +316,6 @@ def parse_report(jdata, **kwargs):
                                  'Version', 'Last Update'],
                              [av_size, 9, result_size, version, 12],
                              ['r', 'c', 'l', version_align, 'c'],
-                             False,
                              kwargs.get('email_template')
                              )
         del plist
