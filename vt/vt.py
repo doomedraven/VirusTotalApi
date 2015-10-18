@@ -310,8 +310,8 @@ def parse_report(jdata, **kwargs):
 
         else:
             version_align = 'l'
-
-        pretty_print_special(plist,
+        if plist:
+            pretty_print_special(plist,
                              ['Vendor name', 'Detected', 'Result',
                                  'Version', 'Last Update'],
                              [av_size, 9, result_size, version, 12],
@@ -566,8 +566,8 @@ class vtAPI():
                     if jdata.get('unique_sources') and kwargs.get('verbose'):
                         print 'Unique sources : {size}'.format(size=jdata['unique_sources'])
 
-                if jdata.get('additional_info') and kwargs.get('verbose'):
-                    if jdata['additional_info']['magic']:
+                if jdata.get('additional_info'):
+                    if jdata['additional_info']['magic'] and kwargs.get('verbose'):
                         print '\tMagic : {magic}'.format(magic=jdata['additional_info']['magic'])
 
                     if jdata['additional_info'].get('trid') and kwargs.get('verbose'):
@@ -704,7 +704,6 @@ class vtAPI():
 
                         if jdata['additional_info']['compressedview'].get('vhash'):
                             print 'Vhash: {0}'.format(jdata['additional_info']['compressedview']['vhash'])
-
                     if jdata['additional_info'].get('detailed_email_parents') and ((kwargs.get('detailed_email_parents') or 'detailed_email_parents' in args) or kwargs.get('verbose')):
 
                         if return_json.get('return_json'):
