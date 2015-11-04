@@ -236,7 +236,6 @@ def get_detections(scans, **kwargs):
                                  'Version', 'Last Update'],
                              [av_size, result_size, version, 11],
                              ['r', 'l', 'l', 'c'],
-                             False,
                              kwargs.get('email_template')
                              )
 
