@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.0.9.4'
+__version__ = '2.0.9.5'
 __license__ = 'For fun :)'
 
 import os
@@ -542,7 +542,10 @@ class vtAPI():
                   else:
                       print '\nSubmission names:'
                       for name in jdata['submission_names']:
+                        try:
                           print '\t{name}'.format(name=name)
+                        except:
+                            print '\t', name
 
                 if jdata.get('ITW_urls') and ((kwargs.get('ITW_urls') or 'ITW_urls' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
