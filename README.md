@@ -43,45 +43,263 @@ License: Do whatever you want with it :)<br />
 Small manual with examples
 http://www.doomedraven.com/2013/11/script-virustotal-public-and-private.html
 
-Some examples:<br />
+```
+vt -h
+usage: value [-h] [-fi] [-udb USERDB] [-fs] [-f] [-u] [-ur] [-d] [-i] [-w]
+             [-s] [-si] [-et] [-rai] [-itu] [-cw] [-dep] [-sn] [-ac] [-gc]
+             [--get-comments-before DATE] [-v] [-j] [--csv] [-rr] [-rj] [-V]
+             [-r] [--delete] [--date DATE] [--period PERIOD] [--repeat REPEAT]
+             [--notify-url NOTIFY_URL] [--notify-changes-only] [-wh] [-wht]
+             [-pdn] [--asn] [-aso] [--country] [--subdomains]
+             [--domain-siblings] [-cat] [-alc] [-alk] [-opi] [--drweb-cat]
+             [-adi] [-wdi] [-tm] [-wt] [-bd] [-wd] [-du] [--pcaps] [--samples]
+             [-dds] [-uds] [-dc] [-uc] [-drs] [-urs] [--behaviour] [-bn] [-bp]
+             [-bs] [-dl] [-nm NAME] [--pcap] [--clusters]
+             [--distribution-files] [--distribution-urls] [--before BEFORE]
+             [--after AFTER] [--reports] [--limit LIMIT] [--allinfo]
+             [--massive-download]
+             [value [value ...]]
 
-<pre><code>python vt.py -d google.com
+Scan/Search/ReScan/JSON parse
 
-Status:          Domain found in dataset
+positional arguments:
+  value                 Enter the Hash, Path to File(s) or Url(s)
 
-[+] Passive DNS replication
-	2013-10-19 	74.125.142.100
-	2013-10-19 	74.125.142.102
-	2013-10-19 	74.125.142.139
-	2013-10-19 	74.125.193.100
-	2013-10-19 	74.125.193.101
-	....
+optional arguments:
+  -h, --help            show this help message and exit
+  -fi, --file-info      Get PE file info, all data extracted offline, for work
+                        you need have installed PEUTILS library
+  -udb USERDB, --userdb USERDB
+                        Path to your userdb file, works with --file-info
+                        option only
+  -fs, --file-search    File(s) search, this option, don't upload file to
+                        VirusTotal, just search by hash, support linux name
+                        wildcard, example: /home/user/*malware*, if file was
+                        scanned, you will see scan info, for full scan report
+                        use verbose mode, and dump if you want save already
+                        scanned samples
+  -f, --file-scan       File(s) scan, support linux name wildcard, example:
+                        /home/user/*malware*, if file was scanned, you will
+                        see scan info, for full scan report use verbose mode,
+                        and dump if you want save already scanned samples
+  -u, --url-scan        Url scan, support space separated list, Max 4 urls (or
+                        25 if you have private api), but you can provide more
+                        urls, for example with public api, 5 url - this will
+                        do 2 requests first with 4 url and other one with only
+                        1, or you can specify file filename must be
+                        urls_for_scan.txt, and one url per line
+  -ur, --url-report     Url(s) report, support space separated list, Max 4 (or
+                        25 if you have private api) urls, you can use --url-
+                        report --url-scan options for analysing url(s) if they
+                        are not in VT data base, read previev description
+                        about more then max limits or file with urls
+  -d, --domain-info     Retrieves a report on a given domain (PRIVATE API
+                        ONLY! including the information recorded by
+                        VirusTotal's Passive DNS infrastructure)
+  -i, --ip-info         A valid IPv4 address in dotted quad notation, for the
+                        time being only IPv4 addresses are supported.
+  -w, --walk            Work with domain-info, will walk throuth all detected
+                        ips and get information, can be provided ip parameters
+                        to get only specific information
+  -s, --search          A md5/sha1/sha256 hash for which you want to retrieve
+                        the most recent report. You may also specify a scan_id
+                        (sha256-timestamp as returned by the scan API) to
+                        access a specific report. You can also specify a space
+                        separated list made up of a combination of hashes and
+                        scan_ids Public API up to 4 items/Private API up to 25
+                        items, this allows you to perform a batch request with
+                        one single call.
+  -si, --search-intelligence
+                        Search query, help can be found here -
+                        https://www.virustotal.com/intelligence/help/
+  -et, --email-template
+                        Table format template for email
+  -ac, --add-comment    The actual review, you can tag it using the "#"
+                        twitter-like syntax (e.g. #disinfection #zbot) and
+                        reference users using the "@" syntax (e.g.
+                        @VirusTotalTeam). supported hashes MD5/SHA1/SHA256
+  -gc, --get-comments   Either a md5/sha1/sha256 hash of the file or the URL
+                        itself you want to retrieve
+  --get-comments-before DATE
+                        A datetime token that allows you to iterate over all
+                        comments on a specific item whenever it has been
+                        commented on more than 25 times. Token format
+                        20120725170000 or 2012-07-25 17 00 00 or 2012-07-25
+                        17:00:00
+  -v, --verbose         Turn on verbosity of VT reports
+  -j, --dump            Dumps the full VT report to file (VTDL{md5}.json), if
+                        you (re)scan many files/urls, their json data will be
+                        dumped to separetad files
+  --csv                 Dumps the AV's detections to file (VTDL{scan_id}.csv)
+  -rr, --return-raw     Return raw json, in case if used as library and want
+                        parse in other way
+  -rj, --return-json    Return json with parts activated, for example -p for
+                        pasive dns, etc
+  -V, --version         Show version and exit
 
+All information related:
+  -rai, --report-all-info
+                        If specified and set to one, the call will return
+                        additional info, other than the antivirus results, on
+                        the file being queried. This additional info includes
+                        the output of several tools acting on the file (PDFiD,
+                        ExifTool, sigcheck, TrID, etc.), metadata regarding
+                        VirusTotal submissions (number of unique sources that
+                        have sent the file in the past, first seen date, last
+                        seen date, etc.), and the output of in-house
+                        technologies such as a behavioural sandbox.
+  -itu, --ITW-urls      In the wild urls
+  -cw, --compressedview
+                        Contains information about extensions, file_types,
+                        tags, lowest and highest datetime, num children
+                        detected, type, uncompressed_size, vhash, childrens
+  -dep, --detailed-email-parents
+                        Contains information about emails, as Subject, sender,
+                        receiver(s), full email, and email hash to download it
+  -sn, --submission_names
+                        Get all submission name
 
-python vt.py -u -ur cuatvientos.org
-Searching for url(s) report:
-	cuatvientos.org
+Rescan options:
+  -r, --rescan          Allows you to rescan files in VirusTotal's file store
+                        without having to resubmit them, thus saving
+                        bandwidth, support space separated list, MAX 25
+                        hashes, can be local files, hashes will be generated
+                        on the fly, support linux wildmask
+  --delete              A md5/sha1/sha256 hash for which you want to delete
+                        the scheduled scan
+  --date DATE           A Date in one of this formats (example: 20120725170000
+                        or 2012-07-25 17 00 00 or 2012-07-25 17:00:00) in
+                        which the rescan should be performed. If not specified
+                        the rescan will be performed immediately.
+  --period PERIOD       Period in days in which the file should be rescanned.
+                        If this argument is provided the file will be
+                        rescanned periodically every period days, if not, the
+                        rescan is performed once and not repated again.
+  --repeat REPEAT       Used in conjunction with period to specify the number
+                        of times the file should be rescanned. If this
+                        argument is provided the file will be rescanned the
+                        given amount of times, if not, the file will be
+                        rescanned indefinitely.
 
-	Scanned on:           2013-10-23 18:11:02
-	Detected by:          0 / 47
+File scan/Rescan shared options:
+  --notify-url NOTIFY_URL
+                        An URL where a POST notification should be sent when
+                        the scan finishes.
+  --notify-changes-only
+                        Used in conjunction with --notify-url. Indicates if
+                        POST notifications should be sent only if the scan
+                        results differ from the previous one.
 
-	Status      : Scan finished, scan information embedded in this object
-	Scanned url : http://cuatvientos.org/
+Domain/IP shared verbose mode options, by default just show resolved IPs/Passive DNS:
+  -wh, --whois          Whois data
+  -wht, --whois-timestamp
+                        Whois timestamp
+  -pdn, --passive-dns   Passive DNS resolves
+  --asn                 ASN number
+  -aso, --as-owner      AS details
+  --country             Country
+  --subdomains          Subdomains
+  --domain-siblings     Domain siblings
+  -cat, --categories    Categories
+  -alc, --alexa-cat     Alexa category
+  -alk, --alexa-rank    Alexa rank
+  -opi, --opera-info    Opera info
+  --drweb-cat           Dr.Web Category
+  -adi, --alexa-domain-info
+                        Just Domain option: Show Alexa domain info
+  -wdi, --wot-domain-info
+                        Just Domain option: Show WOT domain info
+  -tm, --trendmicro     Just Domain option: Show TrendMicro category info
+  -wt, --websense-threatseeker
+                        Just Domain option: Show Websense ThreatSeeker
+                        category
+  -bd, --bitdefender    Just Domain option: Show BitDefender category
+  -wd, --webutation-domain
+                        Just Domain option: Show Webutation domain info
+  -du, --detected-urls  Just Domain option: Show latest detected URLs
+  --pcaps               Just Domain option: Show all pcaps hashes
+  --samples             Will activate -dds -uds -dc -uc -drs -urs
+  -dds, --detected-downloaded-samples
+                        Domain/Ip options: Show latest detected files that
+                        were downloaded from this ip
+  -uds, --undetected-downloaded-samples
+                        Domain/Ip options: Show latest undetected files that
+                        were downloaded from this domain/ip
+  -dc, --detected-communicated
+                        Domain/Ip Show latest detected files that communicate
+                        with this domain/ip
+  -uc, --undetected-communicated
+                        Domain/Ip Show latest undetected files that
+                        communicate with this domain/ip
+  -drs, --detected-referrer-samples
+                        Undetected referrer samples
+  -urs, --undetected-referrer-samples
+                        Undetected referrer samples
 
-	Permanent Link:      https://www.virustotal.com/url/9be15bbec0dacb3ec93c462998e0ea8017efd80353a38882a94e0d5dc906e3dc/analysis/1382551862/
+Behaviour options:
+  --behaviour           The md5/sha1/sha256 hash of the file whose dynamic
+                        behavioural report you want to retrieve. VirusTotal
+                        runs a distributed setup of Cuckoo sandbox machines
+                        that execute the files we receive. Execution is
+                        attempted only once, upon first submission to
+                        VirusTotal, and only Portable Executables under 10MB
+                        in size are ran. The execution of files is a best
+                        effort process, hence, there are no guarantees about a
+                        report being generated for a given file in our
+                        dataset. a file did indeed produce a behavioural
+                        report, a summary of it can be obtained by using the
+                        file scan lookup call providing the additional HTTP
+                        POST parameter allinfo=1. The summary will appear
+                        under the behaviour-v1 property of the additional_info
+                        field in the JSON report.This API allows you to
+                        retrieve the full JSON report of the file's execution
+                        as outputted by the Cuckoo JSON report encoder.
+  -bn, --behavior-network
+                        Show network activity
+  -bp, --behavior-process
+                        Show processes
+  -bs, --behavior-summary
+                        Show summary
 
+Download options:
+  -dl, --download       The md5/sha1/sha256 hash of the file you want to
+                        download or txt file with hashes, or hash and type,
+                        one by line, for example: hash,pcap or only hash. Will
+                        save with hash as name
+  -nm NAME, --name NAME
+                        Name with which file will saved when download it
 
-python vt.py -s 0a1ab00a6f0f7f886fa4ff48fc70a953
+Additional options:
+  --pcap                The md5/sha1/sha256 hash of the file whose network
+                        traffic dump you want to retrieve. Will save as
+                        VTDL_hash.pcap
+  --clusters            A specific day for which we want to access the
+                        clustering details, example: 2013-09-10
+  --distribution-files  Timestamps are just integer numbers where higher
+                        values mean more recent files. Both before and after
+                        parameters are optional, if they are not provided the
+                        oldest files in the queue are returned in timestamp
+                        ascending order.
+  --distribution-urls   Timestamps are just integer numbers where higher
+                        values mean more recent urls. Both before and after
+                        parameters are optional, if they are not provided the
+                        oldest urls in the queue are returned in timestamp
+                        ascending order.
 
-	Scanned on:           2013-10-20 14:13:11
-	Detected by:          15 / 48
-
-	Sophos Detection:     Troj/PDFEx-GD
-	Kaspersky Detection:  HEUR:Exploit.Script.Generic
-	TrendMicro Detection: HEUR_PDFJS.STREM
-
-	Results for MD5:     0a1ab00a6f0f7f886fa4ff48fc70a953
-	Results for SHA1:    0e734df1fbde65db130e4cf23577bdf8fde73ca8
-	Results for SHA256:  be9c0025b99f0f8c55f448ba619ba303fc65eba862cac65a00ea83d480e5efec
-
-	Permanent Link:      https://www.virustotal.com/file/be9c0025b99f0f8c55f448ba619ba303fc65eba862cac65a00ea83d480e5efec/analysis/1382278391/
+Distribution options:
+  --before BEFORE       File/Url option. Retrieve files/urls received before
+                        the given timestamp, in timestamp descending order.
+  --after AFTER         File/Url option. Retrieve files/urls received after
+                        the given timestamp, in timestamp ascending order.
+  --reports             Include the files' antivirus results in the response.
+                        Possible values are 'true' or 'false' (default value
+                        is 'false').
+  --limit LIMIT         File/Url option. Retrieve limit file items at most
+                        (default: 1000).
+  --allinfo             will include the results for each particular URL scan
+                        (in exactly the same format as the URL scan retrieving
+                        API). If the parameter is not specified, each item
+                        returned will onlycontain the scanned URL and its
+                        detection ratio.
+  --massive-download    Show information how to get massive download work
+```
