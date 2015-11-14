@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.0.9.5'
+__version__ = '2.1.0.0'
 __license__ = 'For fun :)'
 
 import os
@@ -18,6 +18,7 @@ import sys
 import csv
 import time
 import json
+import email
 import hashlib
 import argparse
 import requests
@@ -54,6 +55,18 @@ except:
 def private_api_access_error():
     print '\n[!] You don\'t have permission for this operation, Looks like you trying to access to PRIVATE API functions\n'
     sys.exit()
+
+def get_sizes(dictionary):
+    key_s = 20
+    value_s = 20
+
+    key_s = max(map(lambda key: len(key), dictionary.keys()))
+    value_s = max(map(lambda value: len(value), dictionary.values()))
+
+    if value_s > 80:
+        value_s = 80
+
+    return key_s, value_s
 
 def get_adequate_table_sizes(scans, short=False, short_list=False):
 
@@ -231,13 +244,13 @@ def get_detections(scans, **kwargs):
     if plist != [[]]:
         av_size, result_size, version = get_adequate_table_sizes(
             scans, True, engines)
+
         pretty_print_special(plist,
-                             ['Vendor name',  'Result',
-                                 'Version', 'Last Update'],
-                             [av_size, result_size, version, 11],
-                             ['r', 'l', 'l', 'c'],
-                             kwargs.get('email_template')
-                             )
+                ['Vendor name',  'Result', 'Version', 'Last Update'],
+                [av_size, result_size, version, 11],
+                ['r', 'l', 'l', 'c'],
+                kwargs.get('email_template')
+            )
 
 def dump_csv(filename, scans):
 
@@ -309,14 +322,13 @@ def parse_report(jdata, **kwargs):
 
         else:
             version_align = 'l'
-        if plist:
+        if plist != [[]]:
             pretty_print_special(plist,
-                             ['Vendor name', 'Detected', 'Result',
-                                 'Version', 'Last Update'],
-                             [av_size, 9, result_size, version, 12],
-                             ['r', 'c', 'l', version_align, 'c'],
-                             kwargs.get('email_template')
-                             )
+                ['Vendor name', 'Detected', 'Result', 'Version', 'Last Update'],
+                [av_size, 9, result_size, version, 12],
+                ['r', 'c', 'l', version_align, 'c'],
+                kwargs.get('email_template')
+            )
         del plist
 
     if kwargs.get('dump') is True:
@@ -706,34 +718,45 @@ class vtAPI():
 
                         if jdata['additional_info']['compressedview'].get('vhash'):
                             print 'Vhash: {0}'.format(jdata['additional_info']['compressedview']['vhash'])
+
                     if jdata['additional_info'].get('detailed_email_parents') and ((kwargs.get('detailed_email_parents') or 'detailed_email_parents' in args) or kwargs.get('verbose')):
 
-                        if return_json.get('return_json'):
-                            return_json['detailed_email_parents'] = jdata['additional_info']['compressedview']['detailed_email_parents']
+                        if kwargs.get('return_json') and  (kwargs.get('original-email') or 'original-email' in args):
+                            return_json['detailed_email_parents'] = jdata['additional_info']['detailed_email_parents']
                         else:
                             print '\nDetailed email parents:'
                             for email in jdata['additional_info']['detailed_email_parents']:
+                                if kwargs.get('email_original'):
+                                    kwargs['value'] = [email.get('message_id')]
+                                    kwargs['download_email'] = True
+                                    parsed = self.parse_email(**kwargs)
+                                    if parsed:
+                                        return_json.setdefault('emails', [])
+                                        if kwargs.get('return_json'):
+                                            return_json['emails'].append(parsed)
 
-                                if email.get('subject'):
-                                    print '\nSubject:'
-                                    print '\t{subject}'.format(subject=email['subject'])
+                                else:
+                                  if email.get('subject'):
+                                      print '\nSubject:'
+                                      print '\t{subject}'.format(subject=email['subject'])
 
-                                if email.get('sender'):
-                                    print '\nSender:'
-                                    print '\t{sender}'.format(sender=email['sender'])
+                                  if email.get('sender'):
+                                      print '\nSender:'
+                                      print '\t{sender}'.format(sender=email['sender'])
 
-                                if email.get('receiver'):
-                                    print '\nReceiver:'
-                                    print '\t{receiver}'.format(receiver=email['receiver'])
+                                  if email.get('receiver'):
+                                      print '\nReceiver:'
+                                      print '\t{receiver}'.format(receiver=email['receiver'])
 
-                                if email.get('message_id'):
-                                    print '\nMessage id:'
-                                    print '\t{message_id}'.format(message_id=email['message_id'])
+                                  if email.get('message_id'):
+                                      print '\nMessage id:'
+                                      print '\t{message_id}'.format(message_id=email['message_id'])
 
-                                if email.get('message'):
-                                    print '\nMessage:'
-                                    for line in email['message'].split('\n'):
-                                        print line.strip()
+                                  if email.get('message'):
+                                      print '\nMessage:'
+                                      if email['message'] is not None:
+                                        for line in email['message'].split('\n'):
+                                            print line.strip()
 
                 if jdata.get('total') and kwargs.get('verbose'):
                     print '\nDetections:\n\t{positives}/{total} Positives/Total\n'.format(positives=jdata['positives'], total=jdata['total'])
@@ -759,13 +782,13 @@ class vtAPI():
                     else:
                         version_align = 'l'
 
-                    pretty_print_special(plist,
-                                         ['Vendor name', 'Detected', 'Result',
-                                             'Version', 'Last Update'],
-                                         [av_size, 9, result_size, version, 12],
-                                         ['r', 'c', 'l', version_align, 'c'],
-                                         kwargs.get('email_template')
-                                         )
+                    if plist != [[]]:
+                        pretty_print_special(plist,
+                            ['Vendor name', 'Detected', 'Result', 'Version', 'Last Update'],
+                            [av_size, 9, result_size, version, 12],
+                            ['r', 'c', 'l', version_align, 'c'],
+                            kwargs.get('email_template')
+                        )
 
                     del plist
 
@@ -886,7 +909,10 @@ class vtAPI():
                 print "SHA1: {0}".format(pe.sections[0].get_hash_sha1())
                 print "SHA256: {0}".format(pe.sections[0].get_hash_sha256())
                 print "SHA512: {0}".format(pe.sections[0].get_hash_sha512())
-                print 'ImpHash: {0}'.format(pe.get_imphash())
+                try:
+                    print 'ImpHash: {0}'.format(pe.get_imphash())
+                except:
+                    pass
 
                 if pe.FILE_HEADER.TimeDateStamp:
                     print "\n[+]  Created"
@@ -958,15 +984,8 @@ class vtAPI():
         result = False
 
         if len(kwargs.get('value')) == 1 and isinstance(kwargs.get('value'), list):
-
-            if isinstance(kwargs.get('value')[0], basestring):
-                pass
-            else:
-                if os.path.isdir(kwargs.get('value')[0]):
-                    files = glob('{files}'.format(files=os.path.join(kwargs.get('value')[0], '*')))
-        elif isinstance(kwargs.get('value'), basestring):
-            if os.path.isdir(files):
-                files = glob('{files}'.format(files=os.path.join(kwargs.get('value'), '*')))
+            if os.path.isdir(kwargs.get('value')[0]):
+                kwargs['value'] = glob('{files}'.format(files=os.path.join(kwargs.get('value')[0], '*')))
 
         if kwargs.get('notify_url'):
             self.params['notify_url'] = kwargs.get('notify_url')
@@ -979,10 +998,7 @@ class vtAPI():
         if not kwargs.get('scan'):
             for index, c_file in enumerate(kwargs.get('value')):
                 if os.path.isfile(c_file):
-
-                   kwargs.get('value')[index] = hashlib.md5(
-                        open(c_file, 'rb').read()
-                    ).hexdigest()
+                   kwargs.get('value')[index] = hashlib.md5(open(c_file, 'rb').read()).hexdigest()
 
         kwargs['not_exit'] = True
         hash_list = kwargs.get('value')
@@ -1602,7 +1618,7 @@ class vtAPI():
                             print '[-] Hash not found in url'
 
                 self.params['hash'] = f_hash
-                print '\nTrying to download: {0}'.format(f_hash)
+                #print '\nTrying to download: {0}'.format(f_hash)
 
                 if kwargs.get('api_type'):
                     if file_type not in ('file', 'pcap'):
@@ -1617,13 +1633,14 @@ class vtAPI():
                 else:
                     print '[-] You don\'t have permission for download'
                     return
-
-                response = requests.get(url, params=self.params, stream=True)
+                if kwargs.get('download_email'):
+                    response = requests.get(url, params=self.params)#, stream=True)
+                else:
+                    response = requests.get(url, params=self.params, stream=True)
 
                 if response.status_code == 404:
                         print '\n[!] File not found\n'
                         return
-                print '[?] If this is not the same hash, something wrong happend', hashlib.md5(response.content).hexdigest()
                 if kwargs.get('name'):
                     name = kwargs.get('name')
                 else:
@@ -1632,7 +1649,10 @@ class vtAPI():
                 sample = ''
                 for chunk in response.iter_content(chunk_size=1024):
                     if chunk  and "VirusTotal - Free Online Virus, Malware and URL Scanner" not in response.content and '{"response_code": 0, "hash":' not in response.content: # filter out keep-alive new chunks
-                        sample += chunk
+                        if chunk:
+                            sample += chunk
+                        else:
+                            break
                     else:
                         try:
                             json_data = response.json()
@@ -1640,7 +1660,17 @@ class vtAPI():
                         except:
                             print '\tFile can\'t be downloaded: {0}'.format(f_hash)
                         return
+                #Sanity checks
+                downloaded_hash = ''
+                if len(f_hash) == 32:
+                    downloaded_hash = hashlib.md5(sample).hexdigest()
+                elif len(f_hash) == 40:
+                    downloaded_hash = hashlib.sha1(sample).hexdigest()
+                elif len(f_hash) == 64:
+                    downloaded_hash = hashlib.sha256(sample).hexdigest()
 
+                if f_hash != downloaded_hash:
+                    print '[-] Downloaded content has not the same hash as requested'
                 if kwargs.get('return_raw'):
                     return sample
                 else:
@@ -1648,6 +1678,139 @@ class vtAPI():
                     dumped.write(sample)
                     dumped.close()
                     print '\tDownloaded to File -- {name}'.format(name=name)
+
+    def parse_attachment(self, message_part):
+
+        attachment = ''
+        filename = ''
+        size = ''
+        content_type = ''
+        sha256_hash = ''
+        sha1_hash = ''
+        md5_hash = ''
+
+        content_disposition = message_part.get("Content-Disposition", None)
+        if content_disposition:
+            dispositions = content_disposition.strip().split(";")
+            if bool(content_disposition and dispositions[0].lower() == "attachment"):
+                attachment = message_part.get_payload(decode=True)
+                filename = message_part.get_filename()
+                content_type = message_part.get_content_type()
+                size = len(attachment)
+                sha256_hash = hashlib.sha256(attachment).hexdigest()
+                sha1_hash = hashlib.sha1(attachment).hexdigest()
+                md5_hash = hashlib.md5(attachment).hexdigest()
+
+
+        return attachment, filename, size, content_type, sha256_hash, sha1_hash, md5_hash
+
+    def parse_email(self, *args,  **kwargs):
+
+        msg = ''
+        email_dict = dict()
+
+        if kwargs.get('value'):
+            result, name = is_file(kwargs.get('value'))
+            if result:
+                msg = load_file(name)
+                kwargs['dump'] = False
+
+        for email_id in kwargs.get('value'):
+
+            if os.path.exists(email_id):
+                msg = email.message_from_file(open(email_id))
+            else:
+                if email_id.startswith('http'):
+                    email_id = re.findall('[\w\d]{64}', email_id, re.I)
+                    if email_id:
+                        email_id = email_id[0]
+                    else:
+                        print '[-] Hash not found in url'
+
+                elif len(email_id) in (32, 40, 64): # md5, sha1, sha256
+                    pass
+
+                original_email = self.download(**{
+                    'value':[email_id],
+                    'api_type':kwargs.get('api_type'),
+                    'download':'file',
+                    'intelligence':kwargs.get('intelligence'),
+                    'return_raw':True,
+                    'download_email':True,
+                    }
+                )
+                if original_email:
+                    msg = email.message_from_string(original_email)
+
+            if msg:
+                email_dict = dict()
+                email_dict['Attachments'] = list()
+                for k, v in msg.items():
+                   email_dict[k] = v
+
+                for part in msg.walk():
+                    attachment, name, size, content_type, sha256_hash, sha1_hash, md5_hash = self.parse_attachment(part)
+                    if attachment:
+                        email_dict['Attachments'].append({
+                            'attachment': attachment,
+                            'name': name,
+                            'size': size,
+                            'content_type': content_type,
+                            'sha256': sha256_hash,
+                            'sha1': sha1_hash,
+                            'md5': md5_hash
+                        })
+
+                    elif part.get_content_type() == "text/plain":
+                        email_dict['Body'] = part.get_payload(decode=True)
+                    elif part.get_content_type() == "text/html":
+                        email_dict['Body_html'] = part.get_payload(decode=True)
+
+                if not kwargs.get('return_json'):
+
+                    print '\n[+] Details of email: {0}'.format(email_id)
+                    plist = [[]]
+
+                    if 'Attachments' in email_dict:
+                        content = email_dict['Attachments']
+                        for i, part in  enumerate(email_dict['Attachments']):
+                            path_where_save = kwargs.get('save_attachment')
+                            if path_where_save:
+                                if not os.path.exists(path_where_save):
+                                    os.makedirs(path_where_save)
+                                print '[+] Saving attachment with hash: {0}'.format(email_dict['Attachments'][i]['sha256'])
+                                dump_file = open(os.path.join(path_where_save, email_dict['Attachments'][i]['sha256']), 'wb')
+                                dump_file.write(email_dict['Attachments'][i]['attachment'])
+                                dump_file.close()
+
+                            del email_dict['Attachments'][i]['attachment']
+
+
+                        key_s, value_s = get_sizes(email_dict)
+
+                        for k,v in sorted(email_dict.items()):
+                            if k == 'Attachments':
+                                for part in email_dict['Attachments']:
+                                    #to have order
+                                    line = ''
+                                    for value in ('md5', 'sha1', 'sha256', 'name', 'size', 'content_type'):
+                                        line += '{0} : {1}\n'.format(value, part[value])
+
+                                plist.append([k,line])
+                            else:
+                                plist.append([k,v])
+
+
+                        if plist != [[]]:
+                            pretty_print_special(
+                            plist,
+                            ['Key', 'Value'],
+                            [key_s, value_s],
+                            ['r', 'l'],
+                            kwargs.get('email_template')
+                        )
+
+            return email_dict
 
     def distribution(self, *args,  **kwargs):
         """
@@ -1756,8 +1919,8 @@ class vtAPI():
                         plist = [[]]
                         for key in vt_file['scans']:
                             plist.append([key, 'True' if vt_file['scans'][key]['detected'] else 'False', vt_file['scans'][key]['result']])
-
-                        pretty_print_special(plist, ['Vendor name', 'Detection', 'Result'], False, False, kwargs.get('email_template'))
+                        if plist != [[]]:
+                            pretty_print_special(plist, ['Vendor name', 'Detection', 'Result'], False, False, kwargs.get('email_template'))
                     if vt_file.get('permalink'):
                         print '\nPermanent link : {link}\n'.format(link=vt_file['permalink'])
 
@@ -2148,6 +2311,7 @@ def main():
             help='Contains information about extensions, file_types, tags, lowest and highest datetime, num children detected, type, uncompressed_size, vhash, childrens')
         allinfo_opt.add_argument('-dep', '--detailed-email-parents', action='store_true',
             help='Contains information about emails, as Subject, sender, receiver(s), full email, and email hash to download it')
+        allinfo_opt.add_argument('-eo', '--email-original', default=False, action='store_true', help='Will retreive original email and process it')
         allinfo_opt.add_argument('-sn', '--submission_names', action='store_true',
             help='Get all submission name')
 
@@ -2247,6 +2411,10 @@ def main():
         help='Undetected referrer samples')
     domain_opt.add_argument('-urs', '--undetected-referrer-samples', action='store_true', default=False,
         help='Undetected referrer samples')
+
+    email_opt = opt.add_argument_group('Process emails')
+    email_opt.add_argument('-pe', '--parse-email', action='store_true', default=False, help='Parse email, can be string or file')
+    email_opt.add_argument('-esa', '--save-attachment', action='store', default=False, help='Save email attachment, path where to store')
 
     if api_type:
         behaviour = opt.add_argument_group('Behaviour options')
@@ -2379,6 +2547,9 @@ def main():
 
     elif options.get('download'):
         vt.download(**options)
+
+    elif options.get('parse_email'):
+        vt.parse_email(**options)
 
     elif options.get('behaviour'):
         vt.behaviour(**options)
