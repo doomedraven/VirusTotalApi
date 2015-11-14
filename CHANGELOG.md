@@ -1,3 +1,8 @@
+**15.11.2015**
+* Email parsing ___-pe___, ___--parse-email___ options, can be file, or hash of email on VT
+* Report all info now support new options, ___-oe___, ___--original-email___, will download and parse original emails, attachemnt will not be displayed, only md5,sha1,sha256, size, content_type and filename
+* Suported in __report all info__ and __email parsing__. ___-esa___, ___--save-attachment___, will save all attached files
+
 **11.10.2015**
 * email template friendly output added, see -et or --email-template option
 * fileInfo function(-fi) - return some basic PE file information as md5, sha1, sha256, sha512,Imphash, FileType, Sections, Imports, Exports, Created date,can be passed userdb signatures file with -udb or --userdb
