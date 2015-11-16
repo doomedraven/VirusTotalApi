@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.0.0'
+__version__ = '2.1.0.1'
 __license__ = 'For fun :)'
 
 import os
@@ -728,7 +728,6 @@ class vtAPI():
                             for email in jdata['additional_info']['detailed_email_parents']:
                                 if kwargs.get('email_original'):
                                     kwargs['value'] = [email.get('message_id')]
-                                    kwargs['download_email'] = True
                                     parsed = self.parse_email(**kwargs)
                                     if parsed:
                                         return_json.setdefault('emails', [])
@@ -1633,10 +1632,8 @@ class vtAPI():
                 else:
                     print '[-] You don\'t have permission for download'
                     return
-                if kwargs.get('download_email'):
-                    response = requests.get(url, params=self.params)#, stream=True)
-                else:
-                    response = requests.get(url, params=self.params, stream=True)
+
+                response = requests.get(url, params=self.params, stream=True)
 
                 if response.status_code == 404:
                         print '\n[!] File not found\n'
@@ -1646,20 +1643,19 @@ class vtAPI():
                 else:
                     name = '{hash}'.format(hash=f_hash)
 
-                sample = ''
-                for chunk in response.iter_content(chunk_size=1024):
-                    if chunk  and "VirusTotal - Free Online Virus, Malware and URL Scanner" not in response.content and '{"response_code": 0, "hash":' not in response.content: # filter out keep-alive new chunks
-                        if chunk:
-                            sample += chunk
-                        else:
-                            break
-                    else:
+                if "VirusTotal - Free Online Virus, Malware and URL Scanner" in response.content and '{"response_code": 0, "hash":' not in response.content: # filter out keep-alive new chunks
                         try:
                             json_data = response.json()
                             print '\n\t{0}: {1}'.format(json_data['verbose_msg'], f_hash)
                         except:
                             print '\tFile can\'t be downloaded: {0}'.format(f_hash)
                         return
+
+                sample = ''
+                for chunk in response.iter_content(chunk_size=1024):
+                    if chunk:
+                        sample += chunk
+
                 #Sanity checks
                 downloaded_hash = ''
                 if len(f_hash) == 32:
@@ -1736,7 +1732,6 @@ class vtAPI():
                     'download':'file',
                     'intelligence':kwargs.get('intelligence'),
                     'return_raw':True,
-                    'download_email':True,
                     }
                 )
                 if original_email:
