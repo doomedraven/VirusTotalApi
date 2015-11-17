@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.0.1'
+__version__ = '2.1.0.2'
 __license__ = 'For fun :)'
 
 import os
@@ -1302,7 +1302,7 @@ class vtAPI():
                     print '\n[+] Domain:', domain
                 if jdata.get('categories') and ((kwargs.get('categories') or 'categories' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
-                        return_json.update({'categories': jdata['return_json']})
+                        return_json.update({'categories': jdata['categories']})
                     else:
                         print '\n[+] Categories'
                         print '\t{0}'.format('\n\t'.join(jdata['categories']))
