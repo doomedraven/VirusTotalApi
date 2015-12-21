@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.0.2'
+__version__ = '2.1.0.3'
 __license__ = 'For fun :)'
 
 import os
@@ -32,11 +32,11 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 try:
-     from requests.packages.urllib3.exceptions import InsecureRequestWarning, InsecurePlatformWarning
-     requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-     requests.packages.urllib3.disable_warnings(InsecurePlatformWarning)
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning, InsecurePlatformWarning
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+    requests.packages.urllib3.disable_warnings(InsecurePlatformWarning)
 except (AttributeError, ImportError):
-     pass
+    pass
 
 try:
     import pefile
@@ -607,6 +607,100 @@ class vtAPI():
                         for referer in jdata['additional_info']['referers']:
                             print '\t{referer}'.format(referer=referer)
 
+                    if jdata['additional_info'].get('behaviour-v1'):
+                        if jdata['additional_info']['behaviour-v1'].get('tags'):
+                            print '\n[+] Tags:'
+                            for tag in jdata['additional_info']['behaviour-v1'].get('tags'):
+                                print '\t', tag
+
+                        if jdata['additional_info']['behaviour-v1'].get('dropped_files'):
+                            print '\n[+] Dropped files:'
+
+                            plist = [[]]
+
+                            for files in jdata['additional_info']['behaviour-v1'].get('dropped_files'):
+                                plist.append(
+                                    [files.get('hash'), files.get('filename')])
+
+                            if plist != [[]]:
+                                pretty_print_special(plist, ['Hash(sha256?)', 'Filename'], [64, 50], ['c', 'l'], kwargs.get('email_template'))
+
+                            del plist
+
+                        if jdata['additional_info']['behaviour-v1'].get('network'):
+                            print '[+] Network'
+                            if jdata['additional_info']['behaviour-v1']['network'].get('tcp'):
+                                plist = [[]]
+                                plist.append(jdata['additional_info']['behaviour-v1']['network'].get('tcp'))
+                                pretty_print_special(plist, ['TCP'], False, False, kwargs.get('email_template'))
+
+                            if jdata['additional_info']['behaviour-v1']['network'].get('udp'):
+                                plist = [[]]
+                                plist.append(jdata['additional_info']['behaviour-v1']['network'].get('udp'))
+                                pretty_print_special(plist, ['UDP'], False, False, kwargs.get('email_template'))
+                                del plist
+
+                            #if jdata['additional_info']['behaviour-v1']['network'].get('http'):
+                            #    print '\n[+] HTTP:', jdata['additional_info']['behaviour-v1']['network'].get('http')
+
+                        if jdata['additional_info']['behaviour-v1'].get('codesign'):
+                            print '\n[+] Codesign:\n\t',jdata['additional_info']['behaviour-v1'].get('codesign').replace('\n', '\n\t')
+
+                        if jdata['additional_info']['behaviour-v1'].get('process'):
+                            print '\n[+] Process'
+                            if jdata['additional_info']['behaviour-v1']['process'].get('created'):
+                                print '\t[+] Created:'
+                                plist = [[]]
+
+                                for created in jdata['additional_info']['behaviour-v1']['process'].get('created'):
+                                    plist.append(
+                                        [created.get('success'), created.get('start_time'),created.get('end_time'),created.get('pid'),created.get('ppid'),created.get('execname'),created.get('psargs')])
+
+                                if plist != [[]]:
+                                    pretty_print_special(plist, ['Sucess', 'Start time', 'End time', 'pid', 'ppid', 'execname', 'psargs'], [6, 8, 8, 5, 6, 30, 30], ['c','c','c','c','c','c','l', ], kwargs.get('email_template'))
+
+                                del plist
+
+                        if jdata['additional_info']['behaviour-v1'].get('knockknock'):
+                            print '\n[+] Knock Knock:', jdata['additional_info']['behaviour-v1'].get('knockknock'),8
+                        if jdata['additional_info']['behaviour-v1'].get('run_time'):
+                            print '\n[+] Run time:', jdata['additional_info']['behaviour-v1'].get('tun_time')
+                        if jdata['additional_info']['behaviour-v1'].get('internal_tags'):
+                            print '\n[+] Internal tags:', jdata['additional_info']['behaviour-v1'].get('internal_tags'),10
+                        if jdata['additional_info']['behaviour-v1'].get('signals'):
+                            print '\n[+] Signals:'
+
+                            plist = [[]]
+
+                            for signals in jdata['additional_info']['behaviour-v1'].get('signals'):
+                                plist.append(
+                                    [signals.get('cmd'), signals.get('target'), signals.get('signo'), signals.get('pid'), signals.get('walltimestamp'), signals.get('execname')])
+
+                            if plist != [[]]:
+                                pretty_print_special(plist, ['CMD', 'Target', 'Signo', 'PID', 'WallTimeStamp', 'ExecName'], False, False, kwargs.get('email_template'))
+
+                            del plist
+                        if jdata['additional_info']['behaviour-v1'].get('version'):
+                            print '\n[+] Version:', jdata['additional_info']['behaviour-v1'].get('version')
+                        if jdata['additional_info']['behaviour-v1'].get('num_screenshots'):
+                            print '\n[+] Num screenshots:', jdata['additional_info']['behaviour-v1'].get('num_screenshots')
+                        if jdata['additional_info']['behaviour-v1'].get('filesystem'):
+                            print '\n[+] Filesystem:',
+                            if jdata['additional_info']['behaviour-v1']['filesystem'].get('opened'):
+
+                                plist = [[]]
+
+                                for fs_open in jdata['additional_info']['behaviour-v1']['filesystem'].get('opened'):
+                                    plist.append(
+                                        [fs_open.get('success'), fs_open.get('execname'), fs_open.get('path')])
+
+                                if plist != [[]]:
+                                    pretty_print_special(plist, ['Success', 'ExecName', 'Path'], [8, 20, 80], ['c', 'c', 'l'], kwargs.get('email_template'))
+
+                                del plist
+                        if jdata['additional_info']['behaviour-v1'].get('output'):
+                            print '\n[+] Output:', jdata['additional_info']['behaviour-v1'].get('output'),15
+
                     if jdata['additional_info'].get('sigcheck') and kwargs.get('verbose'):
 
                         print '\nPE signature block:'
@@ -655,6 +749,98 @@ class vtAPI():
                             print '\t{0}'.format(imported)
                             for valor in jdata['additional_info']['imports'][imported]:
                                 print '\t\t{0}'.format(valor)
+
+
+                    if jdata['additional_info'].get('dmgcheck'):
+                        print '\n[+] dmgCheck:'
+
+                        if jdata['additional_info']['dmgcheck'].get('plst_keys'):
+                            print '\n[+] plst_keys:'
+                            for key in jdata['additional_info']['dmgcheck']['plst_keys']:
+                                print '\t', key
+
+                        if jdata['additional_info']['dmgcheck'].get('plst'):
+                            plist = [[]]
+
+                            for plst in jdata['additional_info']['dmgcheck']['plst']:
+                                plist.append(
+                                    [plst.get('attributes'), plst.get('name')])
+
+                            if plist != [[]]:
+                                pretty_print_special(plist, ['Attributes', 'Name'], False, False, kwargs.get('email_template'))
+                            del plist
+
+                        if jdata['additional_info']['dmgcheck'].get('xml_offset'):
+                            print '\n[+] xml offset', jdata['additional_info']['dmgcheck']['xml_offset']
+
+                        if jdata['additional_info']['dmgcheck'].get('xml_length'):
+                            print '\n[+] xml length', jdata['additional_info']['dmgcheck']['xml_length']
+
+                        if jdata['additional_info']['dmgcheck'].get('data_fork_offset'):
+                            print '\n[+] Data fork offset', jdata['additional_info']['dmgcheck']['data_fork_offset']
+
+                        if jdata['additional_info']['dmgcheck'].get('running_data_fork_offset'):
+                            print '\n[+] Running data fork offset', jdata['additional_info']['dmgcheck']['running_data_fork_offset']
+
+                        if jdata['additional_info']['dmgcheck'].get('rsrc_fork_offset'):
+                            print '\n[+] rsrc fork offset', jdata['additional_info']['dmgcheck']['rsrc_fork_offset']
+
+                        if jdata['additional_info']['dmgcheck'].get('resourcefork_keys'):
+                            print '\n[+] resourcefork keys:'
+                            for key in jdata['additional_info']['dmgcheck']['resourcefork_keys']:
+                                print '\t', key
+
+                        if jdata['additional_info']['dmgcheck'].get('blkx'):
+                            print '\n[+] blkx:'
+                            plist = [[]]
+
+                            for blkx in  jdata['additional_info']['dmgcheck']['blkx']:
+                                plist.append(
+                                    [blkx.get('attributes'), blkx.get('name')])
+
+                            if plist != [[]]:
+                                pretty_print_special(plist, ['Attributes', 'Name'], False, False, kwargs.get('email_template'))
+
+                            del plist
+
+                        if jdata['additional_info']['dmgcheck'].get('hfs'):
+
+                            if jdata['additional_info']['dmgcheck']['hfs'].get('executables'):
+                                print '\n[+] Executables:'
+                                plist = [[]]
+
+                                for executables in  jdata['additional_info']['dmgcheck']['hfs']['executables']:
+                                    detection = executables.get('detection_ratio')
+                                    detection = '{0}:{1}'.format(detection[0], detection[1])
+                                    plist.append(
+                                        [detection, executables.get('id'), executables.get('sha256'), executables.get('path')])
+
+                                if plist != [[]]:
+                                    pretty_print_special(plist, ['Detection', 'Id', 'sha256', 'path'], [10, 5, 64, 50], ['c', 'c', 'c', 'l'], kwargs.get('email_template'))
+
+                                del plist
+
+                            if jdata['additional_info']['dmgcheck']['hfs'].get('num_files'):
+                                print '\n[+] Num files:', jdata['additional_info']['dmgcheck']['hfs']['num_files']
+
+                            if jdata['additional_info']['dmgcheck']['hfs'].get('unreadable_files'):
+                                print '\n[+] Unreadable files: ', jdata['additional_info']['dmgcheck']['hfs']['unreadable_files']
+
+                            if jdata['additional_info']['dmgcheck']['hfs'].get('bundles'):
+                                print '\n[+] Unreadable files: ', jdata['additional_info']['dmgcheck']['hfs']['bundles']
+
+                            if jdata['additional_info']['dmgcheck']['hfs'].get('info_plist'):
+                                print '\n[+] Info plist: '
+                                for key, value in jdata['additional_info']['dmgcheck']['hfs']['info_plist'].items():
+                                    if isinstance(value, dict):
+                                        print '\t', key, ':'
+                                        for subkey, subvalue in value.items():
+                                            print '\t\t', subkey, ':', subvalue
+                                    else:
+                                        print '\t', key, ':', value
+
+                            if jdata['additional_info']['dmgcheck']['hfs'].get('dmg'):
+                                print '\n[+] dmg: ', jdata['additional_info']['dmgcheck']['hfs']['dmg']
 
                     if jdata['additional_info'].get('compressedview') and ((kwargs.get('compressedview') or 'compressedview' in args) or kwargs.get('verbose')):
                       if return_json.get('return_json'):
@@ -1215,7 +1401,7 @@ class vtAPI():
                     print '\n[-] Status {ip}: {verb_msg}\n'.format(verb_msg=jdata['verbose_msg'], ip=ip)
 
             elif jdata['response_code'] == 1:
-                if jdata.get('verbose_msg'):
+                if jdata.get('verbose_msg') and not (kwargs.get('return_json') or kwargs.get('return_raw')):
                     print '\n[+] IP:', ip
 
                 if jdata.get('asn') and ((kwargs.get('asn') or 'asn' in args) or kwargs.get('verbose')):
@@ -1298,7 +1484,7 @@ class vtAPI():
                     print '\n[!] Status : {verb_msg} : {domain}\n'.format(verb_msg=jdata['verbose_msg'], domain=domain)
 
             if jdata.get('response_code') and jdata['response_code'] == 1:
-                if jdata.get('verbose_msg'):
+                if jdata.get('verbose_msg') and not (kwargs.get('return_json') or kwargs.get('return_raw')):
                     print '\n[+] Domain:', domain
                 if jdata.get('categories') and ((kwargs.get('categories') or 'categories' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
@@ -1384,7 +1570,7 @@ class vtAPI():
                         return_json.update({'whois': jdata['whois']})
                     else:
                         print '\n[+] Whois data:'
-                        print '\t{0}'.format(jdata['whois'].replace('\n', '\n\t'))
+                        print '\t', jdata['whois'].replace('\n', '\n\t')
                 if  jdata.get('whois_timestamp') and ((kwargs.get('whois_timestamp') or 'whois_timestamp' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
                         return_json.update({'whois_timestamp': jdata['whois_timestamp']})
@@ -1785,9 +1971,9 @@ class vtAPI():
 
                         for k,v in sorted(email_dict.items()):
                             if k == 'Attachments':
+                                line = ''
                                 for part in email_dict['Attachments']:
                                     #to have order
-                                    line = ''
                                     for value in ('md5', 'sha1', 'sha256', 'name', 'size', 'content_type'):
                                         line += '{0} : {1}\n'.format(value, part[value])
 
@@ -1958,144 +2144,145 @@ class vtAPI():
 
         if (kwargs.get('behavior_network') or 'behavior_network' in args) or kwargs.get('verbose'):
 
-            print '\nHTTP requests\n'
+            if jdata.get('network'):
+                print '\nHTTP requests\n'
+                if 'behavior-network' in jdata and 'http' in jdata.get('network'):
+                    if kwargs.get('return_json'):
+                        return_json.update({'http':jdata['network']['http']})
+                    else:
 
-            if 'behavior-network' in jdata and 'http' in jdata.get('network'):
-                if kwargs.get('return_json'):
-                    return_json.update({'http':jdata['network']['http']})
-                else:
+                        for http in jdata['network']['http']:
 
-                    for http in jdata['network']['http']:
+                            if http.get('uri'):
+                                print '\tURL        : {0}'.format(http['uri'])
+                            if http.get('host'):
+                                print '\tHost       : {0}'.format(http['host'])
+                            # if http.get('port') : print 'port       : {0}'.format(http['port'])
+                            # if http.get('path') : print 'path       :
+                            # {0}'.format(http['path'])
+                            if http.get('method'):
+                                print '\tMethod     : {0}'.format(http['method'])
+                            if http.get('user-agent'):
+                                print '\tUser-agent : {0}'.format(http['user-agent'])
+                            # if http.get('version') : print 'version    : {0}'.format(http['version'])
+                            # if http.get('data')    : print 'data       : {0}'.format(http['data'].replace('\r\n\r\n', '\n\t').replace('\r\n','\n\t\t'))
+                            if http.get('body'):
+                                print '\tbody hex encoded:\n\t  {}\n'.format(http['body'].encode('hex'))
 
-                        if http.get('uri'):
-                            print '\tURL        : {0}'.format(http['uri'])
-                        if http.get('host'):
-                            print '\tHost       : {0}'.format(http['host'])
-                        # if http.get('port') : print 'port       : {0}'.format(http['port'])
-                        # if http.get('path') : print 'path       :
-                        # {0}'.format(http['path'])
-                        if http.get('method'):
-                            print '\tMethod     : {0}'.format(http['method'])
-                        if http.get('user-agent'):
-                            print '\tUser-agent : {0}'.format(http['user-agent'])
-                        # if http.get('version') : print 'version    : {0}'.format(http['version'])
-                        # if http.get('data')    : print 'data       : {0}'.format(http['data'].replace('\r\n\r\n', '\n\t').replace('\r\n','\n\t\t'))
-                        if http.get('body'):
-                            print '\tbody hex encoded:\n\t  {}\n'.format(http['body'].encode('hex'))
+                if jdata['network'].get('hosts'):
+                    if kwargs.get('return_json'):
+                        return_json.update({'hosts': jdata['network']['hosts']})
+                    else:
+                        pretty_print(jdata['network']['hosts'], ['hosts'], False, False, kwargs.get('email_template'))
 
-            if jdata['network']['hosts']:
-                if kwargs.get('return_json'):
-                    return_json.update({'hosts': jdata['network']['hosts']})
-                else:
-                    pretty_print(jdata['network']['hosts'], ['hosts'], False, False, kwargs.get('email_template'))
+                if jdata['network'].get('dns'):
+                    if kwargs.get('return_json'):
+                        return_json.update({'dns': jdata['network']['dns']})
+                    else:
+                        print '\nDNS requests\n'
+                        pretty_print(jdata['network']['dns'],   ['ip', 'hostname'], False, False, kwargs.get('email_template'))
 
-            if jdata['network']['dns']:
-                if kwargs.get('return_json'):
-                    return_json.update({'dns': jdata['network']['dns']})
-                else:
-                    print '\nDNS requests\n'
-                    pretty_print(jdata['network']['dns'],   ['ip', 'hostname'], False, False, kwargs.get('email_template'))
+                if jdata['network'].get('tcp'):
+                    if kwargs.get('return_json'):
+                        return_json.update({'tcp': jdata['network']['tcp']})
+                    else:
+                        print '\nTCP Connections'
 
-            if jdata['network']['tcp']:
-                if kwargs.get('return_json'):
-                    return_json.update({'tcp': jdata['network']['tcp']})
-                else:
-                    print '\nTCP Connections'
+                        unique = []
 
-                    unique = []
-
-                    for block in jdata['network']['tcp']:
-                        if not [block['src'],  block['dst'], block['sport'], block['dport']] in unique:
-                            unique.append(
-                                [block['src'], block['dst'], block['sport'], block['dport']]
-                            )
-                    pretty_print_special(unique,   ['src', 'dst', 'sport', 'dport'], False, False, kwargs.get('email_template'))
-                    del unique
-
-            if jdata['network']['udp']:
-                if kwargs.get('return_json'):
-                    return_json.update({'udp': jdata['network']['udp']})
-                else:
-                    print '\nUDP Connections'
-                    unique = []
-                    for block in jdata['network']['udp']:
-                        if not [block['src'],  block['dst'], block['sport'], block['dport']] in unique:
-                            unique.append(
-                                [block['src'], block['dst'], block['sport'], block['dport']]
+                        for block in jdata['network']['tcp']:
+                            if not [block['src'],  block['dst'], block['sport'], block['dport']] in unique:
+                                unique.append(
+                                    [block['src'], block['dst'], block['sport'], block['dport']]
                                 )
-                    pretty_print_special(
-                      unique,
-                      ['src', 'dst', 'sport', 'dport'],
-                      False, False,
-                      kwargs.get('email_template')
-                      )
-                    del unique
+                        pretty_print_special(unique,   ['src', 'dst', 'sport', 'dport'], False, False, kwargs.get('email_template'))
+                        del unique
+
+                if jdata['network'].get('udp'):
+                    if kwargs.get('return_json'):
+                        return_json.update({'udp': jdata['network']['udp']})
+                    else:
+                        print '\nUDP Connections'
+                        unique = []
+                        for block in jdata['network']['udp']:
+                            if not [block['src'],  block['dst'], block['sport'], block['dport']] in unique:
+                                unique.append(
+                                    [block['src'], block['dst'], block['sport'], block['dport']]
+                                    )
+                        pretty_print_special(
+                          unique,
+                          ['src', 'dst', 'sport', 'dport'],
+                          False, False,
+                          kwargs.get('email_template')
+                          )
+                        del unique
 
         if (kwargs.get('behavior_process') or 'behavior_process' in args) or kwargs.get('verbose'):
-            print '\n[+] Behavior'
-            print '\n[+] Processes'
-            if kwargs.get('return_json'):
-                    return_json.update({'processes': jdata['behavior']['processes']})
-            else:
-                for process_id in jdata['behavior']['processes']:
+            if jdata.get('behaviour'):
+                print '\n[+] Behavior'
+                print '\n[+] Processes'
+                if kwargs.get('return_json'):
+                        return_json.update({'processes': jdata['behavior']['processes']})
+                else:
+                    for process_id in jdata['behavior']['processes']:
 
-                    plist = []
+                        plist = []
 
-                    if process_id.get('parent_id'):
-                        print '\nParent  Id : {0}'.format(process_id['parent_id'])
-                    if process_id.get('process_id'):
-                        print 'Process Id : {0}'.format(process_id['process_id'])
+                        if process_id.get('parent_id'):
+                            print '\nParent  Id : {0}'.format(process_id['parent_id'])
+                        if process_id.get('process_id'):
+                            print 'Process Id : {0}'.format(process_id['process_id'])
 
-                    if process_id.get('first_seen'):
+                        if process_id.get('first_seen'):
 
-                        date_format = time.strptime(
-                            process_id['first_seen'][:14], '%Y%m%d%H%M%S')
-                        date_formated = '{year}:{month}:{day} {hour}:{minuts}:{seconds}'.format(year=date_format.tm_year, month=date_format.tm_mon,
-                            day=date_format.tm_mday, hour=date_format.tm_hour,
-                            minuts=date_format.tm_min, seconds=date_format.tm_sec)
-                        print 'First Seen : {0}'.format(date_formated)
+                            date_format = time.strptime(
+                                process_id['first_seen'][:14], '%Y%m%d%H%M%S')
+                            date_formated = '{year}:{month}:{day} {hour}:{minuts}:{seconds}'.format(year=date_format.tm_year, month=date_format.tm_mon,
+                                day=date_format.tm_mday, hour=date_format.tm_hour,
+                                minuts=date_format.tm_min, seconds=date_format.tm_sec)
+                            print 'First Seen : {0}'.format(date_formated)
 
-                    if process_id.get('process_name'):
-                        print '\nProcess Name : {0}'.format(process_id['process_name'])
+                        if process_id.get('process_name'):
+                            print '\nProcess Name : {0}'.format(process_id['process_name'])
 
-                    if process_id.get('calls'):
-                        for process_part in process_id['calls']:
-                            plist = [[]]
-                            for key in process_part:
-                                if isinstance(process_part[key], list):
-                                    if process_part[key] != [] and isinstance(process_part[key][0], dict):
+                        if process_id.get('calls'):
+                            for process_part in process_id['calls']:
+                                plist = [[]]
+                                for key in process_part:
+                                    if isinstance(process_part[key], list):
+                                        if process_part[key] != [] and isinstance(process_part[key][0], dict):
+                                            temp_list = []
+                                            for part in process_part[key]:
+                                                temp_list.append('\n'.join(map(lambda key_temp: '{key_temp}:{value}\n'.format(
+                                                    key_temp=key_temp, value=part[key_temp]), part.keys())))
+                                            plist.append([key, ''.join(temp_list)])
+                                            del temp_list
+                                        else:
+                                            plist.append(
+                                                [key, '\n'.join(process_part[key])])
+
+                                    elif isinstance(process_part[key], dict):
                                         temp_list = []
                                         for part in process_part[key]:
-                                            temp_list.append('\n'.join(map(lambda key_temp: '{key_temp}:{value}\n'.format(
-                                                key_temp=key_temp, value=part[key_temp]), part.keys())))
+                                            temp_list += map(lambda key_temp: '{key_temp}:{value}\n'.format(
+                                                key_temp=key_temp, value=part[key_temp]), part.keys()
+                                            )
                                         plist.append([key, ''.join(temp_list)])
                                         del temp_list
                                     else:
-                                        plist.append(
-                                            [key, '\n'.join(process_part[key])])
+                                        plist.append([key, process_part[key]])
+                                pretty_print_special(
+                                    plist, ['Name', 'Value'], [10, 50], False, kwargs.get('email_template'))
+                                del plist
 
-                                elif isinstance(process_part[key], dict):
-                                    temp_list = []
-                                    for part in process_part[key]:
-                                        temp_list += map(lambda key_temp: '{key_temp}:{value}\n'.format(
-                                            key_temp=key_temp, value=part[key_temp]), part.keys()
-                                        )
-                                    plist.append([key, ''.join(temp_list)])
-                                    del temp_list
-                                else:
-                                    plist.append([key, process_part[key]])
-                            pretty_print_special(
-                                plist, ['Name', 'Value'], [10, 50], False, kwargs.get('email_template'))
-                            del plist
+                            print '\n' + '=' * 20 + ' FIN ' + '=' * 20
 
-                        print '\n' + '=' * 20 + ' FIN ' + '=' * 20
-
-                print '\n[+] Process Tree\n'
-                if jdata.get('behavior') and jdata['behavior'].get('processtree'):
-                    for tree in jdata['behavior']['processtree']:
-                        for key in tree.keys():
-                            print '\t{key}:{value}'.format(key=key, value=tree[key])
-                    print '\n'
+                    print '\n[+] Process Tree\n'
+                    if jdata.get('behavior') and jdata['behavior'].get('processtree'):
+                        for tree in jdata['behavior']['processtree']:
+                            for key in tree.keys():
+                                print '\t{key}:{value}'.format(key=key, value=tree[key])
+                        print '\n'
 
         if (kwargs.get('behavior_summary') or 'behavior_summary' in args) or kwargs.get('verbose'):
             if jdata.get('behavior') and jdata['behavior'].get('summary'):

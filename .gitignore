@@ -3,3 +3,5 @@
 *.txt
 dist/*
 vt.egg-info/PKG-INFO
+
+vt/keys
