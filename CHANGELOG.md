@@ -1,3 +1,7 @@
+**21.12.2015**
+* MacOsX files behaviour added, it can be found in __-rai__ (report all info)
+* No more domain/ip print if uses as library and use return_raw or return_json
+
 **15.11.2015**
 * Email parsing ___-pe___, ___--parse-email___ options, can be file, or hash of email on VT
 * Report all info now support new options, ___-oe___, ___--original-email___, will download and parse original emails, attachemnt will not be displayed, only md5,sha1,sha256, size, content_type and filename
