@@ -2653,7 +2653,6 @@ def main():
 
 
     vt = vtAPI(vt_config.get('apikey'))
-    #del vt_config['apikey']
 
     options.update(vt_config)
 
