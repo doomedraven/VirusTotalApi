@@ -9,11 +9,12 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.0.3'
+__version__ = '2.1.0.4'
 __license__ = 'For fun :)'
 
 import os
 import re
+import ast
 import sys
 import csv
 import time
@@ -608,12 +609,12 @@ class vtAPI():
                             print '\t{referer}'.format(referer=referer)
 
                     if jdata['additional_info'].get('behaviour-v1'):
-                        if jdata['additional_info']['behaviour-v1'].get('tags'):
+                        if jdata['additional_info']['behaviour-v1'].get('tags') and kwargs.get('verbose'):
                             print '\n[+] Tags:'
                             for tag in jdata['additional_info']['behaviour-v1'].get('tags'):
                                 print '\t', tag
 
-                        if jdata['additional_info']['behaviour-v1'].get('dropped_files'):
+                        if jdata['additional_info']['behaviour-v1'].get('dropped_files') and kwargs.get('verbose'):
                             print '\n[+] Dropped files:'
 
                             plist = [[]]
@@ -627,7 +628,7 @@ class vtAPI():
 
                             del plist
 
-                        if jdata['additional_info']['behaviour-v1'].get('network'):
+                        if jdata['additional_info']['behaviour-v1'].get('network') and kwargs.get('verbose'):
                             print '[+] Network'
                             if jdata['additional_info']['behaviour-v1']['network'].get('tcp'):
                                 plist = [[]]
@@ -643,10 +644,10 @@ class vtAPI():
                             #if jdata['additional_info']['behaviour-v1']['network'].get('http'):
                             #    print '\n[+] HTTP:', jdata['additional_info']['behaviour-v1']['network'].get('http')
 
-                        if jdata['additional_info']['behaviour-v1'].get('codesign'):
+                        if jdata['additional_info']['behaviour-v1'].get('codesign') and kwargs.get('verbose'):
                             print '\n[+] Codesign:\n\t',jdata['additional_info']['behaviour-v1'].get('codesign').replace('\n', '\n\t')
 
-                        if jdata['additional_info']['behaviour-v1'].get('process'):
+                        if jdata['additional_info']['behaviour-v1'].get('process') and kwargs.get('verbose'):
                             print '\n[+] Process'
                             if jdata['additional_info']['behaviour-v1']['process'].get('created'):
                                 print '\t[+] Created:'
@@ -661,13 +662,13 @@ class vtAPI():
 
                                 del plist
 
-                        if jdata['additional_info']['behaviour-v1'].get('knockknock'):
+                        if jdata['additional_info']['behaviour-v1'].get('knockknock') and kwargs.get('verbose'):
                             print '\n[+] Knock Knock:', jdata['additional_info']['behaviour-v1'].get('knockknock'),8
-                        if jdata['additional_info']['behaviour-v1'].get('run_time'):
+                        if jdata['additional_info']['behaviour-v1'].get('run_time') and kwargs.get('verbose'):
                             print '\n[+] Run time:', jdata['additional_info']['behaviour-v1'].get('tun_time')
-                        if jdata['additional_info']['behaviour-v1'].get('internal_tags'):
+                        if jdata['additional_info']['behaviour-v1'].get('internal_tags') and kwargs.get('verbose'):
                             print '\n[+] Internal tags:', jdata['additional_info']['behaviour-v1'].get('internal_tags'),10
-                        if jdata['additional_info']['behaviour-v1'].get('signals'):
+                        if jdata['additional_info']['behaviour-v1'].get('signals') and kwargs.get('verbose'):
                             print '\n[+] Signals:'
 
                             plist = [[]]
@@ -680,11 +681,11 @@ class vtAPI():
                                 pretty_print_special(plist, ['CMD', 'Target', 'Signo', 'PID', 'WallTimeStamp', 'ExecName'], False, False, kwargs.get('email_template'))
 
                             del plist
-                        if jdata['additional_info']['behaviour-v1'].get('version'):
+                        if jdata['additional_info']['behaviour-v1'].get('version') and kwargs.get('verbose'):
                             print '\n[+] Version:', jdata['additional_info']['behaviour-v1'].get('version')
-                        if jdata['additional_info']['behaviour-v1'].get('num_screenshots'):
+                        if jdata['additional_info']['behaviour-v1'].get('num_screenshots') and kwargs.get('verbose'):
                             print '\n[+] Num screenshots:', jdata['additional_info']['behaviour-v1'].get('num_screenshots')
-                        if jdata['additional_info']['behaviour-v1'].get('filesystem'):
+                        if jdata['additional_info']['behaviour-v1'].get('filesystem') and kwargs.get('verbose'):
                             print '\n[+] Filesystem:',
                             if jdata['additional_info']['behaviour-v1']['filesystem'].get('opened'):
 
@@ -751,7 +752,7 @@ class vtAPI():
                                 print '\t\t{0}'.format(valor)
 
 
-                    if jdata['additional_info'].get('dmgcheck'):
+                    if jdata['additional_info'].get('dmgcheck') and kwargs.get('verbose'):
                         print '\n[+] dmgCheck:'
 
                         if jdata['additional_info']['dmgcheck'].get('plst_keys'):
@@ -1401,7 +1402,7 @@ class vtAPI():
                     print '\n[-] Status {ip}: {verb_msg}\n'.format(verb_msg=jdata['verbose_msg'], ip=ip)
 
             elif jdata['response_code'] == 1:
-                if jdata.get('verbose_msg') and not (kwargs.get('return_json') or kwargs.get('return_raw')):
+                if jdata.get('verbose_msg') and not (kwargs.get('return_json') or kwargs.get('return_raw')) and kwargs.get('verbose'):
                     print '\n[+] IP:', ip
 
                 if jdata.get('asn') and ((kwargs.get('asn') or 'asn' in args) or kwargs.get('verbose')):
@@ -1484,7 +1485,7 @@ class vtAPI():
                     print '\n[!] Status : {verb_msg} : {domain}\n'.format(verb_msg=jdata['verbose_msg'], domain=domain)
 
             if jdata.get('response_code') and jdata['response_code'] == 1:
-                if jdata.get('verbose_msg') and not (kwargs.get('return_json') or kwargs.get('return_raw')):
+                if jdata.get('verbose_msg') and not (kwargs.get('return_json') or kwargs.get('return_raw')) and kwargs.get('verbose'):
                     print '\n[+] Domain:', domain
                 if jdata.get('categories') and ((kwargs.get('categories') or 'categories' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
@@ -1966,7 +1967,6 @@ class vtAPI():
 
                             del email_dict['Attachments'][i]['attachment']
 
-
                         key_s, value_s = get_sizes(email_dict)
 
                         for k,v in sorted(email_dict.items()):
@@ -2396,8 +2396,7 @@ class vtAPI():
         if kwargs.get('return_json'):
             return return_json
 
-def read_conf(config_file = '~/.vtapi'):
-
+def read_conf(config_file = False):
 
       help = '''
                       No API key provided or cannot read ~ /.vtapi. Specify an API key in vt.py or in ~ /.vtapi.
@@ -2406,17 +2405,16 @@ def read_conf(config_file = '~/.vtapi'):
                           apikey=your-apikey-here
                           type=public #private if you have private api
                           intelligence=False # True if you have access
+                          engines= #put there coma separated engine list, or only one, or leave it empty
 
                       For more information check:
                           https://github.com/doomedraven/VirusTotalApi
                       '''
-      apikey = None
-      api_type = False
-      intelligence = False
 
       if not config_file:
-             for conf in ('.vtapi', 'vtapi.conf'):
-                if os.path.exists(os.path.expanduser(conf)):
+          # config in home or in local dirrectory
+          for conf in ('.vtapi', 'vtapi.conf', '~/.vtapi', '~/vtapi.conf'):
+              if os.path.exists(os.path.expanduser(conf)):
                   config_file = conf
                   break
       try:
@@ -2424,37 +2422,38 @@ def read_conf(config_file = '~/.vtapi'):
         if os.path.exists(confpath):
             config = ConfigParser.RawConfigParser()
             config.read(confpath)
-            if config.has_option('vt', 'apikey'):
-                apikey = config.get('vt', 'apikey')
-                if apikey is None:
-                    sys.exit(help)
-                if config.has_option('vt', 'type'):
-                   api_type = config.get('vt', 'type')
-
-                   if  api_type.lower() == 'private':
-                        api_type = True
-                   else:
-                        api_type = False
-
-                if config.has_option('vt', 'intelligence'):
-                    intelligence = config.get('vt', 'intelligence')
-
-                if config.has_option('vt', 'engines'):
-                    engines = config.get('vt', 'engines')
-                else:
-                    engines = []
+            if config.has_section('vt'):
+                vt_config = dict(config.items('vt'))
+                if not vt_config.get('apikey'):
+                  sys.exit(help)
         else:
             sys.exit('\nFile {0} don\'t exists\n'.format(confpath))
 
       except Exception:
           sys.exit(help)
 
-      return apikey, api_type, intelligence, engines
-
+      return vt_config
 
 def main():
 
-    apikey, api_type, intelligence, engines = read_conf()
+    # base to make -h works
+    vt_config = {'intelligence': False, 'apikey': '', 'type': False}
+    vt_config = read_conf()
+
+    for key in vt_config:
+        #backward compartibility
+        if key == 'type':
+          if vt_config[key].lower() == 'private':
+              apitype = True
+          else:
+              apitype = False
+          key  = 'api_type'
+          vt_config[key] = apitype
+          del vt_config['type']
+          del apitype
+
+        if vt_config[key] in ('False', 'True'):
+            vt_config[key] = ast.literal_eval(vt_config[key])
 
     opt = argparse.ArgumentParser(
         'value', description='Scan/Search/ReScan/JSON parse')
@@ -2483,7 +2482,7 @@ def main():
         help='Search query, help can be found here - https://www.virustotal.com/intelligence/help/')
     opt.add_argument('-et', '--email-template', action='store_true',
         help='Table format template for email')
-    if api_type:
+    if vt_config.get('api_type'):
         allinfo_opt = opt.add_argument_group('All information related')
         allinfo_opt.add_argument('-rai', '--report-all-info', action='store_true',
             help='If specified and set to one, the call will return additional info, other than the antivirus results, on the file being queried. This additional info includes the output of several tools acting on the file (PDFiD, ExifTool, sigcheck, TrID, etc.), metadata regarding VirusTotal submissions (number of unique sources that have sent the file in the past, first seen date, last seen date, etc.), and the output of in-house technologies such as a behavioural sandbox.')
@@ -2501,7 +2500,7 @@ def main():
         help='The actual review, you can tag it using the "#" twitter-like syntax (e.g. #disinfection #zbot) and reference users using the "@" syntax (e.g. @VirusTotalTeam). supported hashes MD5/SHA1/SHA256')
     opt.add_argument('-gc', '--get-comments', action='store_true',
         help='Either a md5/sha1/sha256 hash of the file or the URL itself you want to retrieve')
-    if api_type:
+    if vt_config.get('api_type'):
         opt.add_argument('--get-comments-before', action='store', dest='date', default=False,
             help='A datetime token that allows you to iterate over all comments on a specific item whenever it has been commented on more than 25 times. Token format 20120725170000 or 2012-07-25 17 00 00 or 2012-07-25 17:00:00')
     opt.add_argument('-v', '--verbose', action='store_true',
@@ -2519,7 +2518,7 @@ def main():
     rescan = opt.add_argument_group('Rescan options')
     rescan.add_argument('-r', '--rescan', action='store_true',
         help='Allows you to rescan files in VirusTotal\'s file store without having to resubmit them, thus saving bandwidth, support space separated list, MAX 25 hashes, can be local files, hashes will be generated on the fly, support linux wildmask')
-    if api_type:
+    if vt_config.get('api_type'):
         rescan.add_argument('--delete',  action='store_true',
             help='A md5/sha1/sha256 hash for which you want to delete the scheduled scan')
         rescan.add_argument('--date', action='store', dest='date',
@@ -2528,7 +2527,7 @@ def main():
             help='Period in days in which the file should be rescanned. If this argument is provided the file will be rescanned periodically every period days, if not, the rescan is performed once and not repated again.')
         rescan.add_argument('--repeat', action='store',
             help='Used in conjunction with period to specify the number of times the file should be rescanned. If this argument is provided the file will be rescanned the given amount of times, if not, the file will be rescanned indefinitely.')
-    if api_type:
+    if vt_config.get('api_type'):
         scan_rescan = opt.add_argument_group('File scan/Rescan shared options')
         scan_rescan.add_argument('--notify-url', action='store',
             help='An URL where a POST notification should be sent when the scan finishes.')
@@ -2598,7 +2597,7 @@ def main():
     email_opt.add_argument('-pe', '--parse-email', action='store_true', default=False, help='Parse email, can be string or file')
     email_opt.add_argument('-esa', '--save-attachment', action='store', default=False, help='Save email attachment, path where to store')
 
-    if api_type:
+    if vt_config.get('api_type'):
         behaviour = opt.add_argument_group('Behaviour options')
         behaviour.add_argument('--behaviour', action='store_true',  help='The md5/sha1/sha256 hash of the file whose dynamic behavioural report you want to retrieve.\
             VirusTotal runs a distributed setup of Cuckoo sandbox machines that execute the files we receive. Execution is attempted only once, upon\
@@ -2611,14 +2610,14 @@ def main():
         behaviour.add_argument('-bp', '--behavior-process', action='store_true', help='Show processes')
         behaviour.add_argument('-bs', '--behavior-summary', action='store_true', help='Show summary')
 
-    if api_type or intelligence:
+    if vt_config.get('api_type') or vt_config.get('intelligence'):
         downloads = opt.add_argument_group('Download options')
         downloads.add_argument('-dl', '--download',  dest='download', action='store_const', const='file', default=False,
             help='The md5/sha1/sha256 hash of the file you want to download or txt file with hashes, or hash and type, one by line, for example: hash,pcap or only hash. Will save with hash as name')
         downloads.add_argument('-nm', '--name',  action='store', default=False,
             help='Name with which file will saved when download it')
 
-    if api_type:
+    if vt_config.get('api_type'):
         more_private = opt.add_argument_group('Additional options')
         more_private.add_argument('--pcap', dest='download', action='store_const', const='pcap', default=False,
             help='The md5/sha1/sha256 hash of the file whose network traffic dump you want to retrieve. Will save as VTDL_hash.pcap')
@@ -2629,7 +2628,7 @@ def main():
             help='Timestamps are just integer numbers where higher values mean more recent files. Both before and after parameters are optional, if they are not provided the oldest files in the queue are returned in timestamp ascending order.')
         more_private.add_argument('--distribution-urls', action='store_true',
             help='Timestamps are just integer numbers where higher values mean more recent urls. Both before and after parameters are optional, if they are not provided the oldest urls in the queue are returned in timestamp ascending order.')
-    if api_type:
+    if vt_config.get('api_type'):
         dist = opt.add_argument_group('Distribution options')
         dist.add_argument('--before', action='store',
             help='File/Url option. Retrieve files/urls received before the given timestamp, in timestamp descending order.')
@@ -2651,10 +2650,12 @@ def main():
         sys.exit()
 
     options = vars(options)
-    options.update({'intelligence': intelligence})
-    options.update({'api_type': api_type})
-    options.update({'engines': engines})
-    vt = vtAPI(apikey)
+
+
+    vt = vtAPI(vt_config.get('apikey'))
+    #del vt_config['apikey']
+
+    options.update(vt_config)
 
     if options.get('date'):
         options['date'] = options['date'].replace( '-', '').replace(':', '').replace(' ', '')
