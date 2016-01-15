@@ -1,3 +1,9 @@
+**15.01.2016**
+* Config parser updated, will return dictionary and add all data to global kwargs, less apikey
+    * Before - apikey, api_type, intelligence, engines = vt.read_conf()
+    * Now - vt_config = vt.read_conf()
+* Behaviour-v1 data will not be printed without -v 
+
 **21.12.2015**
 * MacOsX files behaviour added, it can be found in __-rai__ (report all info)
 * No more domain/ip print if uses as library and use return_raw or return_json
