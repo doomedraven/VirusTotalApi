@@ -4,7 +4,11 @@ VirusTotal public and private APIv2 Full support
 This script was made public into the official VT API documentation page.
 https://www.virustotal.com/en/documentation/public-api/
 
-Before using the tool you must set your api key in __~.vtapi__ or in __~vtapi.conf__.
+Before using the tool you must set your api key in one of this file:
+* Home Dicrectory:
+    * __~.vtapi__, __~vtapi.conf__
+* or currect directory where vt script placed 
+    * __.vtapi__, __vtapi.conf__
 
 * ~.vtapi file content:
 ```python
