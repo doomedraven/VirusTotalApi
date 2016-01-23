@@ -1,6 +1,7 @@
 **23.01.2016**
 * sys.exit() replaced with return as in many cases it brokes usage as library
 * default timeout for requests now is 60 seconds, can be changed from config file
+* bug fix with urls scan, now you can pass any file to scan it, not only __urls_to_scan.txt__
 
 **15.01.2016**
 * Config parser updated, will return dictionary and add all data to global kwargs, less apikey
