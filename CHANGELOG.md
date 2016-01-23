@@ -1,3 +1,7 @@
+**23.01.2016**
+* sys.exit() replaced with return as in many cases it brokes usage as library
+* default timeout for requests now is 60 seconds, can be changed from config file
+
 **15.01.2016**
 * Config parser updated, will return dictionary and add all data to global kwargs, less apikey
     * Before - apikey, api_type, intelligence, engines = vt.read_conf()
