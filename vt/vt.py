@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.0.4'
+__version__ = '2.1.0.8'
 __license__ = 'For fun :)'
 
 import os
@@ -51,7 +51,6 @@ try:
     MAGIC = True
 except:
     MAGIC = False
-
 
 def private_api_access_error():
     print '\n[!] You don\'t have permission for this operation, Looks like you trying to access to PRIVATE API functions\n'
@@ -284,7 +283,8 @@ def parse_report(jdata, **kwargs):
 
         else:
             print '\n[-] Status : {info}\n'.format(info=jdata.get('verbose_msg'))
-            sys.exit()
+            return
+            #sys.exit()
 
     if jdata.get('scan_date'):
         print '\nScanned on : \n\t{0}'.format(jdata.get('scan_date'))
@@ -370,6 +370,7 @@ def get_response(url, method="get", **kwargs):
 
     jdata = ''
     response = ''
+    kwargs['timeout'] = req_timeout
 
     while True:
         try:
@@ -377,7 +378,7 @@ def get_response(url, method="get", **kwargs):
 
         except requests.exceptions.ConnectionError:
             print '\n[!] Can\'t resolv hostname, check your internet conection\n'
-            sys.exit()
+            return '', ''
 
         if response.status_code == 403:
             private_api_access_error()
@@ -1246,20 +1247,18 @@ class vtAPI():
         result = False
         md5_hash = ''
 
-        if os.path.basename(kwargs.get('value')[0]) != 'urls_for_scan.txt':
+        if kwargs.get('value')[0].endswith('.json'):
             result, name = is_file(kwargs.get('value'))
-        else:
-            result = False
-
-            if os.path.isfile(kwargs.get('value')[0]):
-                urls = open(kwargs('value')[0], 'rb').readlines()
 
         if result:
             jdata = load_file(name)
             kwargs['dump'] = False
         else:
             if isinstance(kwargs.get('value'), list) and len(kwargs.get('value')) == 1:
-                url_uploads = [kwargs.get('value')]
+                if os.path.isfile(kwargs.get('value')[0]):
+                    url_uploads = open(kwargs.get('value')[0], 'rb').readlines()
+                else:
+                    url_uploads = kwargs.get('value')
             elif isinstance(kwargs.get('value'), basestring):
                 url_uploads = [kwargs.get('value')]
             elif len(kwargs.get('value')) > 1 and not isinstance(kwargs.get('value'), basestring):
@@ -1291,15 +1290,15 @@ class vtAPI():
 
         for url_upload in url_uploads:
             cont += 1
-
+            url_upload = url_upload.strip()
             if kwargs.get('key') == 'scan':
-                print 'Submitting url(s) for analysis: \n\t{url}'.format(url=url_upload[0].replace(', ', '\n\t'))
-                self.params['url'] = url_upload[0]
+                print 'Submitting url(s) for analysis: \n\t{url}'.format(url=url_upload.replace(', ', '\n\t'))
+                self.params['url'] = url_upload
                 url = self.base.format('url/scan')
 
             elif kwargs.get('key') == 'report':
-                print '\nSearching for url(s) report: \n\t{url}'.format(url=url_upload[0].replace(', ', '\n\t'))
-                self.params['resource'] = url_upload[0]
+                print '\nSearching for url(s) report: \n\t{url}'.format(url=url_upload.replace(', ', '\n\t'))
+                self.params['resource'] = url_upload
                 self.params['scan'] = kwargs.get('action')
                 url = self.base.format('url/report')
 
@@ -1739,7 +1738,8 @@ class vtAPI():
         if jdata['response_code'] == 0 or jdata['response_code'] == -1:
             if jdata.get('verbose_msg'):
                 print '\n[!] Status : {verb_msg}\n'.format(verb_msg=jdata['verbose_msg'])
-            sys.exit()
+            return
+            #sys.exit()
         if kwargs.get('action') == 'add':
             if jdata.get('verbose_msg'):
                 print '\nStatus : {0}\n'.format(jdata['verbose_msg'])
@@ -1804,7 +1804,6 @@ class vtAPI():
                             print '[-] Hash not found in url'
 
                 self.params['hash'] = f_hash
-                #print '\nTrying to download: {0}'.format(f_hash)
 
                 if kwargs.get('api_type'):
                     if file_type not in ('file', 'pcap'):
@@ -1823,44 +1822,44 @@ class vtAPI():
                 response = requests.get(url, params=self.params, stream=True)
 
                 if response.status_code == 404:
-                        print '\n[!] File not found\n'
-                        return
-                if kwargs.get('name'):
-                    name = kwargs.get('name')
-                else:
-                    name = '{hash}'.format(hash=f_hash)
+                        print '\n[!] File not found - {0}\n'.format(f_hash)
 
-                if "VirusTotal - Free Online Virus, Malware and URL Scanner" in response.content and '{"response_code": 0, "hash":' not in response.content: # filter out keep-alive new chunks
-                        try:
-                            json_data = response.json()
-                            print '\n\t{0}: {1}'.format(json_data['verbose_msg'], f_hash)
-                        except:
-                            print '\tFile can\'t be downloaded: {0}'.format(f_hash)
-                        return
+                if response.status_code == 200:
+                    if kwargs.get('name'):
+                        name = kwargs.get('name')
+                    else:
+                        name = '{hash}'.format(hash=f_hash)
 
-                sample = ''
-                for chunk in response.iter_content(chunk_size=1024):
-                    if chunk:
-                        sample += chunk
+                    if "VirusTotal - Free Online Virus, Malware and URL Scanner" in response.content and '{"response_code": 0, "hash":' not in response.content: # filter out keep-alive new chunks
+                            try:
+                                json_data = response.json()
+                                print '\n\t{0}: {1}'.format(json_data['verbose_msg'], f_hash)
+                            except:
+                                print '\tFile can\'t be downloaded: {0}'.format(f_hash)
 
-                #Sanity checks
-                downloaded_hash = ''
-                if len(f_hash) == 32:
-                    downloaded_hash = hashlib.md5(sample).hexdigest()
-                elif len(f_hash) == 40:
-                    downloaded_hash = hashlib.sha1(sample).hexdigest()
-                elif len(f_hash) == 64:
-                    downloaded_hash = hashlib.sha256(sample).hexdigest()
+                    sample = ''
+                    for chunk in response.iter_content(chunk_size=1024):
+                        if chunk:
+                            sample += chunk
 
-                if f_hash != downloaded_hash:
-                    print '[-] Downloaded content has not the same hash as requested'
-                if kwargs.get('return_raw'):
-                    return sample
-                else:
-                    dumped = open(name, 'wb')
-                    dumped.write(sample)
-                    dumped.close()
-                    print '\tDownloaded to File -- {name}'.format(name=name)
+                    #Sanity checks
+                    downloaded_hash = ''
+                    if len(f_hash) == 32:
+                        downloaded_hash = hashlib.md5(sample).hexdigest()
+                    elif len(f_hash) == 40:
+                        downloaded_hash = hashlib.sha1(sample).hexdigest()
+                    elif len(f_hash) == 64:
+                        downloaded_hash = hashlib.sha256(sample).hexdigest()
+
+                    if f_hash != downloaded_hash:
+                        print '[-] Downloaded content has not the same hash as requested'
+                    if kwargs.get('return_raw'):
+                        return sample
+                    else:
+                        dumped = open(name, 'wb')
+                        dumped.write(sample)
+                        dumped.close()
+                        print '\tDownloaded to File -- {name}'.format(name=name)
 
     def parse_attachment(self, message_part):
 
@@ -2397,6 +2396,7 @@ class vtAPI():
             return return_json
 
 def read_conf(config_file = False):
+      vt_config = {'intelligence': False, 'apikey': '', 'type': False}
 
       help = '''
                       No API key provided or cannot read ~ /.vtapi. Specify an API key in vt.py or in ~ /.vtapi.
@@ -2432,28 +2432,36 @@ def read_conf(config_file = False):
       except Exception:
           sys.exit(help)
 
+
+      for key in vt_config:
+          #backward compartibility
+          if key == 'type':
+              if vt_config[key].lower() == 'private':
+                  apitype = True
+              else:
+                  apitype = False
+              key  = 'api_type'
+              vt_config[key] = apitype
+              del vt_config['type']
+              del apitype
+
+          if vt_config[key] in ('False', 'True'):
+              vt_config[key] = ast.literal_eval(vt_config[key])
+
+
       return vt_config
 
 def main():
 
-    # base to make -h works
-    vt_config = {'intelligence': False, 'apikey': '', 'type': False}
+    global req_timeout
+    #global requests default timeout, can be changed from vt config
+    req_timeout = 60
+
     vt_config = read_conf()
 
-    for key in vt_config:
-        #backward compartibility
-        if key == 'type':
-          if vt_config[key].lower() == 'private':
-              apitype = True
-          else:
-              apitype = False
-          key  = 'api_type'
-          vt_config[key] = apitype
-          del vt_config['type']
-          del apitype
+    if vt_config.get('timeout'):
+        req_timeout = int(vt_config.get('timeout'))
 
-        if vt_config[key] in ('False', 'True'):
-            vt_config[key] = ast.literal_eval(vt_config[key])
 
     opt = argparse.ArgumentParser(
         'value', description='Scan/Search/ReScan/JSON parse')
@@ -2467,7 +2475,7 @@ def main():
     opt.add_argument('-f',  '--file-scan', action='store_true', dest='files',
         help='File(s) scan, support linux name wildcard, example: /home/user/*malware*, if file was scanned, you will see scan info, for full scan report use verbose mode, and dump if you want save already scanned samples')
     opt.add_argument('-u',  '--url-scan', action='store_true',
-        help='Url scan, support space separated list, Max 4 urls (or 25 if you have private api), but you can provide more urls, for example with public api,  5 url - this will do 2 requests first with 4 url and other one with only 1, or you can specify file filename must be urls_for_scan.txt, and one url per line')
+        help='Url scan, support space separated list, Max 4 urls (or 25 if you have private api), but you can provide more urls, for example with public api,  5 url - this will do 2 requests first with 4 url and other one with only 1, or you can specify file filename with one url per line')
     opt.add_argument('-ur', '--url-report', action='store_true',
         help='Url(s) report, support space separated list, Max 4 (or 25 if you have private api) urls, you can use --url-report --url-scan options for analysing url(s) if they are not in VT data base, read previev description about more then max limits or file with urls')
     opt.add_argument('-d', '--domain-info',   action='store_true', dest='domain',
@@ -2613,7 +2621,7 @@ def main():
     if vt_config.get('api_type') or vt_config.get('intelligence'):
         downloads = opt.add_argument_group('Download options')
         downloads.add_argument('-dl', '--download',  dest='download', action='store_const', const='file', default=False,
-            help='The md5/sha1/sha256 hash of the file you want to download or txt file with hashes, or hash and type, one by line, for example: hash,pcap or only hash. Will save with hash as name')
+            help='The md5/sha1/sha256 hash of the file you want to download or txt file with hashes, or hash and type, one by line, for example: hash,pcap or only hash. Will save with hash as name, can be space separated list of hashes to download')
         downloads.add_argument('-nm', '--name',  action='store', default=False,
             help='Name with which file will saved when download it')
 
@@ -2704,20 +2712,10 @@ def main():
             options['value'][0] = urlparse(options['value'][0]).netloc
 
         if match('\w{1,3}\.\w{1,3}\.\w{1,3}\.\w{1,3}', options['value'][0]):
+            vt.getIP(**options)
 
-            #paranoic check :)
-            try:
-                valid=len(filter(lambda(item):0 <=int(item) <=255, options['value'][0].strip().split("."))) == 4
-            except ValueError:
-                valid = False
-
-            if valid:
-                vt.getIP(**options)
-
-            else:
-                vt.getDomain(**options)
         else:
-                vt.getDomain(**options)
+            vt.getDomain(**options)
 
     elif options.get('report_all_info'):
         options.update({'allinfo': 1})
