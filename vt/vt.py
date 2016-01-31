@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.0.8'
+__version__ = '2.1.0.9'
 __license__ = 'For fun :)'
 
 import os
@@ -26,11 +26,12 @@ import requests
 import ConfigParser
 from glob import glob
 from re import match
-import texttable as tt
 from urlparse import urlparse
 from operator import methodcaller
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+
+import thirdpart.texttable.texttable as tt
 
 try:
     from requests.packages.urllib3.exceptions import InsecureRequestWarning, InsecurePlatformWarning
@@ -51,6 +52,8 @@ try:
     MAGIC = True
 except:
     MAGIC = False
+
+req_timeout = 60
 
 def private_api_access_error():
     print '\n[!] You don\'t have permission for this operation, Looks like you trying to access to PRIVATE API functions\n'
@@ -361,7 +364,6 @@ def static_var(varname, value):
 def get_response(url, method="get", **kwargs):
 
     # Set on first request
-
     if get_response.start_time == 0:
         get_response.start_time = time.time()
 
@@ -589,6 +591,10 @@ class vtAPI():
                     if jdata['additional_info'].get('trid') and kwargs.get('verbose'):
                         print '\nTrID:'
                         print '\t{trid}'.format(trid=jdata['additional_info']['trid'].replace('\n', '\n\t'))
+
+                    #if jdata['additional_info'].get('rombioscheck') and kwargs.get('verbose'):
+                    #    print '\t RomBiosCheck'
+                    #    print '\t'
 
                     if jdata['additional_info'].get('trendmicro-housecall-heuristic') and kwargs.get('verbose'):
                         print '\tTrendmicro housecall heuristic : {trend}'.format(trend=jdata['additional_info']['trendmicro-housecall-heuristic'])
@@ -2453,13 +2459,10 @@ def read_conf(config_file = False):
 
 def main():
 
-    global req_timeout
-    #global requests default timeout, can be changed from vt config
-    req_timeout = 60
-
     vt_config = read_conf()
 
     if vt_config.get('timeout'):
+        global req_timeout
         req_timeout = int(vt_config.get('timeout'))
 
 
@@ -2658,7 +2661,6 @@ def main():
         sys.exit()
 
     options = vars(options)
-
 
     vt = vtAPI(vt_config.get('apikey'))
 
