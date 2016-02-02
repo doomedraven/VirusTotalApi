@@ -1,3 +1,7 @@
+**02.02.2016**
+* Bug fixed with multi hash search
+* TextTable now show all rows, one was missed
+
 **23.01.2016**
 * sys.exit() replaced with return as in many cases it brokes usage as library
 * default timeout for requests now is 60 seconds, can be changed from config file
