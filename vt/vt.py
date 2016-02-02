@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.0.9'
+__version__ = '2.1.0.12'
 __license__ = 'For fun :)'
 
 import os
@@ -127,10 +127,9 @@ def pretty_print(block, headers, sizes=False, align=False, email=False):
         tab.set_deco(tt.Texttable.HEADER)
 
     if isinstance(block, list):
-        plist = []
+        plist = [headers]
 
         for line in block:
-
             if len(headers) == 1:
                 plist.append([line])
 
@@ -430,8 +429,8 @@ class vtAPI():
         result, name = is_file(kwargs.get('value'))
 
         if result:
-            jdata = load_file(name)
-            if isinstance(jdata, list):
+            jdatas = load_file(name)
+            if isinstance(jdatas, list):
                 jdatas = jdata
             else:
                 jdatas = [jdata]
@@ -446,33 +445,7 @@ class vtAPI():
             elif isinstance(kwargs.get('value'), basestring):
                 kwargs['value'] = [kwargs.get('value')]
 
-            elif len(kwargs.get('value')) > 1 and not isinstance(kwargs.get('value'), basestring):
-
-                if kwargs.get('api_type'):
-                    start = -25
-                    increment = 25
-
-                else:
-                    start = -4
-                    increment = 4
-
-                end = 0
-
-                while True:
-
-                    start += increment
-
-                    if len(kwargs.get('value')) > end + increment:
-                        end += increment
-                    elif len(kwargs('value')) <= end + increment:
-                        end = len(kwargs.get('value'))
-
-                    kwargs['value'].append(
-                        ' '.join(map(lambda hreport: hreport, kwargs.get('value')[start:end]))
-                    )
-
-                    if end == len(kwargs.get('value')):
-                        break
+            #ToDo support for private api and up to 25 hashes
 
             for hashes_report in kwargs.get('value'):
                 if (kwargs.get('search_intelligence') or 'search_intelligence' in args):
@@ -486,13 +459,11 @@ class vtAPI():
                     self.params['allinfo'] = kwargs.get('allinfo')
 
                 jdata, response = get_response(url, params=self.params)
-
                 if kwargs.get('return_raw'):
                     return jdata
 
-                jdatas += jdata
+                jdatas.append(jdata)
 
-        jdatas = filter(None, jdatas)
         if isinstance(jdatas, list) and jdatas == []:
             if kwargs.get('return_raw'):
                 pass
@@ -500,8 +471,8 @@ class vtAPI():
                 print 'Nothing found'
             return
 
-        if  not isinstance(jdata, list):
-            jdatas = [jdata]
+        if  not isinstance(jdatas, list):
+            jdatas = [jdatas]
 
         for jdata in jdatas:
             if jdata.get('response_code') == 0 or jdata.get('response_code') == -1:
@@ -1058,7 +1029,7 @@ class vtAPI():
                 if kwargs.get('notify_url'):
                     self.params['notify_url'] = kwargs.get('notify_url')
 
-                    if kwargs('notify_changes_only'):
+                    if kwargs.get('notify_changes_only'):
                         self.params['notify_changes_only'] = kwargs.get('notify_changes_only')
 
             jdatas, response = get_response(url, params=self.params, method='post')
@@ -1326,7 +1297,7 @@ class vtAPI():
                         if kwargs.get('dump'):
                             md5_hash = hashlib.md5(jdata_part['url']).hexdigest()
 
-                        if kwargs('key') == 'report':
+                        if kwargs.get('key') == 'report':
                             kwargs.update({'url_report':True})
                             parse_report(jdata, **kwargs)
 
@@ -1416,7 +1387,7 @@ class vtAPI():
                     else:
                         print '\n[+] ASN: {0}'.format(jdata['asn'])
 
-                if jdata.get('as_owner') and ((kwargs.get('as_owner') or 'as_owner' in args)  or kwargs.get('as_owner')):
+                if jdata.get('as_owner') and ((kwargs.get('as_owner') or 'as_owner' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
                         return_json.update({'as_owner':jdata['as_owner']})
                     else:
