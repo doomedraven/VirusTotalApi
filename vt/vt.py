@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.0.12'
+__version__ = '2.1.0.13'
 __license__ = 'For fun :)'
 
 import os
@@ -121,63 +121,74 @@ def get_adequate_table_sizes(scans, short=False, short_list=False):
 
 def pretty_print(block, headers, sizes=False, align=False, email=False):
 
-    tab = tt.Texttable()
+    try:
+        tab = tt.Texttable()
 
-    if email:
-        tab.set_deco(tt.Texttable.HEADER)
+        if email:
+            tab.set_deco(tt.Texttable.HEADER)
 
-    if isinstance(block, list):
-        plist = [headers]
+        if isinstance(block, list):
+            plist = [headers]
 
-        for line in block:
-            if len(headers) == 1:
-                plist.append([line])
+            for line in block:
+                if len(headers) == 1:
+                    plist.append([line])
+
+                else:
+                    plist.append(
+                        map(lambda key: line[key] if line.get(key) else ' -- ', headers)
+                        )
+
+            if len(plist) > 1 and isinstance(plist[0], list):
+                tab.add_rows(plist)
 
             else:
-                plist.append(
-                    map(lambda key: line[key] if line.get(key) else ' -- ', headers)
-                    )
-
-        if len(plist) > 1 and isinstance(plist[0], list):
-            tab.add_rows(plist)
+                tab.add_row(plist[0])
 
         else:
-            tab.add_row(plist[0])
+            row = map(
+                lambda key: block[key] if block.get(key) else ' -- ', headers)
+            tab.add_row(row)
 
-    else:
-        row = map(
-            lambda key: block[key] if block.get(key) else ' -- ', headers)
-        tab.add_row(row)
+        tab.header(headers)
 
-    tab.header(headers)
+        if not align:
+            align = map(lambda key: 'l', headers)
 
-    if not align:
-        align = map(lambda key: 'l', headers)
+        if sizes:
+            tab.set_cols_width(sizes)
 
-    if sizes:
-        tab.set_cols_width(sizes)
-
-    tab.set_cols_align(align)
-
-    print tab.draw()
-
-def pretty_print_special(rows, headers, sizes=False, align=False, email=False):
-    tab = tt.Texttable()
-
-    if email:
-        tab.set_deco(tt.Texttable.HEADER)
-
-    tab.add_rows(rows)
-
-    if sizes:
-        tab.set_cols_width(sizes)
-
-    if align:
         tab.set_cols_align(align)
 
-    tab.header(headers)
+        print tab.draw()
 
-    print '\n', tab.draw()
+    except:
+        print 'Report me plz'
+        print sys.exc_info()
+
+def pretty_print_special(rows, headers, sizes=False, align=False, email=False):
+
+    try:
+        tab = tt.Texttable()
+
+        if email:
+            tab.set_deco(tt.Texttable.HEADER)
+
+        tab.add_rows(rows)
+
+        if sizes:
+            tab.set_cols_width(sizes)
+
+        if align:
+            tab.set_cols_align(align)
+
+        tab.header(headers)
+
+        print '\n', tab.draw()
+
+    except:
+        print 'Report me plz'
+        print sys.exc_info()
 
 def is_file(value):
     try:
@@ -607,17 +618,16 @@ class vtAPI():
                             del plist
 
                         if jdata['additional_info']['behaviour-v1'].get('network') and kwargs.get('verbose'):
-                            print '[+] Network'
+                            print '\n[+] Network'
                             if jdata['additional_info']['behaviour-v1']['network'].get('tcp'):
                                 plist = [[]]
-                                plist.append(jdata['additional_info']['behaviour-v1']['network'].get('tcp'))
+                                [plist.append([ip]) for ip in jdata['additional_info']['behaviour-v1']['network'].get('tcp')]
                                 pretty_print_special(plist, ['TCP'], False, False, kwargs.get('email_template'))
 
                             if jdata['additional_info']['behaviour-v1']['network'].get('udp'):
                                 plist = [[]]
-                                plist.append(jdata['additional_info']['behaviour-v1']['network'].get('udp'))
+                                [plist.append([ip]) for ip in jdata['additional_info']['behaviour-v1']['network'].get('udp')]
                                 pretty_print_special(plist, ['UDP'], False, False, kwargs.get('email_template'))
-                                del plist
 
                             #if jdata['additional_info']['behaviour-v1']['network'].get('http'):
                             #    print '\n[+] HTTP:', jdata['additional_info']['behaviour-v1']['network'].get('http')
