@@ -493,9 +493,9 @@ class vtAPI():
             if kwargs.get('search_intelligence') or 'search_intelligence' in args:
 
                 if kwargs.get('return_json') and (kwargs.get('hashes') or 'hashes' in args):
-                    return_json['hashes'] = jdata['hashes']
+                    return_json['hashes'] = jdata.get('hashes')
                 else:
-                    if 'hashes' in jdata and jdata['hashes']:
+                    if jdata.get('hashes'):
                         print '[+] Matched hash(es):'
                         for file_hash in  jdata['hashes']:
                             print '\t{0}'.format(file_hash)
