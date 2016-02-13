@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='vt',
-    version='2.1.0.13',
+    version='2.1.1.0',
     description='VirusTotal Full API',
     license='For fun :)',
     packages=find_packages(),
@@ -16,6 +16,7 @@ setup(
     },
     install_requires=[
         "requests >= 2.5.0",
-        "python-dateutil >= 1.5"
+        "python-dateutil >= 1.5",
+        "olefile >= 0.42"
     ],
 )

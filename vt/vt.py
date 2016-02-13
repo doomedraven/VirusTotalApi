@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.0.13'
+__version__ = '2.1.1.0'
 __license__ = 'For fun :)'
 
 import os
@@ -31,7 +31,15 @@ from operator import methodcaller
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+#print mysql style tables
 import thirdpart.texttable.texttable as tt
+#parse OUTLOOK .msg
+try:
+    from thirdpart.outlook_parser import OUTLOOK
+    OUTLOOK_prsr = True
+except ImportError:
+    OUTLOOK_prsr = False
+
 
 try:
     from requests.packages.urllib3.exceptions import InsecureRequestWarning, InsecurePlatformWarning
@@ -486,492 +494,493 @@ class vtAPI():
             jdatas = [jdatas]
 
         for jdata in jdatas:
-            if jdata.get('response_code') == 0 or jdata.get('response_code') == -1:
-                if kwargs.get('not_exit'):
-                    return False
+            if isinstance(jdata, dict):
+                if jdata.get('response_code') == 0 or jdata.get('response_code') == -1:
+                    if kwargs.get('not_exit'):
+                        return False
 
-            if kwargs.get('search_intelligence') or 'search_intelligence' in args:
+                if kwargs.get('search_intelligence') or 'search_intelligence' in args:
 
-                if kwargs.get('return_json') and (kwargs.get('hashes') or 'hashes' in args):
-                    return_json['hashes'] = jdata.get('hashes')
-                else:
-                    if jdata.get('hashes'):
-                        print '[+] Matched hash(es):'
-                        for file_hash in  jdata['hashes']:
-                            print '\t{0}'.format(file_hash)
-
-            if kwargs.get('allinfo') == 1:
-
-                if kwargs.get('dump'):
-                    jsondump(jdata, name)
-
-                if kwargs.get('verbose'):
-                    if jdata.get('md5'):
-                        print '\nMD5    : {md5}'.format(md5=jdata.get('md5'))
-                    if jdata.get('vhash'):
-                        print '\nVHash  : {md5}'.format(md5=jdata.get('vhash'))
-                    if jdata.get('sha1'):
-                        print 'SHA1   : {sha1}'.format(sha1=jdata.get('sha1'))
-                    if jdata.get('sha256'):
-                        print 'SHA256 : {sha256}'.format(sha256=jdata.get('sha256'))
-                    if jdata.get('ssdeep'):
-                        print 'SSDEEP : {ssdeep}'.format(ssdeep=jdata.get('ssdeep'))
-
-                    if jdata.get('scan_date'):
-                        print '\nScan  Date     : {scan_date}'.format(scan_date=jdata.get('scan_date'))
-                    if jdata.get('first_seen'):
-                        print 'First Submission : {first_seen}'.format(first_seen=jdata.get('first_seen'))
-                    if jdata.get('last_seen'):
-                        print 'Last  Submission : {last_seen}'.format(last_seen=jdata.get('last_seen'))
-                    if jdata.get('times_submitted'):
-                        print 'Times submitted : {last_seen}'.format(last_seen=jdata.get('times_submitted'))
-                    if jdata.get('scan_id'):
-                        print 'Scan id: {scan}'.format(scan=jdata['scan_id'])
-                    if jdata.get('harmless_votes'):
-                        print 'Harmless votes: {harmless}'.format(harmless=jdata['harmless_votes'])
-                    if jdata.get('community_reputation'):
-                        print 'Community reputation: {community}'.format(community=jdata['community_reputation'])
-                    if jdata.get('malicious_votes'):
-                        print 'Malicious votes: {community}'.format(community=jdata['malicious_votes'])
-
-                if jdata.get('submission_names') and ((kwargs.get('submission_names') or 'submission_names' in args) or kwargs.get('verbose')):
-                  if kwargs.get('return_json'):
-                        return_json['submission_names'] =  jdata.get('submission_names')
-                  else:
-                      print '\nSubmission names:'
-                      for name in jdata['submission_names']:
-                        try:
-                          print '\t{name}'.format(name=name)
-                        except:
-                            print '\t', name
-
-                if jdata.get('ITW_urls') and ((kwargs.get('ITW_urls') or 'ITW_urls' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json['ITW_urls'] =  jdata.get('ITW_urls')
+                    if kwargs.get('return_json') and (kwargs.get('hashes') or 'hashes' in args):
+                        return_json['hashes'] = jdata.get('hashes')
                     else:
-                          print '\nITW urls:'
-                          for itw_url in jdata['ITW_urls']:
-                              print '\t{itw_url}'.format(itw_url=itw_url)
-
-                if kwargs.get('verbose'):
-                    if jdata.get('type') and kwargs.get('verbose'):
-                        print '\nFile Type : {type_f}'.format(type_f=jdata['type'])
-
-                    if jdata.get('size') and kwargs.get('verbose'):
-                        print 'File Size : {size}'.format(size=jdata['size'])
-
-                    if jdata.get('tags') and kwargs.get('verbose'):
-                        print 'Tags: {tags}'.format(tags=', '.join(map(lambda tag: tag, jdata['tags'])))
-
-                    if jdata.get('unique_sources') and kwargs.get('verbose'):
-                        print 'Unique sources : {size}'.format(size=jdata['unique_sources'])
-
-                if jdata.get('additional_info'):
-                    if jdata['additional_info']['magic'] and kwargs.get('verbose'):
-                        print '\tMagic : {magic}'.format(magic=jdata['additional_info']['magic'])
-
-                    if jdata['additional_info'].get('trid') and kwargs.get('verbose'):
-                        print '\nTrID:'
-                        print '\t{trid}'.format(trid=jdata['additional_info']['trid'].replace('\n', '\n\t'))
-
-                    #if jdata['additional_info'].get('rombioscheck') and kwargs.get('verbose'):
-                    #    print '\t RomBiosCheck'
-                    #    print '\t'
-
-                    if jdata['additional_info'].get('trendmicro-housecall-heuristic') and kwargs.get('verbose'):
-                        print '\tTrendmicro housecall heuristic : {trend}'.format(trend=jdata['additional_info']['trendmicro-housecall-heuristic'])
-
-                    if jdata['additional_info'].get('deepguard') and kwargs.get('verbose'):
-                        print '\tDeepguard : {deepguard}'.format(deepguard=jdata['additional_info']['deepguard'])
-
-                    if jdata.get('unique_sources') and kwargs.get('verbose'):
-                        print '\tUnique sources : {size}'.format(size=jdata['unique_sources'])
-
-                    if jdata.get('email_parents') and kwargs.get('verbose'):
-                        print '\nEmail parents:'
-                        for email in jdata['email_parents']:
-                            print '\t{email}'.format(email=email)
-
-                    if jdata['additional_info'].get('referers') and kwargs.get('verbose'):
-                        print '\nReferers:'
-                        for referer in jdata['additional_info']['referers']:
-                            print '\t{referer}'.format(referer=referer)
-
-                    if jdata['additional_info'].get('behaviour-v1'):
-                        if jdata['additional_info']['behaviour-v1'].get('tags') and kwargs.get('verbose'):
-                            print '\n[+] Tags:'
-                            for tag in jdata['additional_info']['behaviour-v1'].get('tags'):
-                                print '\t', tag
-
-                        if jdata['additional_info']['behaviour-v1'].get('dropped_files') and kwargs.get('verbose'):
-                            print '\n[+] Dropped files:'
-
-                            plist = [[]]
-
-                            for files in jdata['additional_info']['behaviour-v1'].get('dropped_files'):
-                                plist.append(
-                                    [files.get('hash'), files.get('filename')])
-
-                            if plist != [[]]:
-                                pretty_print_special(plist, ['Hash(sha256?)', 'Filename'], [64, 50], ['c', 'l'], kwargs.get('email_template'))
-
-                            del plist
-
-                        if jdata['additional_info']['behaviour-v1'].get('network') and kwargs.get('verbose'):
-                            print '\n[+] Network'
-                            if jdata['additional_info']['behaviour-v1']['network'].get('tcp'):
-                                plist = [[]]
-                                [plist.append([ip]) for ip in jdata['additional_info']['behaviour-v1']['network'].get('tcp')]
-                                pretty_print_special(plist, ['TCP'], False, False, kwargs.get('email_template'))
-
-                            if jdata['additional_info']['behaviour-v1']['network'].get('udp'):
-                                plist = [[]]
-                                [plist.append([ip]) for ip in jdata['additional_info']['behaviour-v1']['network'].get('udp')]
-                                pretty_print_special(plist, ['UDP'], False, False, kwargs.get('email_template'))
-
-                            #if jdata['additional_info']['behaviour-v1']['network'].get('http'):
-                            #    print '\n[+] HTTP:', jdata['additional_info']['behaviour-v1']['network'].get('http')
-
-                        if jdata['additional_info']['behaviour-v1'].get('codesign') and kwargs.get('verbose'):
-                            print '\n[+] Codesign:\n\t',jdata['additional_info']['behaviour-v1'].get('codesign').replace('\n', '\n\t')
-
-                        if jdata['additional_info']['behaviour-v1'].get('process') and kwargs.get('verbose'):
-                            print '\n[+] Process'
-                            if jdata['additional_info']['behaviour-v1']['process'].get('created'):
-                                print '\t[+] Created:'
-                                plist = [[]]
-
-                                for created in jdata['additional_info']['behaviour-v1']['process'].get('created'):
-                                    plist.append(
-                                        [created.get('success'), created.get('start_time'),created.get('end_time'),created.get('pid'),created.get('ppid'),created.get('execname'),created.get('psargs')])
-
-                                if plist != [[]]:
-                                    pretty_print_special(plist, ['Sucess', 'Start time', 'End time', 'pid', 'ppid', 'execname', 'psargs'], [6, 8, 8, 5, 6, 30, 30], ['c','c','c','c','c','c','l', ], kwargs.get('email_template'))
-
-                                del plist
-
-                        if jdata['additional_info']['behaviour-v1'].get('knockknock') and kwargs.get('verbose'):
-                            print '\n[+] Knock Knock:', jdata['additional_info']['behaviour-v1'].get('knockknock'),8
-                        if jdata['additional_info']['behaviour-v1'].get('run_time') and kwargs.get('verbose'):
-                            print '\n[+] Run time:', jdata['additional_info']['behaviour-v1'].get('tun_time')
-                        if jdata['additional_info']['behaviour-v1'].get('internal_tags') and kwargs.get('verbose'):
-                            print '\n[+] Internal tags:', jdata['additional_info']['behaviour-v1'].get('internal_tags'),10
-                        if jdata['additional_info']['behaviour-v1'].get('signals') and kwargs.get('verbose'):
-                            print '\n[+] Signals:'
-
-                            plist = [[]]
-
-                            for signals in jdata['additional_info']['behaviour-v1'].get('signals'):
-                                plist.append(
-                                    [signals.get('cmd'), signals.get('target'), signals.get('signo'), signals.get('pid'), signals.get('walltimestamp'), signals.get('execname')])
-
-                            if plist != [[]]:
-                                pretty_print_special(plist, ['CMD', 'Target', 'Signo', 'PID', 'WallTimeStamp', 'ExecName'], False, False, kwargs.get('email_template'))
-
-                            del plist
-                        if jdata['additional_info']['behaviour-v1'].get('version') and kwargs.get('verbose'):
-                            print '\n[+] Version:', jdata['additional_info']['behaviour-v1'].get('version')
-                        if jdata['additional_info']['behaviour-v1'].get('num_screenshots') and kwargs.get('verbose'):
-                            print '\n[+] Num screenshots:', jdata['additional_info']['behaviour-v1'].get('num_screenshots')
-                        if jdata['additional_info']['behaviour-v1'].get('filesystem') and kwargs.get('verbose'):
-                            print '\n[+] Filesystem:',
-                            if jdata['additional_info']['behaviour-v1']['filesystem'].get('opened'):
-
-                                plist = [[]]
-
-                                for fs_open in jdata['additional_info']['behaviour-v1']['filesystem'].get('opened'):
-                                    plist.append(
-                                        [fs_open.get('success'), fs_open.get('execname'), fs_open.get('path')])
-
-                                if plist != [[]]:
-                                    pretty_print_special(plist, ['Success', 'ExecName', 'Path'], [8, 20, 80], ['c', 'c', 'l'], kwargs.get('email_template'))
-
-                                del plist
-                        if jdata['additional_info']['behaviour-v1'].get('output'):
-                            print '\n[+] Output:', jdata['additional_info']['behaviour-v1'].get('output'),15
-
-                    if jdata['additional_info'].get('sigcheck') and kwargs.get('verbose'):
-
-                        print '\nPE signature block:'
-                        plist = [[]]
-                        for sig in jdata['additional_info']['sigcheck']:
-                            if isinstance(jdata['additional_info']['sigcheck'][sig], list):
-                              for data in  jdata['additional_info']['sigcheck'][sig]:
-                                  sub_plist = [[]]
-                                  for key in data.keys():
-                                      sub_plist.append([key, data[key]])
-                                  pretty_print_special(sub_plist, ['Name', 'Value'], False, False, kwargs.get('email_template'))
-                                  del sub_plist
-                            else:
-                                plist.append(
-                                    [sig, jdata['additional_info']['sigcheck'][sig].encode('utf-8')] # texttable unicode fail
-                                )
-
-                        pretty_print_special(plist, ['Name', 'Value'], False, False, kwargs.get('email_template'))
-                        del plist
-
-                    if jdata['additional_info'].get('exiftool') and kwargs.get('verbose'):
-
-                        print '\nExifTool file metadata:'
-                        plist = [[]]
-
-                        for exiftool in jdata['additional_info']['exiftool']:
-                            plist.append(
-                                [exiftool, jdata['additional_info']['exiftool'][exiftool]])
-
-                        pretty_print_special(plist, ['Name', 'Value'], False, False, kwargs.get('email_template'))
-                        del plist
-
-                    if jdata['additional_info'].get('sections') and kwargs.get('verbose'):
-                        pretty_print_special(jdata['additional_info']['sections'],
-                                             ['Name', 'Virtual address', 'Virtual size',
-                                                 'Raw size', 'Entropy', 'MD5'],
-                                             [10, 10, 10, 10, 10, 35],
-                                             ['c', 'c', 'c', 'c', 'c', 'c'],
-                                             kwargs.get('email_template')
-                                             )
-
-                    if jdata['additional_info'].get('imports') and kwargs.get('verbose'):
-
-                        print '\nImports:'
-                        for imported in jdata['additional_info']['imports']:
-                            print '\t{0}'.format(imported)
-                            for valor in jdata['additional_info']['imports'][imported]:
-                                print '\t\t{0}'.format(valor)
-
-
-                    if jdata['additional_info'].get('dmgcheck') and kwargs.get('verbose'):
-                        print '\n[+] dmgCheck:'
-
-                        if jdata['additional_info']['dmgcheck'].get('plst_keys'):
-                            print '\n[+] plst_keys:'
-                            for key in jdata['additional_info']['dmgcheck']['plst_keys']:
-                                print '\t', key
-
-                        if jdata['additional_info']['dmgcheck'].get('plst'):
-                            plist = [[]]
-
-                            for plst in jdata['additional_info']['dmgcheck']['plst']:
-                                plist.append(
-                                    [plst.get('attributes'), plst.get('name')])
-
-                            if plist != [[]]:
-                                pretty_print_special(plist, ['Attributes', 'Name'], False, False, kwargs.get('email_template'))
-                            del plist
-
-                        if jdata['additional_info']['dmgcheck'].get('xml_offset'):
-                            print '\n[+] xml offset', jdata['additional_info']['dmgcheck']['xml_offset']
-
-                        if jdata['additional_info']['dmgcheck'].get('xml_length'):
-                            print '\n[+] xml length', jdata['additional_info']['dmgcheck']['xml_length']
-
-                        if jdata['additional_info']['dmgcheck'].get('data_fork_offset'):
-                            print '\n[+] Data fork offset', jdata['additional_info']['dmgcheck']['data_fork_offset']
-
-                        if jdata['additional_info']['dmgcheck'].get('running_data_fork_offset'):
-                            print '\n[+] Running data fork offset', jdata['additional_info']['dmgcheck']['running_data_fork_offset']
-
-                        if jdata['additional_info']['dmgcheck'].get('rsrc_fork_offset'):
-                            print '\n[+] rsrc fork offset', jdata['additional_info']['dmgcheck']['rsrc_fork_offset']
-
-                        if jdata['additional_info']['dmgcheck'].get('resourcefork_keys'):
-                            print '\n[+] resourcefork keys:'
-                            for key in jdata['additional_info']['dmgcheck']['resourcefork_keys']:
-                                print '\t', key
-
-                        if jdata['additional_info']['dmgcheck'].get('blkx'):
-                            print '\n[+] blkx:'
-                            plist = [[]]
-
-                            for blkx in  jdata['additional_info']['dmgcheck']['blkx']:
-                                plist.append(
-                                    [blkx.get('attributes'), blkx.get('name')])
-
-                            if plist != [[]]:
-                                pretty_print_special(plist, ['Attributes', 'Name'], False, False, kwargs.get('email_template'))
-
-                            del plist
-
-                        if jdata['additional_info']['dmgcheck'].get('hfs'):
-
-                            if jdata['additional_info']['dmgcheck']['hfs'].get('executables'):
-                                print '\n[+] Executables:'
-                                plist = [[]]
-
-                                for executables in  jdata['additional_info']['dmgcheck']['hfs']['executables']:
-                                    detection = executables.get('detection_ratio')
-                                    detection = '{0}:{1}'.format(detection[0], detection[1])
-                                    plist.append(
-                                        [detection, executables.get('id'), executables.get('sha256'), executables.get('path')])
-
-                                if plist != [[]]:
-                                    pretty_print_special(plist, ['Detection', 'Id', 'sha256', 'path'], [10, 5, 64, 50], ['c', 'c', 'c', 'l'], kwargs.get('email_template'))
-
-                                del plist
-
-                            if jdata['additional_info']['dmgcheck']['hfs'].get('num_files'):
-                                print '\n[+] Num files:', jdata['additional_info']['dmgcheck']['hfs']['num_files']
-
-                            if jdata['additional_info']['dmgcheck']['hfs'].get('unreadable_files'):
-                                print '\n[+] Unreadable files: ', jdata['additional_info']['dmgcheck']['hfs']['unreadable_files']
-
-                            if jdata['additional_info']['dmgcheck']['hfs'].get('bundles'):
-                                print '\n[+] Unreadable files: ', jdata['additional_info']['dmgcheck']['hfs']['bundles']
-
-                            if jdata['additional_info']['dmgcheck']['hfs'].get('info_plist'):
-                                print '\n[+] Info plist: '
-                                for key, value in jdata['additional_info']['dmgcheck']['hfs']['info_plist'].items():
-                                    if isinstance(value, dict):
-                                        print '\t', key, ':'
-                                        for subkey, subvalue in value.items():
-                                            print '\t\t', subkey, ':', subvalue
-                                    else:
-                                        print '\t', key, ':', value
-
-                            if jdata['additional_info']['dmgcheck']['hfs'].get('dmg'):
-                                print '\n[+] dmg: ', jdata['additional_info']['dmgcheck']['hfs']['dmg']
-
-                    if jdata['additional_info'].get('compressedview') and ((kwargs.get('compressedview') or 'compressedview' in args) or kwargs.get('verbose')):
-                      if return_json.get('return_json'):
-                        return_json['compressedview'] = jdata['additional_info']['compressedview']['compressedview']
-
+                        if 'hashes' in jdata and jdata['hashes']:
+                            print '[+] Matched hash(es):'
+                            for file_hash in  jdata['hashes']:
+                                print '\t{0}'.format(file_hash)
+
+                if kwargs.get('allinfo') == 1:
+
+                    if kwargs.get('dump'):
+                        jsondump(jdata, name)
+
+                    if kwargs.get('verbose'):
+                        if jdata.get('md5'):
+                            print '\nMD5    : {md5}'.format(md5=jdata.get('md5'))
+                        if jdata.get('vhash'):
+                            print '\nVHash  : {md5}'.format(md5=jdata.get('vhash'))
+                        if jdata.get('sha1'):
+                            print 'SHA1   : {sha1}'.format(sha1=jdata.get('sha1'))
+                        if jdata.get('sha256'):
+                            print 'SHA256 : {sha256}'.format(sha256=jdata.get('sha256'))
+                        if jdata.get('ssdeep'):
+                            print 'SSDEEP : {ssdeep}'.format(ssdeep=jdata.get('ssdeep'))
+
+                        if jdata.get('scan_date'):
+                            print '\nScan  Date     : {scan_date}'.format(scan_date=jdata.get('scan_date'))
+                        if jdata.get('first_seen'):
+                            print 'First Submission : {first_seen}'.format(first_seen=jdata.get('first_seen'))
+                        if jdata.get('last_seen'):
+                            print 'Last  Submission : {last_seen}'.format(last_seen=jdata.get('last_seen'))
+                        if jdata.get('times_submitted'):
+                            print 'Times submitted : {last_seen}'.format(last_seen=jdata.get('times_submitted'))
+                        if jdata.get('scan_id'):
+                            print 'Scan id: {scan}'.format(scan=jdata['scan_id'])
+                        if jdata.get('harmless_votes'):
+                            print 'Harmless votes: {harmless}'.format(harmless=jdata['harmless_votes'])
+                        if jdata.get('community_reputation'):
+                            print 'Community reputation: {community}'.format(community=jdata['community_reputation'])
+                        if jdata.get('malicious_votes'):
+                            print 'Malicious votes: {community}'.format(community=jdata['malicious_votes'])
+
+                    if jdata.get('submission_names') and ((kwargs.get('submission_names') or 'submission_names' in args) or kwargs.get('verbose')):
+                      if kwargs.get('return_json'):
+                            return_json['submission_names'] =  jdata.get('submission_names')
                       else:
-                        print '\nCompressed view:'
+                          print '\nSubmission names:'
+                          for name in jdata['submission_names']:
+                            try:
+                              print '\t{name}'.format(name=name)
+                            except:
+                                print '\t', name
 
-                        if jdata['additional_info']['compressedview'].get('children') and ((kwargs.get('children') or 'children' in args) or kwargs.get('verbose')):
-                            if kwargs.get('return_json'):
-                                return_json['children'] = jdata['additional_info']['compressedview']['children']
-                            else:
-                                for child in jdata['additional_info']['compressedview'].get('children'):
-                                    if child.get('datetime'):
-                                        print '\tDatetime: {0}'.format(child['datetime'])
-                                    if child.get('detection_ration'):
-                                        print '\tDetection ration: \n\tDetected: {0}\n\tTotal {1}'.format(child['detection_ration'][0], child['detection_ration'])
-                                    if child.get('filename'):
-                                        try:
-                                            print '\tFilename: {0}'.format(child['filename'])
-                                        except:
-                                            try:
-                                                print '\tFilename: {0}'.format(child['filename'].encode('utf-8'))
-                                            except:
-                                                print '\t[-]Name decode error'
-                                    if child.get('sha256'):
-                                        print '\tsha256: {0}'.format(child['sha256'])
-                                    if child.get('size'):
-                                        print '\tSize: {0}'.format(child['size'])
-                                    if child.get('type'):
-                                        print '\tType: {0}'.format(child['type'])
-
-                        if jdata['additional_info']['compressedview'].get('extensions'):
-                            print '\nExtensions:'
-                            for ext in jdata['additional_info']['compressedview']['extensions']:
-                                print '\t', ext, jdata['additional_info']['compressedview']['extensions'][ext]
-
-                        if jdata['additional_info']['compressedview'].get('file_types'):
-                            for file_types in jdata['additional_info']['compressedview']['file_types']:
-                                print '\t' ,ext, jdata['additional_info']['compressedview']['file_types'][file_types]
-
-                        if jdata['additional_info']['compressedview'].get('tags'):
-                            print '\nTags:'
-                            for tag in jdata['additional_info']['compressedview']['tags']:
-                                print '\t', tag
-
-                        if jdata['additional_info']['compressedview'].get('lowest_datetime'):
-                            print '\nLowest datetime: {0}'.format(jdata['additional_info']['compressedview']['lowest_datetime'])
-
-                        if jdata['additional_info']['compressedview'].get('highest_datetime'):
-                            print 'Highest datetime: {0}'.format(jdata['additional_info']['compressedview']['highest_datetime'])
-
-                        if jdata['additional_info']['compressedview'].get('num_children'):
-                            print 'Num children: {0}'.format(jdata['additional_info']['compressedview']['num_children'])
-
-                        if jdata['additional_info']['compressedview'].get('type'):
-                            print 'Type: {0}'.format(jdata['additional_info']['compressedview']['type'])
-
-                        if jdata['additional_info']['compressedview'].get('uncompressed_size'):
-                            print 'Uncompressed_size: {0}'.format(jdata['additional_info']['compressedview']['uncompressed_size'])
-
-                        if jdata['additional_info']['compressedview'].get('vhash'):
-                            print 'Vhash: {0}'.format(jdata['additional_info']['compressedview']['vhash'])
-
-                    if jdata['additional_info'].get('detailed_email_parents') and ((kwargs.get('detailed_email_parents') or 'detailed_email_parents' in args) or kwargs.get('verbose')):
-
-                        if kwargs.get('return_json') and  (kwargs.get('original-email') or 'original-email' in args):
-                            return_json['detailed_email_parents'] = jdata['additional_info']['detailed_email_parents']
+                    if jdata.get('ITW_urls') and ((kwargs.get('ITW_urls') or 'ITW_urls' in args) or kwargs.get('verbose')):
+                        if kwargs.get('return_json'):
+                            return_json['ITW_urls'] =  jdata.get('ITW_urls')
                         else:
-                            print '\nDetailed email parents:'
-                            for email in jdata['additional_info']['detailed_email_parents']:
-                                if kwargs.get('email_original'):
-                                    kwargs['value'] = [email.get('message_id')]
-                                    parsed = self.parse_email(**kwargs)
-                                    if parsed:
-                                        return_json.setdefault('emails', [])
-                                        if kwargs.get('return_json'):
-                                            return_json['emails'].append(parsed)
+                              print '\nITW urls:'
+                              for itw_url in jdata['ITW_urls']:
+                                  print '\t{itw_url}'.format(itw_url=itw_url)
 
+                    if kwargs.get('verbose'):
+                        if jdata.get('type') and kwargs.get('verbose'):
+                            print '\nFile Type : {type_f}'.format(type_f=jdata['type'])
+
+                        if jdata.get('size') and kwargs.get('verbose'):
+                            print 'File Size : {size}'.format(size=jdata['size'])
+
+                        if jdata.get('tags') and kwargs.get('verbose'):
+                            print 'Tags: {tags}'.format(tags=', '.join(map(lambda tag: tag, jdata['tags'])))
+
+                        if jdata.get('unique_sources') and kwargs.get('verbose'):
+                            print 'Unique sources : {size}'.format(size=jdata['unique_sources'])
+
+                    if jdata.get('additional_info'):
+                        if jdata['additional_info'].get('magic') and kwargs.get('verbose'):
+                            print '\tMagic : {magic}'.format(magic=jdata['additional_info']['magic'])
+
+                        if jdata['additional_info'].get('trid') and kwargs.get('verbose'):
+                            print '\nTrID:'
+                            print '\t{trid}'.format(trid=jdata['additional_info']['trid'].replace('\n', '\n\t'))
+
+                        #if jdata['additional_info'].get('rombioscheck') and kwargs.get('verbose'):
+                        #    print '\t RomBiosCheck'
+                        #    print '\t'
+
+                        if jdata['additional_info'].get('trendmicro-housecall-heuristic') and kwargs.get('verbose'):
+                            print '\tTrendmicro housecall heuristic : {trend}'.format(trend=jdata['additional_info']['trendmicro-housecall-heuristic'])
+
+                        if jdata['additional_info'].get('deepguard') and kwargs.get('verbose'):
+                            print '\tDeepguard : {deepguard}'.format(deepguard=jdata['additional_info']['deepguard'])
+
+                        if jdata.get('unique_sources') and kwargs.get('verbose'):
+                            print '\tUnique sources : {size}'.format(size=jdata['unique_sources'])
+
+                        if jdata.get('email_parents') and kwargs.get('verbose'):
+                            print '\nEmail parents:'
+                            for email in jdata['email_parents']:
+                                print '\t{email}'.format(email=email)
+
+                        if jdata['additional_info'].get('referers') and kwargs.get('verbose'):
+                            print '\nReferers:'
+                            for referer in jdata['additional_info']['referers']:
+                                print '\t{referer}'.format(referer=referer)
+
+                        if jdata['additional_info'].get('behaviour-v1'):
+                            if jdata['additional_info']['behaviour-v1'].get('tags') and kwargs.get('verbose'):
+                                print '\n[+] Tags:'
+                                for tag in jdata['additional_info']['behaviour-v1'].get('tags'):
+                                    print '\t', tag
+
+                            if jdata['additional_info']['behaviour-v1'].get('dropped_files') and kwargs.get('verbose'):
+                                print '\n[+] Dropped files:'
+
+                                plist = [[]]
+
+                                for files in jdata['additional_info']['behaviour-v1'].get('dropped_files'):
+                                    plist.append(
+                                        [files.get('hash'), files.get('filename')])
+
+                                if plist != [[]]:
+                                    pretty_print_special(plist, ['Hash(sha256?)', 'Filename'], [64, 50], ['c', 'l'], kwargs.get('email_template'))
+
+                                del plist
+
+                            if jdata['additional_info']['behaviour-v1'].get('network') and kwargs.get('verbose'):
+                                print '\n[+] Network'
+                                if jdata['additional_info']['behaviour-v1']['network'].get('tcp'):
+                                    plist = [[]]
+                                    [plist.append([ip]) for ip in jdata['additional_info']['behaviour-v1']['network'].get('tcp')]
+                                    pretty_print_special(plist, ['TCP'], False, False, kwargs.get('email_template'))
+
+                                if jdata['additional_info']['behaviour-v1']['network'].get('udp'):
+                                    plist = [[]]
+                                    [plist.append([ip]) for ip in jdata['additional_info']['behaviour-v1']['network'].get('udp')]
+                                    pretty_print_special(plist, ['UDP'], False, False, kwargs.get('email_template'))
+
+                                #if jdata['additional_info']['behaviour-v1']['network'].get('http'):
+                                #    print '\n[+] HTTP:', jdata['additional_info']['behaviour-v1']['network'].get('http')
+
+                            if jdata['additional_info']['behaviour-v1'].get('codesign') and kwargs.get('verbose'):
+                                print '\n[+] Codesign:\n\t',jdata['additional_info']['behaviour-v1'].get('codesign').replace('\n', '\n\t')
+
+                            if jdata['additional_info']['behaviour-v1'].get('process') and kwargs.get('verbose'):
+                                print '\n[+] Process'
+                                if jdata['additional_info']['behaviour-v1']['process'].get('created'):
+                                    print '\t[+] Created:'
+                                    plist = [[]]
+
+                                    for created in jdata['additional_info']['behaviour-v1']['process'].get('created'):
+                                        plist.append(
+                                            [created.get('success'), created.get('start_time'),created.get('end_time'),created.get('pid'),created.get('ppid'),created.get('execname'),created.get('psargs')])
+
+                                    if plist != [[]]:
+                                        pretty_print_special(plist, ['Sucess', 'Start time', 'End time', 'pid', 'ppid', 'execname', 'psargs'], [6, 8, 8, 5, 6, 30, 30], ['c','c','c','c','c','c','l', ], kwargs.get('email_template'))
+
+                                    del plist
+
+                            if jdata['additional_info']['behaviour-v1'].get('knockknock') and kwargs.get('verbose'):
+                                print '\n[+] Knock Knock:', jdata['additional_info']['behaviour-v1'].get('knockknock'),8
+                            if jdata['additional_info']['behaviour-v1'].get('run_time') and kwargs.get('verbose'):
+                                print '\n[+] Run time:', jdata['additional_info']['behaviour-v1'].get('tun_time')
+                            if jdata['additional_info']['behaviour-v1'].get('internal_tags') and kwargs.get('verbose'):
+                                print '\n[+] Internal tags:', jdata['additional_info']['behaviour-v1'].get('internal_tags'),10
+                            if jdata['additional_info']['behaviour-v1'].get('signals') and kwargs.get('verbose'):
+                                print '\n[+] Signals:'
+
+                                plist = [[]]
+
+                                for signals in jdata['additional_info']['behaviour-v1'].get('signals'):
+                                    plist.append(
+                                        [signals.get('cmd'), signals.get('target'), signals.get('signo'), signals.get('pid'), signals.get('walltimestamp'), signals.get('execname')])
+
+                                if plist != [[]]:
+                                    pretty_print_special(plist, ['CMD', 'Target', 'Signo', 'PID', 'WallTimeStamp', 'ExecName'], False, False, kwargs.get('email_template'))
+
+                                del plist
+                            if jdata['additional_info']['behaviour-v1'].get('version') and kwargs.get('verbose'):
+                                print '\n[+] Version:', jdata['additional_info']['behaviour-v1'].get('version')
+                            if jdata['additional_info']['behaviour-v1'].get('num_screenshots') and kwargs.get('verbose'):
+                                print '\n[+] Num screenshots:', jdata['additional_info']['behaviour-v1'].get('num_screenshots')
+                            if jdata['additional_info']['behaviour-v1'].get('filesystem') and kwargs.get('verbose'):
+                                print '\n[+] Filesystem:',
+                                if jdata['additional_info']['behaviour-v1']['filesystem'].get('opened'):
+
+                                    plist = [[]]
+
+                                    for fs_open in jdata['additional_info']['behaviour-v1']['filesystem'].get('opened'):
+                                        plist.append(
+                                            [fs_open.get('success'), fs_open.get('execname'), fs_open.get('path')])
+
+                                    if plist != [[]]:
+                                        pretty_print_special(plist, ['Success', 'ExecName', 'Path'], [8, 20, 80], ['c', 'c', 'l'], kwargs.get('email_template'))
+
+                                    del plist
+                            if jdata['additional_info']['behaviour-v1'].get('output'):
+                                print '\n[+] Output:', jdata['additional_info']['behaviour-v1'].get('output'),15
+
+                        if jdata['additional_info'].get('sigcheck') and kwargs.get('verbose'):
+
+                            print '\nPE signature block:'
+                            plist = [[]]
+                            for sig in jdata['additional_info']['sigcheck']:
+                                if isinstance(jdata['additional_info']['sigcheck'][sig], list):
+                                  for data in  jdata['additional_info']['sigcheck'][sig]:
+                                      sub_plist = [[]]
+                                      for key in data.keys():
+                                          sub_plist.append([key, data[key]])
+                                      pretty_print_special(sub_plist, ['Name', 'Value'], False, False, kwargs.get('email_template'))
+                                      del sub_plist
                                 else:
-                                  if email.get('subject'):
-                                      print '\nSubject:'
-                                      print '\t{subject}'.format(subject=email['subject'])
+                                    plist.append(
+                                        [sig, jdata['additional_info']['sigcheck'][sig].encode('utf-8')] # texttable unicode fail
+                                    )
 
-                                  if email.get('sender'):
-                                      print '\nSender:'
-                                      print '\t{sender}'.format(sender=email['sender'])
+                            pretty_print_special(plist, ['Name', 'Value'], False, False, kwargs.get('email_template'))
+                            del plist
 
-                                  if email.get('receiver'):
-                                      print '\nReceiver:'
-                                      print '\t{receiver}'.format(receiver=email['receiver'])
+                        if jdata['additional_info'].get('exiftool') and kwargs.get('verbose'):
 
-                                  if email.get('message_id'):
-                                      print '\nMessage id:'
-                                      print '\t{message_id}'.format(message_id=email['message_id'])
+                            print '\nExifTool file metadata:'
+                            plist = [[]]
 
-                                  if email.get('message'):
-                                      print '\nMessage:'
-                                      if email['message'] is not None:
-                                        for line in email['message'].split('\n'):
-                                            print line.strip()
+                            for exiftool in jdata['additional_info']['exiftool']:
+                                plist.append(
+                                    [exiftool, jdata['additional_info']['exiftool'][exiftool]])
 
-                if jdata.get('total') and kwargs.get('verbose'):
-                    print '\nDetections:\n\t{positives}/{total} Positives/Total\n'.format(positives=jdata['positives'], total=jdata['total'])
+                            pretty_print_special(plist, ['Name', 'Value'], False, False, kwargs.get('email_template'))
+                            del plist
 
-                if jdata.get('scans') and kwargs.get('verbose'):
+                        if jdata['additional_info'].get('sections') and kwargs.get('verbose'):
+                            pretty_print_special(jdata['additional_info']['sections'],
+                                                 ['Name', 'Virtual address', 'Virtual size',
+                                                     'Raw size', 'Entropy', 'MD5'],
+                                                 [10, 10, 10, 10, 10, 35],
+                                                 ['c', 'c', 'c', 'c', 'c', 'c'],
+                                                 kwargs.get('email_template')
+                                                 )
 
-                    plist = [[]]
+                        if jdata['additional_info'].get('imports') and kwargs.get('verbose'):
 
-                    for x in sorted(jdata.get('scans')):
-                        if jdata['scans'][x].get('detected'):
-                              plist.append([x,
-                              'True',
-                              jdata['scans'][x]['result'] if jdata['scans'][x]['result'] else ' -- ',
-                              jdata['scans'][x]['version'] if  'version' in jdata['scans'][x] and jdata['scans'][x]['version'] else ' -- ',
-                              jdata['scans'][x]['update'] if 'update' in jdata['scans'][x] and jdata['scans'][x]['update'] else ' -- '
-                              ])
+                            print '\nImports:'
+                            for imported in jdata['additional_info']['imports']:
+                                print '\t{0}'.format(imported)
+                                for valor in jdata['additional_info']['imports'][imported]:
+                                    print '\t\t{0}'.format(valor)
 
-                    av_size, result_size, version = get_adequate_table_sizes(jdata['scans'])
 
-                    if version == 9:
-                        version_align = 'c'
+                        if jdata['additional_info'].get('dmgcheck') and kwargs.get('verbose'):
+                            print '\n[+] dmgCheck:'
 
-                    else:
-                        version_align = 'l'
+                            if jdata['additional_info']['dmgcheck'].get('plst_keys'):
+                                print '\n[+] plst_keys:'
+                                for key in jdata['additional_info']['dmgcheck']['plst_keys']:
+                                    print '\t', key
 
-                    if plist != [[]]:
-                        pretty_print_special(plist,
-                            ['Vendor name', 'Detected', 'Result', 'Version', 'Last Update'],
-                            [av_size, 9, result_size, version, 12],
-                            ['r', 'c', 'l', version_align, 'c'],
-                            kwargs.get('email_template')
-                        )
+                            if jdata['additional_info']['dmgcheck'].get('plst'):
+                                plist = [[]]
 
-                    del plist
+                                for plst in jdata['additional_info']['dmgcheck']['plst']:
+                                    plist.append(
+                                        [plst.get('attributes'), plst.get('name')])
 
-                if jdata.get('permalink') and kwargs.get('verbose'):
-                    print '\nPermanent link : {permalink}\n'.format(permalink=jdata['permalink'])
+                                if plist != [[]]:
+                                    pretty_print_special(plist, ['Attributes', 'Name'], False, False, kwargs.get('email_template'))
+                                del plist
 
-            else:
-                kwargs.update({'url_report':False})
-                result = parse_report(jdata, **kwargs)
+                            if jdata['additional_info']['dmgcheck'].get('xml_offset'):
+                                print '\n[+] xml offset', jdata['additional_info']['dmgcheck']['xml_offset']
+
+                            if jdata['additional_info']['dmgcheck'].get('xml_length'):
+                                print '\n[+] xml length', jdata['additional_info']['dmgcheck']['xml_length']
+
+                            if jdata['additional_info']['dmgcheck'].get('data_fork_offset'):
+                                print '\n[+] Data fork offset', jdata['additional_info']['dmgcheck']['data_fork_offset']
+
+                            if jdata['additional_info']['dmgcheck'].get('running_data_fork_offset'):
+                                print '\n[+] Running data fork offset', jdata['additional_info']['dmgcheck']['running_data_fork_offset']
+
+                            if jdata['additional_info']['dmgcheck'].get('rsrc_fork_offset'):
+                                print '\n[+] rsrc fork offset', jdata['additional_info']['dmgcheck']['rsrc_fork_offset']
+
+                            if jdata['additional_info']['dmgcheck'].get('resourcefork_keys'):
+                                print '\n[+] resourcefork keys:'
+                                for key in jdata['additional_info']['dmgcheck']['resourcefork_keys']:
+                                    print '\t', key
+
+                            if jdata['additional_info']['dmgcheck'].get('blkx'):
+                                print '\n[+] blkx:'
+                                plist = [[]]
+
+                                for blkx in  jdata['additional_info']['dmgcheck']['blkx']:
+                                    plist.append(
+                                        [blkx.get('attributes'), blkx.get('name')])
+
+                                if plist != [[]]:
+                                    pretty_print_special(plist, ['Attributes', 'Name'], False, False, kwargs.get('email_template'))
+
+                                del plist
+
+                            if jdata['additional_info']['dmgcheck'].get('hfs'):
+
+                                if jdata['additional_info']['dmgcheck']['hfs'].get('executables'):
+                                    print '\n[+] Executables:'
+                                    plist = [[]]
+
+                                    for executables in  jdata['additional_info']['dmgcheck']['hfs']['executables']:
+                                        detection = executables.get('detection_ratio')
+                                        detection = '{0}:{1}'.format(detection[0], detection[1])
+                                        plist.append(
+                                            [detection, executables.get('id'), executables.get('sha256'), executables.get('path')])
+
+                                    if plist != [[]]:
+                                        pretty_print_special(plist, ['Detection', 'Id', 'sha256', 'path'], [10, 5, 64, 50], ['c', 'c', 'c', 'l'], kwargs.get('email_template'))
+
+                                    del plist
+
+                                if jdata['additional_info']['dmgcheck']['hfs'].get('num_files'):
+                                    print '\n[+] Num files:', jdata['additional_info']['dmgcheck']['hfs']['num_files']
+
+                                if jdata['additional_info']['dmgcheck']['hfs'].get('unreadable_files'):
+                                    print '\n[+] Unreadable files: ', jdata['additional_info']['dmgcheck']['hfs']['unreadable_files']
+
+                                if jdata['additional_info']['dmgcheck']['hfs'].get('bundles'):
+                                    print '\n[+] Unreadable files: ', jdata['additional_info']['dmgcheck']['hfs']['bundles']
+
+                                if jdata['additional_info']['dmgcheck']['hfs'].get('info_plist'):
+                                    print '\n[+] Info plist: '
+                                    for key, value in jdata['additional_info']['dmgcheck']['hfs']['info_plist'].items():
+                                        if isinstance(value, dict):
+                                            print '\t', key, ':'
+                                            for subkey, subvalue in value.items():
+                                                print '\t\t', subkey, ':', subvalue
+                                        else:
+                                            print '\t', key, ':', value
+
+                                if jdata['additional_info']['dmgcheck']['hfs'].get('dmg'):
+                                    print '\n[+] dmg: ', jdata['additional_info']['dmgcheck']['hfs']['dmg']
+
+                        if jdata['additional_info'].get('compressedview') and ((kwargs.get('compressedview') or 'compressedview' in args) or kwargs.get('verbose')):
+                          if return_json.get('return_json'):
+                            return_json['compressedview'] = jdata['additional_info']['compressedview']['compressedview']
+
+                          else:
+                            print '\nCompressed view:'
+
+                            if jdata['additional_info']['compressedview'].get('children') and ((kwargs.get('children') or 'children' in args) or kwargs.get('verbose')):
+                                if kwargs.get('return_json'):
+                                    return_json['children'] = jdata['additional_info']['compressedview']['children']
+                                else:
+                                    for child in jdata['additional_info']['compressedview'].get('children'):
+                                        if child.get('datetime'):
+                                            print '\tDatetime: {0}'.format(child['datetime'])
+                                        if child.get('detection_ration'):
+                                            print '\tDetection ration: \n\tDetected: {0}\n\tTotal {1}'.format(child['detection_ration'][0], child['detection_ration'])
+                                        if child.get('filename'):
+                                            try:
+                                                print '\tFilename: {0}'.format(child['filename'])
+                                            except:
+                                                try:
+                                                    print '\tFilename: {0}'.format(child['filename'].encode('utf-8'))
+                                                except:
+                                                    print '\t[-]Name decode error'
+                                        if child.get('sha256'):
+                                            print '\tsha256: {0}'.format(child['sha256'])
+                                        if child.get('size'):
+                                            print '\tSize: {0}'.format(child['size'])
+                                        if child.get('type'):
+                                            print '\tType: {0}'.format(child['type'])
+
+                            if jdata['additional_info']['compressedview'].get('extensions'):
+                                print '\nExtensions:'
+                                for ext in jdata['additional_info']['compressedview']['extensions']:
+                                    print '\t', ext, jdata['additional_info']['compressedview']['extensions'][ext]
+
+                            if jdata['additional_info']['compressedview'].get('file_types'):
+                                for file_types in jdata['additional_info']['compressedview']['file_types']:
+                                    print '\t' ,ext, jdata['additional_info']['compressedview']['file_types'][file_types]
+
+                            if jdata['additional_info']['compressedview'].get('tags'):
+                                print '\nTags:'
+                                for tag in jdata['additional_info']['compressedview']['tags']:
+                                    print '\t', tag
+
+                            if jdata['additional_info']['compressedview'].get('lowest_datetime'):
+                                print '\nLowest datetime: {0}'.format(jdata['additional_info']['compressedview']['lowest_datetime'])
+
+                            if jdata['additional_info']['compressedview'].get('highest_datetime'):
+                                print 'Highest datetime: {0}'.format(jdata['additional_info']['compressedview']['highest_datetime'])
+
+                            if jdata['additional_info']['compressedview'].get('num_children'):
+                                print 'Num children: {0}'.format(jdata['additional_info']['compressedview']['num_children'])
+
+                            if jdata['additional_info']['compressedview'].get('type'):
+                                print 'Type: {0}'.format(jdata['additional_info']['compressedview']['type'])
+
+                            if jdata['additional_info']['compressedview'].get('uncompressed_size'):
+                                print 'Uncompressed_size: {0}'.format(jdata['additional_info']['compressedview']['uncompressed_size'])
+
+                            if jdata['additional_info']['compressedview'].get('vhash'):
+                                print 'Vhash: {0}'.format(jdata['additional_info']['compressedview']['vhash'])
+
+                        if jdata['additional_info'].get('detailed_email_parents') and ((kwargs.get('detailed_email_parents') or 'detailed_email_parents' in args) or kwargs.get('verbose')):
+
+                            if kwargs.get('return_json') and  (kwargs.get('original-email') or 'original-email' in args):
+                                return_json['detailed_email_parents'] = jdata['additional_info']['detailed_email_parents']
+                            else:
+                                print '\nDetailed email parents:'
+                                for email in jdata['additional_info']['detailed_email_parents']:
+                                    if kwargs.get('email_original'):
+                                        kwargs['value'] = [email.get('message_id')]
+                                        parsed = self.parse_email(**kwargs)
+                                        if parsed:
+                                            return_json.setdefault('emails', [])
+                                            if kwargs.get('return_json'):
+                                                return_json['emails'].append(parsed)
+
+                                    else:
+                                      if email.get('subject'):
+                                          print '\nSubject:'
+                                          print '\t{subject}'.format(subject=email['subject'])
+
+                                      if email.get('sender'):
+                                          print '\nSender:'
+                                          print '\t{sender}'.format(sender=email['sender'])
+
+                                      if email.get('receiver'):
+                                          print '\nReceiver:'
+                                          print '\t{receiver}'.format(receiver=email['receiver'])
+
+                                      if email.get('message_id'):
+                                          print '\nMessage id:'
+                                          print '\t{message_id}'.format(message_id=email['message_id'])
+
+                                      if email.get('message'):
+                                          print '\nMessage:'
+                                          if email['message'] is not None:
+                                            for line in email['message'].split('\n'):
+                                                print line.strip()
+
+                    if jdata.get('total') and kwargs.get('verbose'):
+                        print '\nDetections:\n\t{positives}/{total} Positives/Total\n'.format(positives=jdata['positives'], total=jdata['total'])
+
+                    if jdata.get('scans') and kwargs.get('verbose'):
+
+                        plist = [[]]
+
+                        for x in sorted(jdata.get('scans')):
+                            if jdata['scans'][x].get('detected'):
+                                  plist.append([x,
+                                  'True',
+                                  jdata['scans'][x]['result'] if jdata['scans'][x]['result'] else ' -- ',
+                                  jdata['scans'][x]['version'] if  'version' in jdata['scans'][x] and jdata['scans'][x]['version'] else ' -- ',
+                                  jdata['scans'][x]['update'] if 'update' in jdata['scans'][x] and jdata['scans'][x]['update'] else ' -- '
+                                  ])
+
+                        av_size, result_size, version = get_adequate_table_sizes(jdata['scans'])
+
+                        if version == 9:
+                            version_align = 'c'
+
+                        else:
+                            version_align = 'l'
+
+                        if plist != [[]]:
+                            pretty_print_special(plist,
+                                ['Vendor name', 'Detected', 'Result', 'Version', 'Last Update'],
+                                [av_size, 9, result_size, version, 12],
+                                ['r', 'c', 'l', version_align, 'c'],
+                                kwargs.get('email_template')
+                            )
+
+                        del plist
+
+                    if jdata.get('permalink') and kwargs.get('verbose'):
+                        print '\nPermanent link : {permalink}\n'.format(permalink=jdata['permalink'])
+
+                else:
+                    kwargs.update({'url_report':False})
+                    result = parse_report(jdata, **kwargs)
 
         if kwargs.get('return_json'):
             return  return_json
@@ -1848,7 +1857,8 @@ class vtAPI():
                         dumped.close()
                         print '\tDownloaded to File -- {name}'.format(name=name)
 
-    def parse_attachment(self, message_part):
+    # normal email attachment extractor
+    def __email_parse_attachment(self, message_part):
 
         attachment = ''
         filename = ''
@@ -1865,13 +1875,72 @@ class vtAPI():
                 attachment = message_part.get_payload(decode=True)
                 filename = message_part.get_filename()
                 content_type = message_part.get_content_type()
-                size = len(attachment)
-                sha256_hash = hashlib.sha256(attachment).hexdigest()
-                sha1_hash = hashlib.sha1(attachment).hexdigest()
-                md5_hash = hashlib.md5(attachment).hexdigest()
+                if attachment:
+                    size = len(attachment)
+                    sha256_hash = hashlib.sha256(attachment).hexdigest()
+                    sha1_hash = hashlib.sha1(attachment).hexdigest()
+                    md5_hash = hashlib.md5(attachment).hexdigest()
 
 
         return attachment, filename, size, content_type, sha256_hash, sha1_hash, md5_hash
+
+    def __email_print(self, email_dict, email_id, **kwargs):
+
+            if len(email_id) >=64:
+                # in case if you pass full email instead of hash
+                email_id = hashlib.sha256(email_id).hexdigest()
+
+            print '\n[+] Details of email: {0}'.format(email_id)
+            plist = [[]]
+
+            if 'Attachments' in email_dict:
+                for i, part in  enumerate(email_dict['Attachments']):
+
+                    path_where_save = kwargs.get('save_attachment')
+                    if path_where_save:
+                        if not os.path.exists(path_where_save):
+                            os.makedirs(path_where_save)
+                        print '[+] Saving attachment with hash: {0}'.format(email_dict['Attachments'][i]['sha256'])
+                        dump_file = open(os.path.join(path_where_save, email_dict['Attachments'][i]['sha256']), 'wb')
+                        dump_file.write(email_dict['Attachments'][i]['attachment'])
+                        dump_file.close()
+
+                    del email_dict['Attachments'][i]['attachment']
+
+            key_s, value_s = get_sizes(email_dict)
+
+            for k,v in sorted(email_dict.items()):
+                if k == 'Attachments':
+                  line = ''
+                  for part in email_dict['Attachments']:
+                        #to have order
+                        for value in ('md5', 'sha1', 'sha256', 'name', 'size', 'content_type'):
+                            line += '{0} : {1}\n'.format(value, part.get(value))
+
+                        plist.append([k,line])
+                else:
+                    plist.append([k,v])
+
+            if plist != [[]]:
+                pretty_print_special(
+                plist,
+                ['Key', 'Value'],
+                [key_s, value_s],
+                ['r', 'l'],
+                kwargs.get('email_template')
+            )
+
+    def __download_email(self, email_id, *args, **kwargs):
+        original_email = ''
+        original_email = self.download(**{
+              'value':[email_id],
+              'api_type':kwargs.get('api_type'),
+              'download':'file',
+              'intelligence':kwargs.get('intelligence'),
+              'return_raw':True,
+        })
+
+        return original_email
 
     def parse_email(self, *args,  **kwargs):
 
@@ -1885,7 +1954,6 @@ class vtAPI():
                 kwargs['dump'] = False
 
         for email_id in kwargs.get('value'):
-
             if os.path.exists(email_id):
                 msg = email.message_from_file(open(email_id))
             else:
@@ -1897,18 +1965,17 @@ class vtAPI():
                         print '[-] Hash not found in url'
 
                 elif len(email_id) in (32, 40, 64): # md5, sha1, sha256
-                    pass
+                    original_email = self.__download_email(email_id)
 
-                original_email = self.download(**{
-                    'value':[email_id],
-                    'api_type':kwargs.get('api_type'),
-                    'download':'file',
-                    'intelligence':kwargs.get('intelligence'),
-                    'return_raw':True,
-                    }
-                )
-                if original_email:
-                    msg = email.message_from_string(original_email)
+                    if original_email:
+                        msg = email.message_from_string(original_email)
+                else:
+                  #permit parse emails from library
+                  try:
+                      msg = email.message_from_string(email_id)
+                  except Exception as e:
+                      print e
+                      return ''
 
             if msg:
                 email_dict = dict()
@@ -1917,7 +1984,7 @@ class vtAPI():
                    email_dict[k] = v
 
                 for part in msg.walk():
-                    attachment, name, size, content_type, sha256_hash, sha1_hash, md5_hash = self.parse_attachment(part)
+                    attachment, name, size, content_type, sha256_hash, sha1_hash, md5_hash = self.__email_parse_attachment(part)
                     if attachment:
                         email_dict['Attachments'].append({
                             'attachment': attachment,
@@ -1935,49 +2002,27 @@ class vtAPI():
                         email_dict['Body_html'] = part.get_payload(decode=True)
 
                 if not kwargs.get('return_json'):
-
-                    print '\n[+] Details of email: {0}'.format(email_id)
-                    plist = [[]]
-
-                    if 'Attachments' in email_dict:
-                        content = email_dict['Attachments']
-                        for i, part in  enumerate(email_dict['Attachments']):
-                            path_where_save = kwargs.get('save_attachment')
-                            if path_where_save:
-                                if not os.path.exists(path_where_save):
-                                    os.makedirs(path_where_save)
-                                print '[+] Saving attachment with hash: {0}'.format(email_dict['Attachments'][i]['sha256'])
-                                dump_file = open(os.path.join(path_where_save, email_dict['Attachments'][i]['sha256']), 'wb')
-                                dump_file.write(email_dict['Attachments'][i]['attachment'])
-                                dump_file.close()
-
-                            del email_dict['Attachments'][i]['attachment']
-
-                        key_s, value_s = get_sizes(email_dict)
-
-                        for k,v in sorted(email_dict.items()):
-                            if k == 'Attachments':
-                                line = ''
-                                for part in email_dict['Attachments']:
-                                    #to have order
-                                    for value in ('md5', 'sha1', 'sha256', 'name', 'size', 'content_type'):
-                                        line += '{0} : {1}\n'.format(value, part[value])
-
-                                plist.append([k,line])
-                            else:
-                                plist.append([k,v])
-
-
-                        if plist != [[]]:
-                            pretty_print_special(
-                            plist,
-                            ['Key', 'Value'],
-                            [key_s, value_s],
-                            ['r', 'l'],
-                            kwargs.get('email_template')
-                        )
+                    self.__email_print(email_dict, email_id)
 
             return email_dict
+
+    def parse_email_outlook(self, *args, **kwargs):
+        if OUTLOOK_prsr:
+            for email_id in kwargs.get('value'):
+
+                if len(email_id) in (32, 40, 64): # md5, sha1, sha256
+                    email_id = self.__download_email(email_id, *args, **kwargs)
+
+                msg = OUTLOOK(email_id)
+                email_dict = msg.parse_outlook_email()
+
+                # add posibiliti to save attachment
+                if not kwargs.get('return_json'):
+                    self.__email_print(email_dict, email_id, *args, **kwargs)
+                else:
+                    return email_dict
+
+        return {'status':'missed library'}
 
     def distribution(self, *args,  **kwargs):
         """
@@ -2588,6 +2633,7 @@ def main():
     email_opt = opt.add_argument_group('Process emails')
     email_opt.add_argument('-pe', '--parse-email', action='store_true', default=False, help='Parse email, can be string or file')
     email_opt.add_argument('-esa', '--save-attachment', action='store', default=False, help='Save email attachment, path where to store')
+    email_opt.add_argument('-peo', '--parse-email-outlook', action='store_true', default=False, help='Parse outlook .msg, can be string or file')
 
     if vt_config.get('api_type'):
         behaviour = opt.add_argument_group('Behaviour options')
@@ -2713,6 +2759,9 @@ def main():
 
     elif options.get('parse_email'):
         vt.parse_email(**options)
+
+    elif options.get('parse_email_outlook'):
+        vt.parse_email_outlook(**options)
 
     elif options.get('behaviour'):
         vt.behaviour(**options)
