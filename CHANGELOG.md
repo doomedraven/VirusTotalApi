@@ -1,3 +1,7 @@
+**13.02.2016**
+* Outlook .msg parser
+    * -peo can be  local file or hash to download from vt and parse
+
 **02.02.2016**
 * Bug fixed with multi hash search
 * TextTable now show all rows, one was missed
