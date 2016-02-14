@@ -1,4 +1,4 @@
-**14.02*2016**
+**14.02.2016**
 
 * New options for pcap files:
     * -snr, --snort
