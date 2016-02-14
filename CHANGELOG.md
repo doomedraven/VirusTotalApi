@@ -1,3 +1,11 @@
+**14.02*2016**
+
+* New options for pcap files:
+    * -snr, --snort
+    * -srct --suricata
+    * -tir, --traffic-inspection
+    * -wir, --wireshark-info
+
 **13.02.2016**
 * Outlook .msg parser
     * -peo can be  local file or hash to download from vt and parse
