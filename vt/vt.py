@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.1.0'
+__version__ = '2.1.2.0'
 __license__ = 'For fun :)'
 
 import os
@@ -605,6 +605,77 @@ class vtAPI():
                             print '\nReferers:'
                             for referer in jdata['additional_info']['referers']:
                                 print '\t{referer}'.format(referer=referer)
+
+                        # IDS, splited to be easily getted throw imported vt as library
+                        if jdata['additional_info'].get('suricata') and (kwargs.get('suricata') or 'suricata' in args) or kwargs.get('verbose'):
+                            if return_json.get('return_json'):
+                                return_json['suricata'] = jdata['additional_info']['suricata']
+                            else:
+                                print '\n[+] Suricata'
+                                for rule in jdata['additional_info'].get('suricata'):
+                                    print '\nRule:', rule
+                                    print '\tAlert\n\t\t', jdata['additional_info']['suricata'][rule]['alert']
+                                    print '\tClassification\n\t\t', jdata['additional_info']['suricata'][rule]['classification']
+                                    print '\tDescription:'
+                                    for desc in jdata['additional_info']['suricata'][rule]['destinations']:
+                                        print '\t\t', desc
+
+                        if jdata['additional_info'].get('snort') and (kwargs.get('snort') or 'snort' in args) or kwargs.get('verbose'):
+                            if return_json.get('return_json'):
+                                return_json['snort'] = jdata['additional_info']['snort']
+                            else:
+                                print '\n[+] Snort'
+                                for rule in jdata['additional_info'].get('snort'):
+                                    print '\nRule', rule
+                                    print '\tAlert\n\t\t', jdata['additional_info']['snort'][rule]['alert']
+                                    print '\tClassification\n\t\t', jdata['additional_info']['snort'][rule]['classification']
+                                    print '\tDescription:'
+                                    for desc in jdata['additional_info']['snort'][rule]['destinations']:
+                                        print '\t\t', desc
+
+                        if jdata['additional_info'].get('traffic_inspection') and (kwargs.get('traffic_inspection') or 'traffic_inspection' in args) or kwargs.get('verbose'):
+                            if return_json.get('return_json'):
+                                return_json['traffic_inspection'] = jdata['additional_info']['traffic_inspection']
+                            else:
+                                print '\n[+] Traffic inspection'
+                                for proto in jdata['additional_info'].get('traffic_inspection'):
+                                    print '\tProtocol:', proto
+                                    for block in jdata['additional_info'].get('traffic_inspection')[proto]:
+                                        plist = [[]]
+                                        for key, value in block.items():
+                                            plist.append([key, value])
+
+                                        if plist != [[]]:
+                                            pretty_print_special(plist, ['Key', 'Value'], False, ['r', 'l'], kwargs.get('email_template'))
+
+                                        del plist
+
+                        if jdata['additional_info'].get('wireshark') and (kwargs.get('wireshark_info') or 'wireshark_info' in args) or kwargs.get('verbose'):
+                            if return_json.get('return_json'):
+                                return_json['wireshark'] = jdata['additional_info']['wireshark']
+                            else:
+                                print '\n[+] Wireshark:'
+                                if jdata['additional_info'].get('wireshark').get('pcap'):
+                                    plist = [[]]
+                                    for key, value in jdata['additional_info'].get('wireshark').get('pcap').items():
+                                        plist.append([key, value])
+
+                                    if plist != [[]]:
+                                        pretty_print_special(plist, ['Key', 'Value'], False, ['c', 'l'], kwargs.get('email_template'))
+
+                                    del plist
+
+                                if jdata['additional_info'].get('wireshark').get('dns'):
+                                    print '\n[+] DNS'
+                                    plist = [[]]
+                                    key_s, value_s = get_sizes(jdata['additional_info'].get('wireshark'))
+                                    for domain in  jdata['additional_info'].get('wireshark').get('dns'):
+                                        plist.append([domain[0], '\n\t'.join(domain[1])])
+
+                                    if plist != [[]]:
+                                        pretty_print_special(plist, ['Domain', 'IP(s)'], False, ['r', 'l'], kwargs.get('email_template'))
+
+                                    del plist
 
                         if jdata['additional_info'].get('behaviour-v1'):
                             if jdata['additional_info']['behaviour-v1'].get('tags') and kwargs.get('verbose'):
@@ -2530,8 +2601,10 @@ def main():
         allinfo_opt.add_argument('-dep', '--detailed-email-parents', action='store_true',
             help='Contains information about emails, as Subject, sender, receiver(s), full email, and email hash to download it')
         allinfo_opt.add_argument('-eo', '--email-original', default=False, action='store_true', help='Will retreive original email and process it')
-        allinfo_opt.add_argument('-sn', '--submission_names', action='store_true',
-            help='Get all submission name')
+        allinfo_opt.add_argument('-snr', '--snort', action='store_true', help='Get Snort results')
+        allinfo_opt.add_argument('-srct', '--suricata', action='store_true', help='Get Suricata results')
+        allinfo_opt.add_argument('-tir', '--traffic-inspection', action='store_true', help='Get Wireshark info')
+        allinfo_opt.add_argument('-wir', '--wireshark-info', action='store_true', help='Get Wireshark info')
 
     opt.add_argument('-ac', '--add-comment', action='store_true',
         help='The actual review, you can tag it using the "#" twitter-like syntax (e.g. #disinfection #zbot) and reference users using the "@" syntax (e.g. @VirusTotalTeam). supported hashes MD5/SHA1/SHA256')
