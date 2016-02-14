@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.2.0'
+__version__ = '2.1.2.1'
 __license__ = 'For fun :)'
 
 import os
@@ -199,10 +199,13 @@ def pretty_print_special(rows, headers, sizes=False, align=False, email=False):
         print sys.exc_info()
 
 def is_file(value):
+
+    # check if is file and if file is json, avoit recognize input file as dumped json
+
     try:
         if isinstance(value, list):
 
-            if os.path.isfile(value[0]):
+            if os.path.isfile(value[0]) and value[0].endswith('.json'):
                 return True, value[0]
 
             else:
@@ -210,7 +213,7 @@ def is_file(value):
 
         elif isinstance(value, basestring):
 
-            if os.path.isfile(value):
+            if os.path.isfile(value) and value.endswith('.json'):
                 return True, value
 
             else:
@@ -450,9 +453,10 @@ class vtAPI():
         if result:
             jdatas = load_file(name)
             if isinstance(jdatas, list):
-                jdatas = jdata
+                jdatas = jdatas
             else:
-                jdatas = [jdata]
+                jdatas = [jdatas]
+
 
             kwargs['dump'] = False
 
@@ -467,6 +471,12 @@ class vtAPI():
             #ToDo support for private api and up to 25 hashes
 
             for hashes_report in kwargs.get('value'):
+                if os.path.isfile(hashes_report):
+                    print '\nCalculating hash for:', hashes_report
+                    hashes_report = hashlib.sha256(open(hashes_report, 'rb').read()).hexdigest()
+                    #print '\n\t Hash is:', hashes_report
+
+
                 if (kwargs.get('search_intelligence') or 'search_intelligence' in args):
                     self.params['query'] = [hashes_report]
                     url = self.base.format('file/search')
@@ -608,74 +618,78 @@ class vtAPI():
 
                         # IDS, splited to be easily getted throw imported vt as library
                         if jdata['additional_info'].get('suricata') and (kwargs.get('suricata') or 'suricata' in args) or kwargs.get('verbose'):
-                            if return_json.get('return_json'):
-                                return_json['suricata'] = jdata['additional_info']['suricata']
+                            if kwargs.get('return_json'):
+                                return_json['suricata'] = jdata['additional_info'].get('suricata')
                             else:
-                                print '\n[+] Suricata'
-                                for rule in jdata['additional_info'].get('suricata'):
-                                    print '\nRule:', rule
-                                    print '\tAlert\n\t\t', jdata['additional_info']['suricata'][rule]['alert']
-                                    print '\tClassification\n\t\t', jdata['additional_info']['suricata'][rule]['classification']
-                                    print '\tDescription:'
-                                    for desc in jdata['additional_info']['suricata'][rule]['destinations']:
-                                        print '\t\t', desc
+                                if jdata['additional_info'].get('suricata', ''):
+                                    print '\n[+] Suricata'
+                                    for rule in jdata['additional_info'].get('suricata'):
+                                        print '\nRule:', rule
+                                        print '\tAlert\n\t\t', jdata['additional_info']['suricata'][rule]['alert']
+                                        print '\tClassification\n\t\t', jdata['additional_info']['suricata'][rule]['classification']
+                                        print '\tDescription:'
+                                        for desc in jdata['additional_info']['suricata'][rule]['destinations']:
+                                            print '\t\t', desc
 
                         if jdata['additional_info'].get('snort') and (kwargs.get('snort') or 'snort' in args) or kwargs.get('verbose'):
-                            if return_json.get('return_json'):
-                                return_json['snort'] = jdata['additional_info']['snort']
+                            if kwargs.get('return_json'):
+                                return_json['snort'] = jdata['additional_info'].get('snort')
                             else:
-                                print '\n[+] Snort'
-                                for rule in jdata['additional_info'].get('snort'):
-                                    print '\nRule', rule
-                                    print '\tAlert\n\t\t', jdata['additional_info']['snort'][rule]['alert']
-                                    print '\tClassification\n\t\t', jdata['additional_info']['snort'][rule]['classification']
-                                    print '\tDescription:'
-                                    for desc in jdata['additional_info']['snort'][rule]['destinations']:
-                                        print '\t\t', desc
+                                if jdata['additional_info'].get('snort', ''):
+                                    print '\n[+] Snort'
+                                    for rule in jdata['additional_info'].get('snort', ''):
+                                        print '\nRule', rule
+                                        print '\tAlert\n\t\t', jdata['additional_info']['snort'][rule]['alert']
+                                        print '\tClassification\n\t\t', jdata['additional_info']['snort'][rule]['classification']
+                                        print '\tDescription:'
+                                        for desc in jdata['additional_info']['snort'][rule]['destinations']:
+                                            print '\t\t', desc
 
                         if jdata['additional_info'].get('traffic_inspection') and (kwargs.get('traffic_inspection') or 'traffic_inspection' in args) or kwargs.get('verbose'):
-                            if return_json.get('return_json'):
-                                return_json['traffic_inspection'] = jdata['additional_info']['traffic_inspection']
+                            if kwargs.get('return_json'):
+                                return_json['traffic_inspection'] = jdata['additional_info'].get('traffic_inspection')
                             else:
-                                print '\n[+] Traffic inspection'
-                                for proto in jdata['additional_info'].get('traffic_inspection'):
-                                    print '\tProtocol:', proto
-                                    for block in jdata['additional_info'].get('traffic_inspection')[proto]:
+                                if jdata['additional_info'].get('traffic_inspection'):
+                                    print '\n[+] Traffic inspection'
+                                    for proto in jdata['additional_info'].get('traffic_inspection'):
+                                        print '\tProtocol:', proto
+                                        for block in jdata['additional_info'].get('traffic_inspection')[proto]:
+                                            plist = [[]]
+                                            for key, value in block.items():
+                                                plist.append([key, value])
+
+                                            if plist != [[]]:
+                                                pretty_print_special(plist, ['Key', 'Value'], False, ['r', 'l'], kwargs.get('email_template'))
+
+                                            del plist
+
+                        if jdata['additional_info'].get('wireshark') and (kwargs.get('wireshark_info') or 'wireshark_info' in args) or kwargs.get('verbose'):
+                            if kwargs.get('return_json'):
+                                return_json['wireshark'] = jdata['additional_info'].get('wireshark')
+                            else:
+                                if jdata['additional_info'].get('wireshark', {}):
+                                    print '\n[+] Wireshark:'
+                                    if jdata['additional_info'].get('wireshark', {}).get('pcap'):
                                         plist = [[]]
-                                        for key, value in block.items():
+                                        for key, value in jdata['additional_info'].get('wireshark', {}).get('pcap').items():
                                             plist.append([key, value])
 
                                         if plist != [[]]:
-                                            pretty_print_special(plist, ['Key', 'Value'], False, ['r', 'l'], kwargs.get('email_template'))
+                                            pretty_print_special(plist, ['Key', 'Value'], False, ['c', 'l'], kwargs.get('email_template'))
 
                                         del plist
 
-                        if jdata['additional_info'].get('wireshark') and (kwargs.get('wireshark_info') or 'wireshark_info' in args) or kwargs.get('verbose'):
-                            if return_json.get('return_json'):
-                                return_json['wireshark'] = jdata['additional_info']['wireshark']
-                            else:
-                                print '\n[+] Wireshark:'
-                                if jdata['additional_info'].get('wireshark').get('pcap'):
-                                    plist = [[]]
-                                    for key, value in jdata['additional_info'].get('wireshark').get('pcap').items():
-                                        plist.append([key, value])
+                                    if jdata['additional_info'].get('wireshark', {}).get('dns'):
+                                        print '\n[+] DNS'
+                                        plist = [[]]
+                                        key_s, value_s = get_sizes(jdata['additional_info'].get('wireshark'))
+                                        for domain in  jdata['additional_info'].get('wireshark').get('dns'):
+                                            plist.append([domain[0], '\n\t'.join(domain[1])])
 
-                                    if plist != [[]]:
-                                        pretty_print_special(plist, ['Key', 'Value'], False, ['c', 'l'], kwargs.get('email_template'))
+                                        if plist != [[]]:
+                                            pretty_print_special(plist, ['Domain', 'IP(s)'], False, ['r', 'l'], kwargs.get('email_template'))
 
-                                    del plist
-
-                                if jdata['additional_info'].get('wireshark').get('dns'):
-                                    print '\n[+] DNS'
-                                    plist = [[]]
-                                    key_s, value_s = get_sizes(jdata['additional_info'].get('wireshark'))
-                                    for domain in  jdata['additional_info'].get('wireshark').get('dns'):
-                                        plist.append([domain[0], '\n\t'.join(domain[1])])
-
-                                    if plist != [[]]:
-                                        pretty_print_special(plist, ['Domain', 'IP(s)'], False, ['r', 'l'], kwargs.get('email_template'))
-
-                                    del plist
+                                        del plist
 
                         if jdata['additional_info'].get('behaviour-v1'):
                             if jdata['additional_info']['behaviour-v1'].get('tags') and kwargs.get('verbose'):
@@ -912,7 +926,7 @@ class vtAPI():
                                     print '\n[+] dmg: ', jdata['additional_info']['dmgcheck']['hfs']['dmg']
 
                         if jdata['additional_info'].get('compressedview') and ((kwargs.get('compressedview') or 'compressedview' in args) or kwargs.get('verbose')):
-                          if return_json.get('return_json'):
+                          if kwargs.get('return_json'):
                             return_json['compressedview'] = jdata['additional_info']['compressedview']['compressedview']
 
                           else:
