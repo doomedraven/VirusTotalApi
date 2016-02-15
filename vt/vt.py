@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.2.1'
+__version__ = '2.1.2.2'
 __license__ = 'For fun :)'
 
 import os
@@ -1980,7 +1980,6 @@ class vtAPI():
 
             if 'Attachments' in email_dict:
                 for i, part in  enumerate(email_dict['Attachments']):
-
                     path_where_save = kwargs.get('save_attachment')
                     if path_where_save:
                         if not os.path.exists(path_where_save):
@@ -2002,7 +2001,7 @@ class vtAPI():
                         for value in ('md5', 'sha1', 'sha256', 'name', 'size', 'content_type'):
                             line += '{0} : {1}\n'.format(value, part.get(value))
 
-                        plist.append([k,line])
+                  plist.append([k,line])
                 else:
                     plist.append([k,v])
 
@@ -2098,14 +2097,17 @@ class vtAPI():
                 if len(email_id) in (32, 40, 64): # md5, sha1, sha256
                     email_id = self.__download_email(email_id, *args, **kwargs)
 
-                msg = OUTLOOK(email_id)
-                email_dict = msg.parse_outlook_email()
+                try:
+                    msg = OUTLOOK(email_id)
+                    email_dict = msg.parse_outlook_email()
 
-                # add posibiliti to save attachment
-                if not kwargs.get('return_json'):
-                    self.__email_print(email_dict, email_id, *args, **kwargs)
-                else:
-                    return email_dict
+                    if not kwargs.get('return_json'):
+                        self.__email_print(email_dict, email_id, *args, **kwargs)
+                    else:
+                        return email_dict
+                except IOError:
+                    print '\n[-]Not OLE file\n'
+                    return {'status':'Not OLE file'}
 
         return {'status':'missed library'}
 
