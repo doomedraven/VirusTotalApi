@@ -7,6 +7,7 @@
 #
 # https://www.virustotal.com/en/documentation/public-api
 # https://www.virustotal.com/en/documentation/private-api
+# https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
 __version__ = '2.1.2.3'
@@ -1653,10 +1654,10 @@ class vtAPI():
                     else:
                         print '\n[+] Whois data:'
                         try:
-                            print '\t', jdata['whois'].replace('\n', '\n\t')
+                            print '\n\t', jdata['whois'].replace('\n', '\n\t')
                         except:
                             try:
-                                print '\t', jdata['whois'].encode('utf-8', 'replace').replace('\n', '\n\t')
+                                print '\n\t', jdata['whois'].encode('utf-8', 'replace').replace('\n', '\n\t')
                             except:
                                 print 'Old version of python has some problems with converting chars to ansii'
                 if  jdata.get('whois_timestamp') and ((kwargs.get('whois_timestamp') or 'whois_timestamp' in args) or kwargs.get('verbose')):
@@ -2784,6 +2785,7 @@ def main():
 
     if options.version:
         print 'Version:', __version__
+        print 'Current path:', os.path.dirname(os.path.realpath(__file__))
         sys.exit()
 
     options = vars(options)
