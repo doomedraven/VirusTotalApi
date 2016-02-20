@@ -9,7 +9,7 @@
 # https://www.virustotal.com/en/documentation/private-api
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.2.2'
+__version__ = '2.1.2.3'
 __license__ = 'For fun :)'
 
 import os
@@ -403,18 +403,19 @@ def get_response(url, method="get", **kwargs):
             print '\n[!] Can\'t resolv hostname, check your internet conection\n'
             return '', ''
 
-        if response.status_code == 403:
-            private_api_access_error()
+        if response:
+            if response.status_code == 403:
+                private_api_access_error()
 
-        if response.status_code != 204 and hasattr(response, 'json'):
+            if response.status_code != 204 and hasattr(response, 'json'):
 
-            try:
-                jdata = response.json()
+                try:
+                    jdata = response.json()
 
-            except:
-                jdata = response.json
+                except:
+                    jdata = response.json
 
-            break
+                break
 
         # Determine minimum time we need to wait for limit to reset
         wait_time = 59 - int(time.time() - get_response.start_time)
@@ -1651,7 +1652,13 @@ class vtAPI():
                         return_json.update({'whois': jdata['whois']})
                     else:
                         print '\n[+] Whois data:'
-                        print '\t', jdata['whois'].replace('\n', '\n\t')
+                        try:
+                            print '\t', jdata['whois'].replace('\n', '\n\t')
+                        except:
+                            try:
+                                print '\t', jdata['whois'].encode('utf-8', 'replace').replace('\n', '\n\t')
+                            except:
+                                print 'Old version of python has some problems with converting chars to ansii'
                 if  jdata.get('whois_timestamp') and ((kwargs.get('whois_timestamp') or 'whois_timestamp' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
                         return_json.update({'whois_timestamp': jdata['whois_timestamp']})
@@ -1900,47 +1907,49 @@ class vtAPI():
                     print '[-] You don\'t have permission for download'
                     return
 
-                response = requests.get(url, params=self.params, stream=True)
+                jdata, response = get_response(url, params=self.params, stream=True)
+                if response:
+                    if response.status_code == 404:
+                            print '\n[!] File not found - {0}\n'.format(f_hash)
 
-                if response.status_code == 404:
-                        print '\n[!] File not found - {0}\n'.format(f_hash)
+                    if response.status_code == 200:
+                        if kwargs.get('name'):
+                            name = kwargs.get('name')
+                        else:
+                            name = '{hash}'.format(hash=f_hash)
 
-                if response.status_code == 200:
-                    if kwargs.get('name'):
-                        name = kwargs.get('name')
-                    else:
-                        name = '{hash}'.format(hash=f_hash)
+                        if "VirusTotal - Free Online Virus, Malware and URL Scanner" in response.content and '{"response_code": 0, "hash":' not in response.content: # filter out keep-alive new chunks
+                                try:
+                                    json_data = response.json()
+                                    print '\n\t{0}: {1}'.format(json_data['verbose_msg'], f_hash)
+                                except:
+                                    print '\tFile can\'t be downloaded: {0}'.format(f_hash)
 
-                    if "VirusTotal - Free Online Virus, Malware and URL Scanner" in response.content and '{"response_code": 0, "hash":' not in response.content: # filter out keep-alive new chunks
-                            try:
-                                json_data = response.json()
-                                print '\n\t{0}: {1}'.format(json_data['verbose_msg'], f_hash)
-                            except:
-                                print '\tFile can\'t be downloaded: {0}'.format(f_hash)
+                        sample = ''
+                        for chunk in response.iter_content(chunk_size=1024):
+                            if chunk:
+                                sample += chunk
 
-                    sample = ''
-                    for chunk in response.iter_content(chunk_size=1024):
-                        if chunk:
-                            sample += chunk
+                        #Sanity checks
+                        downloaded_hash = ''
+                        if len(f_hash) == 32:
+                            downloaded_hash = hashlib.md5(sample).hexdigest()
+                        elif len(f_hash) == 40:
+                            downloaded_hash = hashlib.sha1(sample).hexdigest()
+                        elif len(f_hash) == 64:
+                            downloaded_hash = hashlib.sha256(sample).hexdigest()
 
-                    #Sanity checks
-                    downloaded_hash = ''
-                    if len(f_hash) == 32:
-                        downloaded_hash = hashlib.md5(sample).hexdigest()
-                    elif len(f_hash) == 40:
-                        downloaded_hash = hashlib.sha1(sample).hexdigest()
-                    elif len(f_hash) == 64:
-                        downloaded_hash = hashlib.sha256(sample).hexdigest()
-
-                    if f_hash != downloaded_hash:
-                        print '[-] Downloaded content has not the same hash as requested'
-                    if kwargs.get('return_raw'):
-                        return sample
-                    else:
-                        dumped = open(name, 'wb')
-                        dumped.write(sample)
-                        dumped.close()
-                        print '\tDownloaded to File -- {name}'.format(name=name)
+                        if f_hash != downloaded_hash:
+                            print '[-] Downloaded content has not the same hash as requested'
+                        if kwargs.get('return_raw'):
+                            return sample
+                        else:
+                            dumped = open(name, 'wb')
+                            dumped.write(sample)
+                            dumped.close()
+                            print '\tDownloaded to File -- {name}'.format(name=name)
+                else:
+                    return {'status':'failed'}
 
     # normal email attachment extractor
     def __email_parse_attachment(self, message_part):
@@ -1969,7 +1978,7 @@ class vtAPI():
 
         return attachment, filename, size, content_type, sha256_hash, sha1_hash, md5_hash
 
-    def __email_print(self, email_dict, email_id, **kwargs):
+    def __email_print(self, email_dict, email_id, *args, **kwargs):
 
             if len(email_id) >=64:
                 # in case if you pass full email instead of hash
@@ -2049,9 +2058,9 @@ class vtAPI():
                         print '[-] Hash not found in url'
 
                 elif len(email_id) in (32, 40, 64): # md5, sha1, sha256
-                    original_email = self.__download_email(email_id)
+                    original_email = self.__download_email(email_id, *args, **kwargs)
 
-                    if original_email:
+                    if original_email and  isinstance(original_email, basestring):
                         msg = email.message_from_string(original_email)
                 else:
                   #permit parse emails from library
@@ -2086,11 +2095,12 @@ class vtAPI():
                         email_dict['Body_html'] = part.get_payload(decode=True)
 
                 if not kwargs.get('return_json'):
-                    self.__email_print(email_dict, email_id)
+                    self.__email_print(email_dict, email_id, *args, **kwargs)
 
             return email_dict
 
     def parse_email_outlook(self, *args, **kwargs):
+
         if OUTLOOK_prsr:
             for email_id in kwargs.get('value'):
 
