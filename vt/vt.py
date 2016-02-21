@@ -227,7 +227,7 @@ def is_file(value):
 def jsondump(jdata, sha1):
 
     jsondumpfile = open('VTDL_{name}.json'.format(name=sha1), 'w')
-    json.dump(jdata, jsondumpfile)
+    json.dump(jdata, jsondumpfile, indent=4)
     jsondumpfile.close()
 
     print '\n\tJSON Written to File -- VTDL_{sha1}.json\n'.format(sha1=sha1)
@@ -478,7 +478,6 @@ class vtAPI():
                     hashes_report = hashlib.sha256(open(hashes_report, 'rb').read()).hexdigest()
                     #print '\n\t Hash is:', hashes_report
 
-
                 if (kwargs.get('search_intelligence') or 'search_intelligence' in args):
                     self.params['query'] = [hashes_report]
                     url = self.base.format('file/search')
@@ -599,7 +598,7 @@ class vtAPI():
                                     print '\n', key.capitalize().replace('_', ' ')
                                     print '\t', jdata['additional_info'][key].replace('\n', '\n\t')
 
-                        if jdata['additional_info'].get('rombioscheck') and (kwargs.get('rombioscheck_info') or 'rombioscheck_info' in args) or kwargs.get('verbose'):
+                        if jdata['additional_info'].get('rombioscheck') and ((kwargs.get('rombioscheck_info') or 'rombioscheck_info' in args) or kwargs.get('verbose')):
                             if kwargs.get('return_json'):
                                 return_json['rombioscheck'] = jdata['additional_info'].get('rombioscheck')
                             else:
@@ -664,7 +663,6 @@ class vtAPI():
                                           pretty_print_special(plist, ['Key', 'Value'], False, ['r', 'l'], kwargs.get('email_template'))
                                       del plist
 
-
                                 dict_keys = (
                                     'option_roms',
                                     'certs'
@@ -718,7 +716,7 @@ class vtAPI():
 
                                         del plist
 
-                        if jdata['additional_info'].get('rombios_generator') and (kwargs.get('rombios_generator_info') or 'rombios_generator_info' in args) or kwargs.get('verbose'):
+                        if jdata['additional_info'].get('rombios_generator') and ((kwargs.get('rombios_generator_info') or 'rombios_generator_info' in args) or kwargs.get('verbose')):
 
                             if kwargs.get('return_json'):
                                 return_json['rombios_generator'] = jdata['additional_info'].get('rombios_generator')
@@ -751,14 +749,99 @@ class vtAPI():
                                      #u'additional_info.rombios_generator.diff.missing_children',
                                      #u'additional_info.rombios_generator.diff.missing_nvar',
                                     """
+                        if jdata['additional_info'].get('androguard') and ((kwargs.get('androidguard_info') or 'androidguard_info' in args) or kwargs.get('verbose')):
+                            if kwargs.get('return_json'):
+                                return_json['androguard'] = jdata['additional_info'].get('androguard')
+                            else:
+                                print '\n[+] AndroidGuard'
+                                simple_list = (
+                                        'AndroguardVersion',
+                                        'AndroidApplication',
+                                        'AndroidApplicationError',
+                                        'AndroidApplicationInfo',
+                                        'AndroidVersionCode',
+                                        'AndroidVersionName',
+                                        'VTAndroidInfo',
+                                        'Main Activity',
+                                        'MinSdkVersion',
+                                        'TargetSdkVersion',
+                                        'Package',
+                                        'SourceFile',
+                                )
+
+                                list_list = (
+                                    'Libraries',
+                                    'Activities',
+                                    'StringsInformation'
+                                )
+
+
+                                dict_list = (
+                                    'Permissions',
+                                    'RiskIndicator',
+                                )
+
+                                for key in simple_list:
+                                    if jdata['additional_info']['androguard'].get(key):
+                                        print '\n[+] {}'.format(key.capitalize().replace('_', ' '))
+                                        print '\t', jdata['additional_info']['androguard'].get(key)
+
+                                for key in list_list:
+                                    if jdata['additional_info']['androguard'].get(key):
+                                        print '\n[+] {}'.format(key.capitalize().replace('_', ' '))
+                                        print '\t', '\n\t'.join(jdata['additional_info']['androguard'].get(key))
+
+                                for key in dict_list:
+                                    if jdata['additional_info']['androguard'].get(key):
+                                        print '\n[+] {}'.format(key.capitalize().replace('_', ' '))
+                                        for sub_key, value in jdata['additional_info']['androguard'][key].items():
+                                            print '\n', sub_key, '\n\t' ,'\n\t'.join(value)
+
+                                #certificates info
+                                cert_list = (
+                                    'Subject',
+                                    'validto',
+                                    'serialnumber',
+                                    'thumbprint',
+                                    'validfrom',
+                                    'Issuer'
+                                )
+
+                                if jdata['additional_info']['androguard'].get('certificate'):
+                                    for key in cert_list:
+                                        if jdata['additional_info']['androguard']['certificate'].get(key):
+                                            print '\n[+] {}'.format(key.capitalize().replace('_', ' '))
+                                            if key in ('Subject', 'Issuer'):
+                                                for sub_key, sub_value in jdata['additional_info']['androguard']['certificate'].get(key).items():
+                                                    print '\t', sub_key, ':', sub_value
+                                            else:
+                                                print '\t',  jdata['additional_info']['androguard']['certificate'].get(key)
+
+                                if jdata['additional_info']['androguard'].get('intent-filters'):
+                                    print '\n[+]', 'Intent-filters'
+                                    for key in jdata['additional_info']['androguard'].get('intent-filters'):
+                                        print '\t', key
+                                        for sub_key in jdata['additional_info']['androguard']['intent-filters'].get(key, {}):
+                                            print '\n\t\t', sub_key
+                                            for ssub_key in jdata['additional_info']['androguard']['intent-filters'][key].get(sub_key):
+                                                print '\n\t\t\t', ssub_key
+                                                print '\n\t\t\t\t',  '\n\t\t\t\t'.join(jdata['additional_info']['androguard']['intent-filters'][key][sub_key].get(ssub_key))
+
+
+                                """
+                                ToDo
+                                 u'additional_info.androguard.Providers',
+                                 u'additional_info.androguard.Receivers',
+                                 u'additional_info.androguard.Services',
+                                 """
 
                         if jdata.get('email_parents') and kwargs.get('verbose'):
-                            print '\nEmail parents:'
+                            print '\n[+] Email parents:'
                             for email in jdata['email_parents']:
                                 print '\t{email}'.format(email=email)
 
                         if jdata['additional_info'].get('referers') and kwargs.get('verbose'):
-                            print '\nReferers:'
+                            print '\n[+] Referers:'
                             print '\t', '\n\t'.join(jdata['additional_info']['referers'])
 
                         # IDS, splited to be easily getted throw imported vt as library
@@ -881,11 +964,11 @@ class vtAPI():
                                     del plist
 
                             if jdata['additional_info']['behaviour-v1'].get('knockknock') and kwargs.get('verbose'):
-                                print '\n[+] Knock Knock:', jdata['additional_info']['behaviour-v1'].get('knockknock'),8
+                                print '\n[+] Knock Knock:', jdata['additional_info']['behaviour-v1'].get('knockknock')
                             if jdata['additional_info']['behaviour-v1'].get('run_time') and kwargs.get('verbose'):
                                 print '\n[+] Run time:', jdata['additional_info']['behaviour-v1'].get('tun_time')
                             if jdata['additional_info']['behaviour-v1'].get('internal_tags') and kwargs.get('verbose'):
-                                print '\n[+] Internal tags:', jdata['additional_info']['behaviour-v1'].get('internal_tags'),10
+                                print '\n[+] Internal tags:', jdata['additional_info']['behaviour-v1'].get('internal_tags')
                             if jdata['additional_info']['behaviour-v1'].get('signals') and kwargs.get('verbose'):
                                 print '\n[+] Signals:'
 
@@ -942,7 +1025,7 @@ class vtAPI():
 
                         if jdata['additional_info'].get('exiftool') and kwargs.get('verbose'):
 
-                            print '\nExifTool file metadata:'
+                            print '\n[+] ExifTool file metadata:'
                             plist = [[]]
 
                             for exiftool in jdata['additional_info']['exiftool']:
@@ -989,20 +1072,18 @@ class vtAPI():
                                     pretty_print_special(plist, ['Attributes', 'Name'], False, False, kwargs.get('email_template'))
                                 del plist
 
-                            if jdata['additional_info']['dmgcheck'].get('xml_offset'):
-                                print '\n[+] xml offset', jdata['additional_info']['dmgcheck']['xml_offset']
+                            dmgcheck_list = (
+                                'xml_offset',
+                                'xml_length',
+                                'data_fork_offset',
+                                'running_data_fork_offset',
+                                'rsrc_fork_offset',
+                            )
 
-                            if jdata['additional_info']['dmgcheck'].get('xml_length'):
-                                print '\n[+] xml length', jdata['additional_info']['dmgcheck']['xml_length']
-
-                            if jdata['additional_info']['dmgcheck'].get('data_fork_offset'):
-                                print '\n[+] Data fork offset', jdata['additional_info']['dmgcheck']['data_fork_offset']
-
-                            if jdata['additional_info']['dmgcheck'].get('running_data_fork_offset'):
-                                print '\n[+] Running data fork offset', jdata['additional_info']['dmgcheck']['running_data_fork_offset']
-
-                            if jdata['additional_info']['dmgcheck'].get('rsrc_fork_offset'):
-                                print '\n[+] rsrc fork offset', jdata['additional_info']['dmgcheck']['rsrc_fork_offset']
+                            for key in dmgcheck_list:
+                                if jdata['additional_info']['dmgcheck'].get(key):
+                                    print '\n[+] {}'.format(key.capitalize().replace('_', ' '))
+                                    print '\t', jdata['additional_info']['dmgcheck'][key]
 
                             if jdata['additional_info']['dmgcheck'].get('resourcefork_keys'):
                                 print '\n[+] resourcefork keys:'
@@ -1066,63 +1147,58 @@ class vtAPI():
                             return_json['compressedview'] = jdata['additional_info']['compressedview']['compressedview']
 
                           else:
-                            print '\nCompressed view:'
-
+                            print '\n[+] Compressed view:'
                             if jdata['additional_info']['compressedview'].get('children') and ((kwargs.get('children') or 'children' in args) or kwargs.get('verbose')):
                                 if kwargs.get('return_json'):
-                                    return_json['children'] = jdata['additional_info']['compressedview']['children']
+                                    return_json['compresedview_children'] = jdata['additional_info']['compressedview']['children']
                                 else:
+                                    compressedview_list = ('datetime', 'detection_ratio', 'filename', 'sha256', 'size', 'type')
                                     for child in jdata['additional_info']['compressedview'].get('children'):
-                                        if child.get('datetime'):
-                                            print '\tDatetime: {0}'.format(child['datetime'])
-                                        if child.get('detection_ration'):
-                                            print '\tDetection ration: \n\tDetected: {0}\n\tTotal {1}'.format(child['detection_ration'][0], child['detection_ration'])
-                                        if child.get('filename'):
-                                            try:
-                                                print '\tFilename: {0}'.format(child['filename'])
-                                            except:
-                                                try:
-                                                    print '\tFilename: {0}'.format(child['filename'].encode('utf-8'))
-                                                except:
-                                                    print '\t[-]Name decode error'
-                                        if child.get('sha256'):
-                                            print '\tsha256: {0}'.format(child['sha256'])
-                                        if child.get('size'):
-                                            print '\tSize: {0}'.format(child['size'])
-                                        if child.get('type'):
-                                            print '\tType: {0}'.format(child['type'])
+                                        print '\n'
+                                        for key in compressedview_list:
+                                            if child.get(key):
+                                                print key.capitalize().replace('_', ' ')
+                                                if key == 'detection_ratio':
+                                                    print '\t{0}/{1}'.format(child[key][0], child[key][1])
+                                                elif key == 'filename':
+                                                    try:
+                                                        print '\t', child[key]
+                                                    except:
+                                                        try:
+                                                            print '\t', child[key].encode('utf-8')
+                                                        except:
+                                                            print '\t[-]Name decode error'
+                                                else:
+                                                    print '\t', child.get(key)
 
                             if jdata['additional_info']['compressedview'].get('extensions'):
-                                print '\nExtensions:'
+                                print '\n[+] Extensions:'
                                 for ext in jdata['additional_info']['compressedview']['extensions']:
                                     print '\t', ext, jdata['additional_info']['compressedview']['extensions'][ext]
 
                             if jdata['additional_info']['compressedview'].get('file_types'):
+                                print '\n[+] FileTypes'
                                 for file_types in jdata['additional_info']['compressedview']['file_types']:
                                     print '\t' ,ext, jdata['additional_info']['compressedview']['file_types'][file_types]
 
                             if jdata['additional_info']['compressedview'].get('tags'):
-                                print '\nTags:'
+                                print '\n[+] Tags:'
                                 for tag in jdata['additional_info']['compressedview']['tags']:
                                     print '\t', tag
 
-                            if jdata['additional_info']['compressedview'].get('lowest_datetime'):
-                                print '\nLowest datetime: {0}'.format(jdata['additional_info']['compressedview']['lowest_datetime'])
+                            compressedview_add_list = (
+                                'lowest_datetime',
+                                'highest_datetime',
+                                'num_children',
+                                'type',
+                                'uncompressed_size',
+                                'vhash'
+                            )
 
-                            if jdata['additional_info']['compressedview'].get('highest_datetime'):
-                                print 'Highest datetime: {0}'.format(jdata['additional_info']['compressedview']['highest_datetime'])
-
-                            if jdata['additional_info']['compressedview'].get('num_children'):
-                                print 'Num children: {0}'.format(jdata['additional_info']['compressedview']['num_children'])
-
-                            if jdata['additional_info']['compressedview'].get('type'):
-                                print 'Type: {0}'.format(jdata['additional_info']['compressedview']['type'])
-
-                            if jdata['additional_info']['compressedview'].get('uncompressed_size'):
-                                print 'Uncompressed_size: {0}'.format(jdata['additional_info']['compressedview']['uncompressed_size'])
-
-                            if jdata['additional_info']['compressedview'].get('vhash'):
-                                print 'Vhash: {0}'.format(jdata['additional_info']['compressedview']['vhash'])
+                            for key in compressedview_add_list:
+                                if jdata['additional_info']['compressedview'].get(key):
+                                    print '\n[+] {}'.format(key.capitalize().replace('_', ' '))
+                                    print  '\t', jdata['additional_info']['compressedview'][key]
 
                         if jdata['additional_info'].get('detailed_email_parents') and ((kwargs.get('detailed_email_parents') or 'detailed_email_parents' in args) or kwargs.get('verbose')):
 
@@ -1140,30 +1216,26 @@ class vtAPI():
                                                 return_json['emails'].append(parsed)
 
                                     else:
-                                      if email.get('subject'):
-                                          print '\nSubject:'
-                                          print '\t{subject}'.format(subject=email['subject'])
+                                        email_list = (
+                                            'subject',
+                                            'sender',
+                                            'receiver',
+                                            'message_id',
 
-                                      if email.get('sender'):
-                                          print '\nSender:'
-                                          print '\t{sender}'.format(sender=email['sender'])
+                                        )
+                                        for key in email_list:
+                                            if email.get(key):
+                                                print '\n', key.capitalize().replace('_', ' ')
+                                                print '\t', email[key]
 
-                                      if email.get('receiver'):
-                                          print '\nReceiver:'
-                                          print '\t{receiver}'.format(receiver=email['receiver'])
-
-                                      if email.get('message_id'):
-                                          print '\nMessage id:'
-                                          print '\t{message_id}'.format(message_id=email['message_id'])
-
-                                      if email.get('message'):
-                                          print '\nMessage:'
-                                          if email['message'] is not None:
-                                            for line in email['message'].split('\n'):
-                                                print line.strip()
+                                        if email.get('message'):
+                                            print '\nMessage:'
+                                            if email['message'] is not None:
+                                              for line in email['message'].split('\n'):
+                                                  print line.strip()
 
                     if jdata.get('total') and kwargs.get('verbose'):
-                        print '\nDetections:\n\t{positives}/{total} Positives/Total\n'.format(positives=jdata['positives'], total=jdata['total'])
+                        print '\n[+] Detections:\n\t{positives}/{total} Positives/Total\n'.format(positives=jdata['positives'], total=jdata['total'])
 
                     if jdata.get('scans') and kwargs.get('verbose'):
 
@@ -2680,6 +2752,7 @@ def main():
         allinfo_opt.add_argument('-wir', '--wireshark-info', action='store_true', help='Get Wireshark info')
         allinfo_opt.add_argument('-rbgi', '--rombios-generator-info', action='store_true', help='Get RomBios generator info')
         allinfo_opt.add_argument('-rbi', '--rombioscheck-info', action='store_true', help='Get RomBiosCheck info')
+        allinfo_opt.add_argument('-agi', '--androidguard-info', action='store_true', help='Get AndroidGuard info')
 
     opt.add_argument('-ac', '--add-comment', action='store_true', help='The actual review, you can tag it using the "#" twitter-like syntax (e.g. #disinfection #zbot) and reference users using the "@" syntax (e.g. @VirusTotalTeam). supported hashes MD5/SHA1/SHA256')
     opt.add_argument('-gc', '--get-comments', action='store_true', help='Either a md5/sha1/sha256 hash of the file or the URL itself you want to retrieve')

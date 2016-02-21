@@ -4,6 +4,8 @@
 * Firmware information added
     * -rbgi, --rombios-generator-info
     * -rbi, --rombioscheck-info
+* AndroidGuard info
+    * -agi, --androidguard-info 
 
 **14.02.2016**
 
