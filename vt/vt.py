@@ -10,7 +10,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.2.3'
+__version__ = '2.1.3.0'
 __license__ = 'For fun :)'
 
 import os
@@ -527,33 +527,26 @@ class vtAPI():
                         jsondump(jdata, name)
 
                     if kwargs.get('verbose'):
-                        if jdata.get('md5'):
-                            print '\nMD5    : {md5}'.format(md5=jdata.get('md5'))
-                        if jdata.get('vhash'):
-                            print '\nVHash  : {md5}'.format(md5=jdata.get('vhash'))
-                        if jdata.get('sha1'):
-                            print 'SHA1   : {sha1}'.format(sha1=jdata.get('sha1'))
-                        if jdata.get('sha256'):
-                            print 'SHA256 : {sha256}'.format(sha256=jdata.get('sha256'))
-                        if jdata.get('ssdeep'):
-                            print 'SSDEEP : {ssdeep}'.format(ssdeep=jdata.get('ssdeep'))
 
-                        if jdata.get('scan_date'):
-                            print '\nScan  Date     : {scan_date}'.format(scan_date=jdata.get('scan_date'))
-                        if jdata.get('first_seen'):
-                            print 'First Submission : {first_seen}'.format(first_seen=jdata.get('first_seen'))
-                        if jdata.get('last_seen'):
-                            print 'Last  Submission : {last_seen}'.format(last_seen=jdata.get('last_seen'))
-                        if jdata.get('times_submitted'):
-                            print 'Times submitted : {last_seen}'.format(last_seen=jdata.get('times_submitted'))
-                        if jdata.get('scan_id'):
-                            print 'Scan id: {scan}'.format(scan=jdata['scan_id'])
-                        if jdata.get('harmless_votes'):
-                            print 'Harmless votes: {harmless}'.format(harmless=jdata['harmless_votes'])
-                        if jdata.get('community_reputation'):
-                            print 'Community reputation: {community}'.format(community=jdata['community_reputation'])
-                        if jdata.get('malicious_votes'):
-                            print 'Malicious votes: {community}'.format(community=jdata['malicious_votes'])
+                        basic_file_info_list = (
+                          'md5',
+                          'sha1',
+                          'sha256',
+                          'ssdeep',
+                          'scan_date',
+                          'first_seen',
+                          'last_seen',
+                          'times_submitted',
+                          'scan_id',
+                          'harmless_votes',
+                          'community_reputation',
+                          'malicious_votes',
+                        )
+
+                        for key in basic_file_info_list:
+                            if jdata.get(key):
+                                print '\n', key.capitalize().replace('_', ' ')
+                                print '\t', jdata.get(key)
 
                     if jdata.get('submission_names') and ((kwargs.get('submission_names') or 'submission_names' in args) or kwargs.get('verbose')):
                       if kwargs.get('return_json'):
@@ -575,38 +568,189 @@ class vtAPI():
                                   print '\t{itw_url}'.format(itw_url=itw_url)
 
                     if kwargs.get('verbose'):
-                        if jdata.get('type') and kwargs.get('verbose'):
-                            print '\nFile Type : {type_f}'.format(type_f=jdata['type'])
-
-                        if jdata.get('size') and kwargs.get('verbose'):
-                            print 'File Size : {size}'.format(size=jdata['size'])
-
-                        if jdata.get('tags') and kwargs.get('verbose'):
-                            print 'Tags: {tags}'.format(tags=', '.join(map(lambda tag: tag, jdata['tags'])))
-
-                        if jdata.get('unique_sources') and kwargs.get('verbose'):
-                            print 'Unique sources : {size}'.format(size=jdata['unique_sources'])
+                        file_info_list = (
+                            'type',
+                            'size',
+                            'tags',
+                            'unique_sources',
+                        )
+                        for key in file_info_list:
+                            if jdata.get(key):
+                                print '\n', key.capitalize().replace('_', ' ')
+                                if isinstance(jdata[key], list):
+                                    print '\t', '\n\t'.join(jdata[key])
+                                else:
+                                    print '\t', jdata.get(key)
 
                     if jdata.get('additional_info'):
-                        if jdata['additional_info'].get('magic') and kwargs.get('verbose'):
-                            print '\tMagic : {magic}'.format(magic=jdata['additional_info']['magic'])
+                        add_info_list = (
+                            'magic',
+                            'trid',
+                            'first_seen_itw',
+                            'compressed_parents',
+                            'trendmicro-housecall-heuristic',
+                            'deepguard',
+                            'unique_sources',
+                        )
 
-                        if jdata['additional_info'].get('trid') and kwargs.get('verbose'):
-                            print '\nTrID:'
-                            print '\t{trid}'.format(trid=jdata['additional_info']['trid'].replace('\n', '\n\t'))
+                        if kwargs.get('verbose'):
+                            for key in add_info_list:
+                                if jdata['additional_info'].get(key):
+                                    print '\n', key.capitalize().replace('_', ' ')
+                                    print '\t', jdata['additional_info'][key].replace('\n', '\n\t')
 
-                        #if jdata['additional_info'].get('rombioscheck') and kwargs.get('verbose'):
-                        #    print '\t RomBiosCheck'
-                        #    print '\t'
+                        if jdata['additional_info'].get('rombioscheck') and (kwargs.get('rombioscheck_info') or 'rombioscheck_info' in args) or kwargs.get('verbose'):
+                            if kwargs.get('return_json'):
+                                return_json['rombioscheck'] = jdata['additional_info'].get('rombioscheck')
+                            else:
+                                print '\n[+] RomBiosCheck:'
+                                print '\t'
 
-                        if jdata['additional_info'].get('trendmicro-housecall-heuristic') and kwargs.get('verbose'):
-                            print '\tTrendmicro housecall heuristic : {trend}'.format(trend=jdata['additional_info']['trendmicro-housecall-heuristic'])
+                                # this removes code duplication
+                                single_keys = (
+                                    'contained_hash',
+                                    'executable_file',
+                                    'firmware_volume_count',
+                                    'max_tree_level', 'format',
+                                    'raw_objects',
+                                    'raw_sections',
+                                    'section_count',
+                                    'vhash',
+                                    'win32_file',
+                                )
 
-                        if jdata['additional_info'].get('deepguard') and kwargs.get('verbose'):
-                            print '\tDeepguard : {deepguard}'.format(deepguard=jdata['additional_info']['deepguard'])
+                                for key in single_keys:
+                                    if jdata['additional_info']['rombioscheck'].get(key) and kwargs.get('verbose'):
+                                        print '\n', key.capitalize().replace('_', ' ')
+                                        print '\t', jdata['additional_info']['rombioscheck'].get(key)
 
-                        if jdata.get('unique_sources') and kwargs.get('verbose'):
-                            print '\tUnique sources : {size}'.format(size=jdata['unique_sources'])
+                                list_keys = (
+                                    'acpi_tables',
+                                    'nvar_variable_names',
+                                    'tags'
+                                )
+
+                                for key in list_keys:
+                                    if jdata['additional_info']['rombioscheck'].get(key) and kwargs.get('verbose'):
+                                        print '\n', key.capitalize().replace('_', ' ')
+                                        print '\t', '\n\t'.join(jdata['additional_info']['rombioscheck'].get(key))
+
+                                double_list = (
+                                    'apple_data',
+                                    'manufacturer_candidates'
+                                )
+                                for key in double_list:
+                                  if jdata['additional_info']['rombioscheck'].get(key) and kwargs.get('verbose'):
+                                      print '\n', key.capitalize().replace('_', ' ')
+                                      for block in  jdata['additional_info']['rombioscheck'].get(key):
+                                          print '\t', block[0], ':', block[1]
+
+                                simply_dict = (
+                                    'smbios_data',
+                                    'biosinformation',
+                                    'systeminformation'
+                                )
+
+                                for key in simply_dict:
+                                  if jdata['additional_info']['rombioscheck'].get(key) and kwargs.get('verbose'):
+                                      print '\n', key.capitalize().replace('_', ' ')
+                                      plist = [[]]
+                                      for sub_key, value in  jdata['additional_info']['rombioscheck'].get(key).items():
+                                          if isinstance(value, list):
+                                              value = '\n'.join(value)
+                                          plist.append([sub_key, str(value).replace(',', '\n')])
+
+                                      if plist != [[]]:
+                                          pretty_print_special(plist, ['Key', 'Value'], False, ['r', 'l'], kwargs.get('email_template'))
+                                      del plist
+
+
+                                dict_keys = (
+                                    'option_roms',
+                                    'certs'
+                                )
+
+                                for key in dict_keys:
+                                    if jdata['additional_info']['rombioscheck'].get(key) and kwargs.get('verbose'):
+                                        print '\n', key.capitalize().replace('_', ' ')
+
+                                        for block in jdata['additional_info']['rombioscheck'].get(key, {}):
+                                            plist = [[]]
+                                            for key, value in block.items():
+                                                if isinstance(value, list):
+                                                    value = '\n'.join(value)
+                                                plist.append([key, str(value).replace(',', '\n')])
+
+                                            if plist != [[]]:
+                                                pretty_print_special(plist, ['Key', 'Value'], False, ['r', 'l'], kwargs.get('email_template'))
+                                            del plist
+
+                                complex_dict = (
+                                  'win32children',
+                                  'children'
+                                )
+
+                                for key in complex_dict:
+                                    if jdata['additional_info']['rombioscheck'].get(key) and kwargs.get('verbose'):
+                                        print '\n', key.capitalize().replace('_', ' ')
+
+                                        for cert in jdata['additional_info']['rombioscheck'].get(key, {}):
+                                            plist = [[]]
+                                            for key, value in cert.items():
+                                                if key == 'detection_ratio':
+                                                    value = '/'.join([str(num) for num in value])
+                                                if key in ('tags', 'imports'):
+                                                    value = '\n'.join(value)
+                                                if key == 'certs':
+
+                                                    certs = list()
+                                                    for certificates in value:
+                                                        for sub_key, sub_value in certificates.items():
+                                                            if sub_key == 'subject':
+                                                                certs.append('{0}: {1}\n\n----------------'.format(sub_key, sub_value))
+                                                            else:
+                                                                certs.append('{0}: {1}'.format(sub_key, sub_value))
+                                                    value = '\n'.join(certs)
+                                                plist.append([key, value])
+
+                                        if plist != [[]]:
+                                            pretty_print_special(plist, ['Key', 'Value'], [20, 64], ['r', 'l'], kwargs.get('email_template'))
+
+                                        del plist
+
+                        if jdata['additional_info'].get('rombios_generator') and (kwargs.get('rombios_generator_info') or 'rombios_generator_info' in args) or kwargs.get('verbose'):
+
+                            if kwargs.get('return_json'):
+                                return_json['rombios_generator'] = jdata['additional_info'].get('rombios_generator')
+                            else:
+                                print '\n[+] RomBios Generator:'
+                                dict_keys = (
+                                        'source',
+                                )
+
+                                for key in dict_keys:
+                                    if jdata['additional_info']['rombios_generator'].get(key) and kwargs.get('verbose'):
+                                        print '\n', key.capitalize().replace('_', ' ')
+                                        plist = [[]]
+                                        for key, value in jdata['additional_info']['rombios_generator'].get(key, {}).items():
+                                            if isinstance(value, list):
+                                                value = '\n'.join(value)
+                                            plist.append([key, str(value).replace(',', '\n')])
+
+                                        if plist != [[]]:
+                                            pretty_print_special(plist, ['Key', 'Value'], False, ['r', 'l'], kwargs.get('email_template'))
+
+                                        del plist
+
+
+                                if jdata['additional_info']['rombios_generator'].get('diff') and kwargs.get('verbose'):
+                                    pass
+                                    """
+                                    ToDo
+                                     #u'additional_info.rombios_generator.diff.contained',
+                                     #u'additional_info.rombios_generator.diff.missing_children',
+                                     #u'additional_info.rombios_generator.diff.missing_nvar',
+                                    """
 
                         if jdata.get('email_parents') and kwargs.get('verbose'):
                             print '\nEmail parents:'
@@ -615,37 +759,27 @@ class vtAPI():
 
                         if jdata['additional_info'].get('referers') and kwargs.get('verbose'):
                             print '\nReferers:'
-                            for referer in jdata['additional_info']['referers']:
-                                print '\t{referer}'.format(referer=referer)
+                            print '\t', '\n\t'.join(jdata['additional_info']['referers'])
 
                         # IDS, splited to be easily getted throw imported vt as library
-                        if jdata['additional_info'].get('suricata') and (kwargs.get('suricata') or 'suricata' in args) or kwargs.get('verbose'):
-                            if kwargs.get('return_json'):
-                                return_json['suricata'] = jdata['additional_info'].get('suricata')
-                            else:
-                                if jdata['additional_info'].get('suricata', ''):
-                                    print '\n[+] Suricata'
-                                    for rule in jdata['additional_info'].get('suricata'):
-                                        print '\nRule:', rule
-                                        print '\tAlert\n\t\t', jdata['additional_info']['suricata'][rule]['alert']
-                                        print '\tClassification\n\t\t', jdata['additional_info']['suricata'][rule]['classification']
-                                        print '\tDescription:'
-                                        for desc in jdata['additional_info']['suricata'][rule]['destinations']:
-                                            print '\t\t', desc
-
-                        if jdata['additional_info'].get('snort') and (kwargs.get('snort') or 'snort' in args) or kwargs.get('verbose'):
-                            if kwargs.get('return_json'):
-                                return_json['snort'] = jdata['additional_info'].get('snort')
-                            else:
-                                if jdata['additional_info'].get('snort', ''):
-                                    print '\n[+] Snort'
-                                    for rule in jdata['additional_info'].get('snort', ''):
-                                        print '\nRule', rule
-                                        print '\tAlert\n\t\t', jdata['additional_info']['snort'][rule]['alert']
-                                        print '\tClassification\n\t\t', jdata['additional_info']['snort'][rule]['classification']
-                                        print '\tDescription:'
-                                        for desc in jdata['additional_info']['snort'][rule]['destinations']:
-                                            print '\t\t', desc
+                        ids = (
+                          'suricata',
+                          'snort'
+                        )
+                        for key in ids:
+                            if jdata['additional_info'].get(key) and (kwargs.get(key) or key in args) or kwargs.get('verbose'):
+                                if kwargs.get('return_json'):
+                                    return_json[key] = jdata['additional_info'].get(key)
+                                else:
+                                    if jdata['additional_info'].get(key, ''):
+                                        print '\n[+] {}'.format(key.capitalize())
+                                        for rule in jdata['additional_info'].get(key):
+                                            print '\nRule:', rule
+                                            print '\tAlert\n\t\t', jdata['additional_info'][key][rule]['alert']
+                                            print '\tClassification\n\t\t', jdata['additional_info'][key][rule]['classification']
+                                            print '\tDescription:'
+                                            for desc in jdata['additional_info'][key][rule]['destinations']:
+                                                print '\t\t', desc
 
                         if jdata['additional_info'].get('traffic_inspection') and (kwargs.get('traffic_inspection') or 'traffic_inspection' in args) or kwargs.get('verbose'):
                             if kwargs.get('return_json'):
@@ -1487,39 +1621,33 @@ class vtAPI():
                 if jdata.get('verbose_msg') and not (kwargs.get('return_json') or kwargs.get('return_raw')) and kwargs.get('verbose'):
                     print '\n[+] IP:', ip
 
-                if jdata.get('asn') and ((kwargs.get('asn') or 'asn' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'asn':jdata['asn']})
-                    else:
-                        print '\n[+] ASN: {0}'.format(jdata['asn'])
+                simple_list = (
+                    'asn',
+                    'as_owner',
+                    'country',
+                )
 
-                if jdata.get('as_owner') and ((kwargs.get('as_owner') or 'as_owner' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'as_owner':jdata['as_owner']})
-                    else:
-                        print '\n[+] AS owner: {0}'.format(jdata['as_owner'])
-
-                if jdata.get('country') and ((kwargs.get('country') or 'country' in args)  or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'country':jdata['country']})
-                    else:
-                        print '\n[+] Country: {0}'.format(jdata['country'])
+                for key in simple_list:
+                    if jdata.get(key) and ((kwargs.get(key) or key in args) or kwargs.get('verbose')):
+                        if kwargs.get('return_json'):
+                            return_json.update({key:jdata[key]})
+                        else:
+                            print '\n[+] {0}\n\t{1}'.format(key.capitalize().replace('_', ''), jdata.get(key))
 
                 if kwargs.get('return_json'):
-                    return_json.update(self.print_results(jdata, *args, **kwargs))
+                    return_json.update(self.detected_samples(jdata, *args, **kwargs))
                 else:
-                    return_json = self.print_results(jdata, *args, **kwargs)
+                    return_json = self.detected_samples(jdata, *args, **kwargs)
 
-                if jdata.get('resolutions') and ((kwargs.get('passive_dns') or 'passive_dns' in args) or kwargs.get('verbose')):
+                if jdata.get('resolutions') and ((kwargs.get('resolutions') or 'resolutions' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
-                        return_json.update({'passive_dns':jdata['resolutions']})
+                        return_json.update({'resolutions':jdata['resolutions']})
                     else:
                         print '\n[+] Lastest domain resolved\n'
                         pretty_print(sorted(jdata['resolutions'], key=methodcaller(
                             'get', 'last_resolved'), reverse=True), ['last_resolved', 'hostname'],
                             False, False, kwargs.get('email_template')
                         )
-
 
                 if kwargs.get('dump') is True:
                     md5_hash = hashlib.md5(name).hexdigest()
@@ -1532,6 +1660,7 @@ class vtAPI():
         """
         Get domain last scan, detected urls and resolved IPs
         """
+
         return_json = dict()
         jdatas = list()
         try:
@@ -1540,9 +1669,11 @@ class vtAPI():
                 jdatas = [load_file(name)]
                 kwargs['dump'] = False
                 md5_hash = ''
+
         except IndexError:
             print '[-] Something going wrong'
             return
+
         if not jdatas:
             if isinstance(kwargs.get('value'), list) and len(kwargs.get('value')) == 1:
                     pass
@@ -1569,108 +1700,69 @@ class vtAPI():
             if jdata.get('response_code') and jdata['response_code'] == 1:
                 if jdata.get('verbose_msg') and not (kwargs.get('return_json') or kwargs.get('return_raw')) and kwargs.get('verbose'):
                     print '\n[+] Domain:', domain
-                if jdata.get('categories') and ((kwargs.get('categories') or 'categories' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'categories': jdata['categories']})
-                    else:
-                        print '\n[+] Categories'
-                        print '\t{0}'.format('\n\t'.join(jdata['categories']))
-                if jdata.get('TrendMicro category') and ((kwargs.get('trendmicro') or 'trendmicro' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'trendmicro': jdata['TrendMicro category']})
-                    else:
-                        print '\n[+] TrendMicro category'
-                        print '\t', jdata['TrendMicro category']
-                if jdata.get('Websense ThreatSeeker category') and ((kwargs.get('websense_threatseeker') or 'websense_threatseeker' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'websense_threatseeker': jdata['Websense ThreatSeeker category']})
-                    else:
-                        print '\n[+] Websense ThreatSeeker category'
-                        print '\t', jdata['Websense ThreatSeeker category']
-                if jdata.get('BitDefender category') and ((kwargs.get('bitdefender') or 'bitdefender' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'bitdefender': jdata['BitDefender category']})
-                    else:
-                        print '\n[+] BitDefender category'
-                        print '\t', jdata['BitDefender category']
-                if jdata.get('Dr.Web category') and ((kwargs.get('drweb_cat') or 'drweb_cat' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'drweb_cat': jdata['Dr.Web category']})
-                    else:
-                        print '\n[+] Dr.Web category'
-                        print '\t', jdata['Dr.Web category']
-                if jdata.get('Alexa domain info') and ((kwargs.get('alexa_domain_info') or 'alexa_domain_info' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'alexa_domain_info': jdata['Alexa domain info']})
-                    else:
-                        print '\n[+] Alexa domain info'
-                        print '\t', jdata['Alexa domain info']
-                if jdata.get('Alexa category')  and ((kwargs.get('alexa_cat') or 'alexa_cat' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'alexa_cat': jdata['Alexa category']})
-                    else:
-                        print '\n[+] Alexa category'
-                        print '\t', jdata['Alexa category']
-                if jdata.get('Alexa rank') and ((kwargs.get('alexa_rank') or 'alexa_rank' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'alexa_rank': jdata['Alexa rank']})
-                    else:
-                        print '\n[+] Alexa rank:'
-                        print '\t', jdata['Alexa rank']
-                if jdata.get('Opera domain info') and ((kwargs.get('opera_info') or 'opera_info' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'opera_info': jdata['Opera domain info']})
-                    else:
-                        print '\n[+] Opera domain info'
-                        print '\t', jdata['Opera domain info']
-                if jdata.get('WOT domain info') and ((kwargs.get('wot_domain_info') or 'wot_domain_info' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'wot_domain_info': jdata['WOT domain info']})
-                    else:
-                        print '\n[+] WOT domain info'
-                        plist = [[]]
-                        for jdata_part in jdata['WOT domain info']:
-                            plist.append(
-                                [jdata_part, jdata['WOT domain info'][jdata_part]])
-                        pretty_print_special(
-                            plist, ['Name', 'Value'], [25, 20], ['c', 'c'], kwargs.get('email_template'))
-                        del plist
-                if jdata.get('Webutation domain info') and ((kwargs.get('webutation_domain') or 'webutation_domain' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'webutation_domain': jdata['Webutation domain info']})
-                    else:
-                        print "\n[+] Webutation"
-                        plist = [[]]
-                        for jdata_part in jdata['Webutation domain info']:
-                            plist.append(
-                                [jdata_part, jdata['Webutation domain info'][jdata_part]]
-                                )
-                        pretty_print_special(
-                            plist, ['Name', 'Value'], [25, 20], ['c', 'c'], kwargs.get('email_template'))
-                        del plist
+
+                single_dict = (
+                    'categories',
+                    'TrendMicro category',
+                    'Dr.Web category',
+                    'BitDefender category',
+                    'Websense ThreatSeeker category',
+                    'Alexa category',
+                    'Alexa domain info',
+                    'Alexa rank',
+                    'Opera domain info',
+                    'subdomains',
+                    'domain_siblings',
+                )
+
+                complicated_dict = (
+                     'WOT domain info',
+                     'Webutation domain info',
+                     'resolutions'
+                )
+
+                for key in single_dict:
+                    if jdata.get(key) and ((kwargs.get(key) or key in args) or kwargs.get('verbose')):
+                        if kwargs.get('return_json'):
+                            return_json.update({key: jdata[key]})
+                        else:
+                            print '\n[+]', key.capitalize().replace('_', ' ')
+                            if isinstance(jdata[key], list):
+                                print '\t', '\n\t'.join(jdata[key])
+                            elif key == 'whois_timestamp':
+                                print '\t{0}'.format(datetime.fromtimestamp(float(jdata[key])).strftime('%Y-%m-%d %H:%M:%S'))
+                            else:
+                                print '\t{0}'.format(jdata[key])
+
+                for key in complicated_dict:
+                    if jdata.get(key) and ((kwargs.get(key) or key in args) or kwargs.get('verbose')):
+                        if kwargs.get('return_json'):
+                            return_json.update({key: jdata[key]})
+                        else:
+                            print '\n[+]', key.capitalize().replace('_', ' ')
+                            plist = [[]]
+                            for jdata_part in jdata[key]:
+                                plist.append([jdata_part, jdata[key][jdata_part]])
+                            pretty_print_special(plist, ['Name', 'Value'], [25, 20], ['c', 'c'], kwargs.get('email_template'))
+                            del plist
+
                 if jdata.get('whois') and ((kwargs.get('whois') or 'whois' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
                         return_json.update({'whois': jdata['whois']})
                     else:
-                        print '\n[+] Whois data:'
+                        print '\n[+] Whois data:\n'
                         try:
-                            print '\n\t', jdata['whois'].replace('\n', '\n\t')
+                            print '\t', jdata['whois'].replace('\n', '\n\t')
                         except:
                             try:
-                                print '\n\t', jdata['whois'].encode('utf-8', 'replace').replace('\n', '\n\t')
+                                print '\t', jdata['whois'].encode('utf-8', 'replace').replace('\n', '\n\t')
                             except:
                                 print 'Old version of python has some problems with converting chars to ansii'
-                if  jdata.get('whois_timestamp') and ((kwargs.get('whois_timestamp') or 'whois_timestamp' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'whois_timestamp': jdata['whois_timestamp']})
-                    else:
-                        print '\n[+] Whois timestamp:'
-                        print '\t{0}'.format(datetime.fromtimestamp(float(jdata['whois_timestamp'])).strftime('%Y-%m-%d %H:%M:%S'))
 
                 if kwargs.get('return_json'):
-                    return_json.update(self.print_results(jdata, *args, **kwargs))
+                    return_json.update(self.detected_samples(jdata, *args, **kwargs))
                 else:
-                    return_json = self.print_results(jdata, *args, **kwargs)
+                    return_json = self.detected_samples(jdata, *args, **kwargs)
 
                 if jdata.get('pcaps') and ((kwargs.get('pcaps') or 'pcaps' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
@@ -1678,6 +1770,7 @@ class vtAPI():
                     else:
                         print '\n'
                         pretty_print(jdata['pcaps'], ['pcaps'], [70], ['c'], kwargs.get('email_template'))
+
                 if jdata.get('resolutions') and ((kwargs.get('passive_dns') or 'passive_dns' in args)  or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
                         return_json.update({'passive_dns': jdata['resolutions']})
@@ -1690,25 +1783,15 @@ class vtAPI():
                             ['c', 'c'],
                             kwargs.get('email_template')
                             )
-                if kwargs.get('walk'):
+
+                if kwargs.get('walk') and jdata.get('resolutions'):
                     filter_ip = list()
                     for ip in sorted(jdata['resolutions'], key=methodcaller('get', 'last_resolved'), reverse=True):
                         if ip['ip_address'] not in filter_ip:
                             print '\n\n[+] Checking data for ip: {0}'.format(ip['ip_address'])
                             kwargs['value'] = ip['ip_address']
                             self.getIP(**kwargs)
-                if jdata.get('subdomains') and ((kwargs.get('subdomains') or 'subdomains' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'subdomains': jdata['subdomains']})
-                    else:
-                        print '\n[+] Subdomains:'
-                        print '\t{0}'.format('\n\t'.join(jdata['subdomains']))
-                if jdata.get('domain_siblings') and ((kwargs.get('domain_siblings') or 'domain_siblings' in args) or kwargs.get('verbose')):
-                    if kwargs.get('return_json'):
-                        return_json.update({'domain_siblings': jdata['domain_siblings']})
-                    else:
-                        print '\n[+] Domain siblings:'
-                        print '\t{0}'.format('\n\t'.join(jdata['domain_siblings']))
+
                 if kwargs.get('dump') is True:
                     md5_hash = hashlib.md5(name).hexdigest()
                     jsondump(jdata, md5_hash)
@@ -1759,12 +1842,18 @@ class vtAPI():
             return
         if jdata.get('verbose_msg'):
             print '\nStatus : {verb_msg}'.format(verb_msg=jdata['verbose_msg'])
-        if jdata.get('size_top200'):
-            print '\n\tSize top 200   : {size_top200}'.format(size_top200=jdata['size_top200'])
-        if jdata.get('num_clusters'):
-            print '\tNum Clusters   : {num_clusters}'.format(num_clusters=jdata['num_clusters'])
-        if jdata.get('num_candidates'):
-            print '\tNum Candidates : {num_candidates}'.format(num_candidates=jdata['num_candidates'])
+
+        simple_list = (
+            'size_top200',
+            'num_clusters',
+
+        )
+
+        for key in simple_list:
+            if jdata.get(key):
+                print '\n\t', key.capitalize().repalce('_', ' ')
+                print '\n\t', jdata.get(key)
+
         if jdata.get('clusters'):
             plist = [[]]
             for line in jdata['clusters']:
@@ -2158,86 +2247,89 @@ class vtAPI():
             if kwargs.get('return_raw'):
                 return jdata
 
-        for vt_file in jdata:
-                if vt_file.get('response_code') and (vt_file['response_code'] == 0 or vt_file['response_code'] == -1):
-                    if jdata.get('verbose_msg'):
-                        print '\n[!] Status : {verb_msg}\n'.format(verb_msg=vt_file['verbose_msg'])
-                        return
+        simple_list = (
+            'md5',
+            'sha1',
+            'sha256',
+            'size',
+            'filetype',
+            'source_id',
+            'first_seen',
+            'last_seen',
+            'scan_date',
+            'score',
+            'timestamp',
+            'url'
+        )
 
-                if kwargs.get('action') == 'file':
-                    try:
-                        if vt_file.get('name'):
-                            print '\n\nName   : {name}'.format(name=vt_file['name'])
-                    except UnicodeEncodeError:
-                        print ''
-                    if vt_file.get('md5'):
-                        print 'MD5    : {md5}'.format(md5=vt_file['md5'])
-                    if vt_file.get('sha1'):
-                        print 'SHA1   : {sha1}'.format(sha1=vt_file['sha1'])
-                    if vt_file.get('sha256'):
-                        print 'SHA256 : {sha256}'.format(sha256=vt_file['sha256'])
-                    if vt_file.get('filetype'):
-                        print '\nType   : {filetype}'.format(filetype=vt_file['filetype'])
-                    if vt_file.get('size'):
-                        print 'Size   : {size}'.format(size=vt_file['size'])
-                    if vt_file.get('source_id'):
-                        print 'Source Id  : {source_id}'.format(source_id=vt_file['source_id'])
-                    if vt_file.get('first_seen'):
-                        print 'First Seen : {first_seen}'.format(first_seen=vt_file['first_seen'])
-                    if vt_file.get('last_seen'):
-                        print 'Last  Seen : {last_seen}'.format(last_seen=vt_file['last_seen'])
-                    if vt_file.get('report'):
-                        plist = [[]]
-                        for key in vt_file['report']:
-                            plist.append(
-                              [key, 'True' if jdata[0]['report'][key][0] else 'False', jdata[0]['report'][key][1], jdata[0]['report'][key][2]]
-                            )
+        for vt_file in jdata:
+            if vt_file.get('response_code') and (vt_file['response_code'] == 0 or vt_file['response_code'] == -1):
+                if jdata.get('verbose_msg'):
+                    print '\n[!] Status : {verb_msg}\n'.format(verb_msg=vt_file['verbose_msg'])
+                    return
+
+            if kwargs.get('action') == 'file':
+                for key in simple_list:
+                    if vt_file.get(key):
+                        try:
+                            print '\n\n', key.capitalize().replace('_', ' ')
+                            print vt_file[key]
+                        except UnicodeEncodeError:
+                            print ''
+
+                if vt_file.get('report'):
+                    plist = [[]]
+                    for key in vt_file['report']:
+                        plist.append(
+                        [key, 'True' if jdata[0]['report'][key][0] else 'False', jdata[0]['report'][key][1], jdata[0]['report'][key][2]]
+                        )
                         pretty_print_special(
                             plist, ['Vendor name', 'Detection', 'Version', 'Update'], False, False, kwargs.get('email_template'))
-                    if vt_file.get('link'):
-                        print '\nLink : {link}'.format(link=vt_file['link'])
 
-                elif kwargs.get('action') == 'url':
-                    if vt_file.get('scan_date'):
-                        print '\nScan Date : {scan_date}'.format(scan_date=vt_file['scan_date'])
-                    if vt_file.get('last_seen'):
-                        print 'Last Seen : {last_seen}'.format(last_seen=vt_file['last_seen'])
-                    if vt_file.get('positives') and vt_file.get('total'):
-                        print '\nDetections:\n\t{positives}/{total} Positives/Total\n'.format(positives=vt_file['positives'], total=vt_file['total'])
-                    if vt_file.get('score'):
-                        print 'Score     : {score}'.format(score=vt_file['score'])
-                    if vt_file.get('url'):
-                        print 'Url       : {url}'.format(url=vt_file['url'])
-                    if vt_file.get('timestamp'):
-                        print 'Timestamp : {timestamp}'.format(timestamp=vt_file['timestamp'])
-                    if vt_file.get('additional_info'):
-                        print '\n\nAdditional info:'
-                        plist = [[]]
+                if vt_file.get('link'):
+                    print '\nLink : {link}'.format(link=vt_file['link'])
 
-                        for key in vt_file['additional_info']:
-                            if isinstance(vt_file['additional_info'][key], dict):
-                                plist.append([key, ''.join(map(lambda key_temp:'{key_temp}:{value}\n'.format(
-                                    key_temp=key_temp, value=vt_file['additional_info'][key][key_temp]), vt_file['additional_info'][key]))])
-                            elif isinstance(vt_file['additional_info'][key], list):
-                                plist.append(
-                                    [key, '\n'.join(vt_file['additional_info'][key])])
-                            else:
-                                plist.append([key, vt_file['additional_info'][key]])
-                        pretty_print_special(plist, ['Name', 'Value'], [40, 70], False, kwargs.get('email_template'))
+            elif kwargs.get('action') == 'url':
 
-                    if vt_file.get('scans'):
-                        plist = [[]]
-                        for key in vt_file['scans']:
-                            plist.append([key, 'True' if vt_file['scans'][key]['detected'] else 'False', vt_file['scans'][key]['result']])
-                        if plist != [[]]:
-                            pretty_print_special(plist, ['Vendor name', 'Detection', 'Result'], False, False, kwargs.get('email_template'))
+                for key in simple_list:
+                    if vt_file.get(key):
+                        try:
+                            print '\n\n', key.capitalize().replace('_', ' ')
+                            print vt_file[key]
+                        except UnicodeEncodeError:
+                            print ''
+                print '\nDetections:\n\t{positives}/{total} Positives/Total\n'.format(positives=vt_file.get('positives', 0), total=vt_file.get('total'))
+
+                if vt_file.get('additional_info'):
+                    print '\n\nAdditional info:'
+                    plist = [[]]
+
+                for key in vt_file['additional_info']:
+                    if isinstance(vt_file['additional_info'][key], dict):
+                        plist.append([key, ''.join(map(lambda key_temp:'{key_temp}:{value}\n'.format(
+                            key_temp=key_temp, value=vt_file['additional_info'][key][key_temp]), vt_file['additional_info'][key]))])
+                    elif isinstance(vt_file['additional_info'][key], list):
+                        plist.append(
+                            [key, '\n'.join(vt_file['additional_info'][key])])
+                    else:
+                        plist.append([key, vt_file['additional_info'][key]])
+                pretty_print_special(plist, ['Name', 'Value'], [40, 70], False, kwargs.get('email_template'))
+
+                if vt_file.get('scans'):
+                    plist = [[]]
+                    for key in vt_file['scans']:
+                        plist.append([key, 'True' if vt_file['scans'][key]['detected'] else 'False', vt_file['scans'][key]['result']])
+
+                    if plist != [[]]:
+                        pretty_print_special(plist, ['Vendor name', 'Detection', 'Result'], False, False, kwargs.get('email_template'))
+
                     if vt_file.get('permalink'):
                         print '\nPermanent link : {link}\n'.format(link=vt_file['permalink'])
 
-                if kwargs.get('dump'):
-                    jsondump(jdata, 'distribution_{date}'.format(
-                        date=time.strftime("%Y-%m-%d"))
-                    )
+            if kwargs.get('dump'):
+                jsondump(jdata, 'distribution_{date}'.format(
+                    date=time.strftime("%Y-%m-%d"))
+                )
 
     def behaviour(self, *args,  **kwargs):
 
@@ -2309,7 +2401,7 @@ class vtAPI():
                         return_json.update({'dns': jdata['network']['dns']})
                     else:
                         print '\nDNS requests\n'
-                        pretty_print(jdata['network']['dns'],   ['ip', 'hostname'], False, False, kwargs.get('email_template'))
+                        pretty_print(jdata['network']['dns'], ['ip', 'hostname'], False, False, kwargs.get('email_template'))
 
                 if jdata['network'].get('tcp'):
                     if kwargs.get('return_json'):
@@ -2449,7 +2541,7 @@ class vtAPI():
         if kwargs.get('return_json'):
             return return_json
 
-    def print_results(self, jdata, *args,  **kwargs):
+    def detected_samples(self, jdata, *args,  **kwargs):
 
         if kwargs.get('samples') or 'samples' in args:
               kwargs['detected_downloaded_samples'] = \
@@ -2459,54 +2551,26 @@ class vtAPI():
               kwargs['detected_communicated'] = \
               kwargs['undetected_communicated'] = True
 
+
+        simple_list = (
+            'detected_downloaded_samples',
+            'undetected_downloaded_samples',
+            'detected_communicating_samples',
+            'undetected_communicating_samples',
+            'detected_referrer_samples',
+            'undetected_referrer_samples',
+        )
+
         return_json = dict()
-        if jdata.get('detected_downloaded_samples') and ((kwargs.get('detected_downloaded_samples') or 'detected_downloaded_samples' in args) or kwargs.get('verbose')):
-            if kwargs.get('return_json'):
-                return_json.update({'detected_downloaded_samples': jdata['detected_downloaded_samples']})
-            else:
-                print '\n[+] Latest detected files that were downloaded from this domain/ip\n'
-                pretty_print(sorted(jdata['detected_downloaded_samples'], key=methodcaller('get', 'date'), reverse=True), [
-                             'positives', 'total', 'date', 'sha256'], [15, 10, 20, 70], ['c', 'c', 'c', 'c'], kwargs.get('email_template'))
 
-        if jdata.get('undetected_downloaded_samples') and ((kwargs.get('undetected_downloaded_samples') or 'undetected_downloaded_samples' in args) or kwargs.get('verbose')):
-            if kwargs.get('return_json'):
-                return_json.update({'undetected_downloaded_samples': jdata['undetected_downloaded_samples']})
-            else:
-                print '\n[+] Latest undetected files that were downloaded from this domain/ip\n'
-                pretty_print(sorted(jdata['undetected_downloaded_samples'], key=methodcaller('get', 'date'), reverse=True), [
-                             'positives', 'total', 'date', 'sha256'], [15, 10, 20, 70], ['c', 'c', 'c', 'c'], kwargs.get('email_template'))
-
-        if jdata.get('detected_communicating_samples') and ((kwargs.get('detected_communicated') or 'detected_communicated' in args) or kwargs.get('verbose')):
-            if kwargs.get('return_json'):
-                return_json.update({'detected_communicating_samples': jdata['detected_communicating_samples']})
-            else:
-                print '\n[+] Latest detected files that communicate with this domain/ip\n'
-                pretty_print(sorted(jdata['detected_communicating_samples'], key=methodcaller('get', 'scan_date'), reverse=True), [
-                             'positives', 'total', 'date', 'sha256'], [15, 10, 20, 70], ['c', 'c', 'c', 'c'], kwargs.get('email_template'))
-
-        if jdata.get('undetected_communicating_samples') and ((kwargs.get('undetected_communicating_samples') or 'undetected_communicating_samples' in args) or kwargs.get('verbose')):
-            if kwargs.get('return_json'):
-                return_json.update({'undetected_communicating_samples': jdata['undetected_communicating_samples']})
-            else:
-                print '\n[+] Latest undetected files that communicate with this domain/ip\n'
-                pretty_print(sorted(jdata['undetected_communicating_samples'], key=methodcaller('get', 'date'), reverse=True), [
-                             'positives', 'total', 'date', 'sha256'], [15, 10, 20, 70], ['c', 'c', 'c', 'c'], kwargs.get('email_template'))
-
-        if jdata.get('detected_referrer_samples') and ((kwargs.get('detected_referrer_samples') or 'detected_referrer_samples' in args) or kwargs.get('verbose')):
-            if kwargs.get('return_json'):
-                return_json.update({'detected_referrer_samples': jdata['detected_referrer_samples']})
-            else:
-                print '\n[+] Latest detected referrer files\n'
-                pretty_print(sorted(jdata['detected_referrer_samples']), [
-                             'positives', 'total',  'sha256'], [15, 10, 70], ['c', 'c', 'c'], kwargs.get('email_template'))
-
-        if jdata.get('undetected_referrer_samples') and ((kwargs.get('undetected_referrer_samples') or 'undetected_referrer_samples' in args) or kwargs.get('verbose')):
-            if kwargs.get('return_json'):
-                return_json.update({'undetected_referrer_samples': jdata['undetected_referrer_samples']})
-            else:
-                print '\n[+] Latest undetected referrer files\n'
-                pretty_print(sorted(jdata['undetected_referrer_samples']), [
-                             'positives', 'total',  'sha256'], [15, 10, 70], ['c', 'c', 'c'], kwargs.get('email_template'))
+        for key in simple_list:
+            if jdata.get(key) and ((kwargs.get(key) or 'key' in args) or kwargs.get('verbose')):
+                if kwargs.get('return_json'):
+                    return_json.update({key: jdata[key]})
+                else:
+                    print '\n[+] {0}\n'.format(key.capitalize().replace('_', ' '))
+                    pretty_print(sorted(jdata[key], key=methodcaller('get', 'date'), reverse=True), [
+                                 'positives', 'total', 'date', 'sha256'], [15, 10, 20, 70], ['c', 'c', 'c', 'c'], kwargs.get('email_template'))
 
         if jdata.get('detected_urls') and ((kwargs.get('detected_urls') or 'detected_urls' in args) or kwargs.get('verbose')):
             if kwargs.get('return_json'):
@@ -2535,7 +2599,6 @@ def read_conf(config_file = False):
                           apikey=your-apikey-here
                           type=public #private if you have private api
                           intelligence=False # True if you have access
-                          engines= #put there coma separated engine list, or only one, or leave it empty
 
                       For more information check:
                           https://github.com/doomedraven/VirusTotalApi
@@ -2589,146 +2652,90 @@ def main():
         global req_timeout
         req_timeout = int(vt_config.get('timeout'))
 
-
-    opt = argparse.ArgumentParser(
-        'value', description='Scan/Search/ReScan/JSON parse')
-    opt.add_argument('-fi', '--file-info', action='store_true',
-        help='Get PE file info, all data extracted offline, for work you need have installed PEUTILS library')
-    opt.add_argument('-udb', '--userdb', action='store',
-        help='Path to your userdb file, works with --file-info option only')
+    opt = argparse.ArgumentParser('value', description='Scan/Search/ReScan/JSON parse')
+    opt.add_argument('-fi', '--file-info', action='store_true', help='Get PE file info, all data extracted offline, for work you need have installed PEUTILS library')
+    opt.add_argument('-udb', '--userdb', action='store', help='Path to your userdb file, works with --file-info option only')
     opt.add_argument('value', nargs='*', help='Enter the Hash, Path to File(s) or Url(s)')
-    opt.add_argument('-fs', '--file-search', action='store_true',
-        help='File(s) search, this option, don\'t upload file to VirusTotal, just search by hash, support linux name wildcard, example: /home/user/*malware*, if file was scanned, you will see scan info, for full scan report use verbose mode, and dump if you want save already scanned samples')
-    opt.add_argument('-f',  '--file-scan', action='store_true', dest='files',
-        help='File(s) scan, support linux name wildcard, example: /home/user/*malware*, if file was scanned, you will see scan info, for full scan report use verbose mode, and dump if you want save already scanned samples')
-    opt.add_argument('-u',  '--url-scan', action='store_true',
-        help='Url scan, support space separated list, Max 4 urls (or 25 if you have private api), but you can provide more urls, for example with public api,  5 url - this will do 2 requests first with 4 url and other one with only 1, or you can specify file filename with one url per line')
-    opt.add_argument('-ur', '--url-report', action='store_true',
-        help='Url(s) report, support space separated list, Max 4 (or 25 if you have private api) urls, you can use --url-report --url-scan options for analysing url(s) if they are not in VT data base, read previev description about more then max limits or file with urls')
-    opt.add_argument('-d', '--domain-info',   action='store_true', dest='domain',
-        help='Retrieves a report on a given domain (PRIVATE API ONLY! including the information recorded by VirusTotal\'s Passive DNS infrastructure)')
-    opt.add_argument('-i', '--ip-info', action='store_true', dest='ip',
-        help='A valid IPv4 address in dotted quad notation, for the time being only IPv4 addresses are supported.')
-    opt.add_argument('-w', '--walk', action='store_true', default=False,
-        help='Work with domain-info, will walk throuth all detected ips and get information, can be provided ip parameters to get only specific information')
-    opt.add_argument('-s', '--search', action='store_true',
-        help='A md5/sha1/sha256 hash for which you want to retrieve the most recent report. You may also specify a scan_id (sha256-timestamp as returned by the scan API) to access a specific report. You can also specify a space separated list made up of a combination of hashes and scan_ids Public API up to 4 items/Private API up to 25 items, this allows you to perform a batch request with one single call.')
-    opt.add_argument('-si', '--search-intelligence', action='store_true',
-        help='Search query, help can be found here - https://www.virustotal.com/intelligence/help/')
-    opt.add_argument('-et', '--email-template', action='store_true',
-        help='Table format template for email')
+    opt.add_argument('-fs', '--file-search', action='store_true', help='File(s) search, this option, don\'t upload file to VirusTotal, just search by hash, support linux name wildcard, example: /home/user/*malware*, if file was scanned, you will see scan info, for full scan report use verbose mode, and dump if you want save already scanned samples')
+    opt.add_argument('-f',  '--file-scan', action='store_true', dest='files',  help='File(s) scan, support linux name wildcard, example: /home/user/*malware*, if file was scanned, you will see scan info, for full scan report use verbose mode, and dump if you want save already scanned samples')
+    opt.add_argument('-u',  '--url-scan', action='store_true', help='Url scan, support space separated list, Max 4 urls (or 25 if you have private api), but you can provide more urls, for example with public api,  5 url - this will do 2 requests first with 4 url and other one with only 1, or you can specify file filename with one url per line')
+    opt.add_argument('-ur', '--url-report', action='store_true', help='Url(s) report, support space separated list, Max 4 (or 25 if you have private api) urls, you can use --url-report --url-scan options for analysing url(s) if they are not in VT data base, read previev description about more then max limits or file with urls')
+    opt.add_argument('-d', '--domain-info',   action='store_true', dest='domain', help='Retrieves a report on a given domain (PRIVATE API ONLY! including the information recorded by VirusTotal\'s Passive DNS infrastructure)')
+    opt.add_argument('-i', '--ip-info', action='store_true', dest='ip', help='A valid IPv4 address in dotted quad notation, for the time being only IPv4 addresses are supported.')
+    opt.add_argument('-w', '--walk', action='store_true', default=False, help='Work with domain-info, will walk throuth all detected ips and get information, can be provided ip parameters to get only specific information')
+    opt.add_argument('-s', '--search', action='store_true',  help='A md5/sha1/sha256 hash for which you want to retrieve the most recent report. You may also specify a scan_id (sha256-timestamp as returned by the scan API) to access a specific report. You can also specify a space separated list made up of a combination of hashes and scan_ids Public API up to 4 items/Private API up to 25 items, this allows you to perform a batch request with one single call.')
+    opt.add_argument('-si', '--search-intelligence', action='store_true', help='Search query, help can be found here - https://www.virustotal.com/intelligence/help/')
+    opt.add_argument('-et', '--email-template', action='store_true', help='Table format template for email')
+
     if vt_config.get('api_type'):
         allinfo_opt = opt.add_argument_group('All information related')
-        allinfo_opt.add_argument('-rai', '--report-all-info', action='store_true',
-            help='If specified and set to one, the call will return additional info, other than the antivirus results, on the file being queried. This additional info includes the output of several tools acting on the file (PDFiD, ExifTool, sigcheck, TrID, etc.), metadata regarding VirusTotal submissions (number of unique sources that have sent the file in the past, first seen date, last seen date, etc.), and the output of in-house technologies such as a behavioural sandbox.')
-        allinfo_opt.add_argument('-itu', '--ITW-urls', action='store_true',
-            help='In the wild urls')
-        allinfo_opt.add_argument('-cw', '--compressedview', action='store_true',
-            help='Contains information about extensions, file_types, tags, lowest and highest datetime, num children detected, type, uncompressed_size, vhash, childrens')
-        allinfo_opt.add_argument('-dep', '--detailed-email-parents', action='store_true',
-            help='Contains information about emails, as Subject, sender, receiver(s), full email, and email hash to download it')
+        allinfo_opt.add_argument('-rai', '--report-all-info', action='store_true', help='If specified and set to one, the call will return additional info, other than the antivirus results, on the file being queried. This additional info includes the output of several tools acting on the file (PDFiD, ExifTool, sigcheck, TrID, etc.), metadata regarding VirusTotal submissions (number of unique sources that have sent the file in the past, first seen date, last seen date, etc.), and the output of in-house technologies such as a behavioural sandbox.')
+        allinfo_opt.add_argument('-itu', '--ITW-urls', action='store_true', help='In the wild urls')
+        allinfo_opt.add_argument('-cw', '--compressedview', action='store_true', help='Contains information about extensions, file_types, tags, lowest and highest datetime, num children detected, type, uncompressed_size, vhash, childrens')
+        allinfo_opt.add_argument('-dep', '--detailed-email-parents', action='store_true', help='Contains information about emails, as Subject, sender, receiver(s), full email, and email hash to download it')
         allinfo_opt.add_argument('-eo', '--email-original', default=False, action='store_true', help='Will retreive original email and process it')
         allinfo_opt.add_argument('-snr', '--snort', action='store_true', help='Get Snort results')
         allinfo_opt.add_argument('-srct', '--suricata', action='store_true', help='Get Suricata results')
-        allinfo_opt.add_argument('-tir', '--traffic-inspection', action='store_true', help='Get Wireshark info')
+        allinfo_opt.add_argument('-tir', '--traffic-inspection', action='store_true', help='Get Traffic inspection info')
         allinfo_opt.add_argument('-wir', '--wireshark-info', action='store_true', help='Get Wireshark info')
+        allinfo_opt.add_argument('-rbgi', '--rombios-generator-info', action='store_true', help='Get RomBios generator info')
+        allinfo_opt.add_argument('-rbi', '--rombioscheck-info', action='store_true', help='Get RomBiosCheck info')
 
-    opt.add_argument('-ac', '--add-comment', action='store_true',
-        help='The actual review, you can tag it using the "#" twitter-like syntax (e.g. #disinfection #zbot) and reference users using the "@" syntax (e.g. @VirusTotalTeam). supported hashes MD5/SHA1/SHA256')
-    opt.add_argument('-gc', '--get-comments', action='store_true',
-        help='Either a md5/sha1/sha256 hash of the file or the URL itself you want to retrieve')
+    opt.add_argument('-ac', '--add-comment', action='store_true', help='The actual review, you can tag it using the "#" twitter-like syntax (e.g. #disinfection #zbot) and reference users using the "@" syntax (e.g. @VirusTotalTeam). supported hashes MD5/SHA1/SHA256')
+    opt.add_argument('-gc', '--get-comments', action='store_true', help='Either a md5/sha1/sha256 hash of the file or the URL itself you want to retrieve')
+
     if vt_config.get('api_type'):
-        opt.add_argument('--get-comments-before', action='store', dest='date', default=False,
-            help='A datetime token that allows you to iterate over all comments on a specific item whenever it has been commented on more than 25 times. Token format 20120725170000 or 2012-07-25 17 00 00 or 2012-07-25 17:00:00')
-    opt.add_argument('-v', '--verbose', action='store_true',
-        dest='verbose', help='Turn on verbosity of VT reports')
-    opt.add_argument('-j', '--dump',    action='store_true',
-        help='Dumps the full VT report to file (VTDL{md5}.json), if you (re)scan many files/urls, their json data will be dumped to separetad files')
-    opt.add_argument('--csv', action='store_true', default = False,
-        help='Dumps the AV\'s detections to file (VTDL{scan_id}.csv)')
-    opt.add_argument('-rr', '--return-raw', action='store_true', default = False,
-        help='Return raw json, in case if used as library and want parse in other way')
-    opt.add_argument('-rj', '--return-json', action='store_true', default = False,
-        help='Return json with parts activated, for example -p for pasive dns, etc')
-    opt.add_argument('-V', '--version', action='store_true', default = False,
-        help='Show version and exit')
+        opt.add_argument('--get-comments-before', action='store', dest='date', default=False, help='A datetime token that allows you to iterate over all comments on a specific item whenever it has been commented on more than 25 times. Token format 20120725170000 or 2012-07-25 17 00 00 or 2012-07-25 17:00:00')
+    opt.add_argument('-v', '--verbose', action='store_true', dest='verbose', help='Turn on verbosity of VT reports')
+    opt.add_argument('-j', '--dump',    action='store_true', help='Dumps the full VT report to file (VTDL{md5}.json), if you (re)scan many files/urls, their json data will be dumped to separetad files')
+    opt.add_argument('--csv', action='store_true', default = False, help='Dumps the AV\'s detections to file (VTDL{scan_id}.csv)')
+    opt.add_argument('-rr', '--return-raw', action='store_true', default = False, help='Return raw json, in case if used as library and want parse in other way')
+    opt.add_argument('-rj', '--return-json', action='store_true', default = False, help='Return json with parts activated, for example -p for pasive dns, etc')
+    opt.add_argument('-V', '--version', action='store_true', default = False,  help='Show version and exit')
+
     rescan = opt.add_argument_group('Rescan options')
-    rescan.add_argument('-r', '--rescan', action='store_true',
-        help='Allows you to rescan files in VirusTotal\'s file store without having to resubmit them, thus saving bandwidth, support space separated list, MAX 25 hashes, can be local files, hashes will be generated on the fly, support linux wildmask')
+    rescan.add_argument('-r', '--rescan', action='store_true', help='Allows you to rescan files in VirusTotal\'s file store without having to resubmit them, thus saving bandwidth, support space separated list, MAX 25 hashes, can be local files, hashes will be generated on the fly, support linux wildmask')
     if vt_config.get('api_type'):
-        rescan.add_argument('--delete',  action='store_true',
-            help='A md5/sha1/sha256 hash for which you want to delete the scheduled scan')
-        rescan.add_argument('--date', action='store', dest='date',
-            help='A Date in one of this formats (example: 20120725170000 or 2012-07-25 17 00 00 or 2012-07-25 17:00:00) in which the rescan should be performed. If not specified the rescan will be performed immediately.')
-        rescan.add_argument('--period', action='store',
-            help='Period in days in which the file should be rescanned. If this argument is provided the file will be rescanned periodically every period days, if not, the rescan is performed once and not repated again.')
-        rescan.add_argument('--repeat', action='store',
-            help='Used in conjunction with period to specify the number of times the file should be rescanned. If this argument is provided the file will be rescanned the given amount of times, if not, the file will be rescanned indefinitely.')
+        rescan.add_argument('--delete',  action='store_true',help='A md5/sha1/sha256 hash for which you want to delete the scheduled scan')
+        rescan.add_argument('--date', action='store', dest='date',help='A Date in one of this formats (example: 20120725170000 or 2012-07-25 17 00 00 or 2012-07-25 17:00:00) in which the rescan should be performed. If not specified the rescan will be performed immediately.')
+        rescan.add_argument('--period', action='store',help='Period in days in which the file should be rescanned. If this argument is provided the file will be rescanned periodically every period days, if not, the rescan is performed once and not repated again.')
+        rescan.add_argument('--repeat', action='store',help='Used in conjunction with period to specify the number of times the file should be rescanned. If this argument is provided the file will be rescanned the given amount of times, if not, the file will be rescanned indefinitely.')
+
     if vt_config.get('api_type'):
         scan_rescan = opt.add_argument_group('File scan/Rescan shared options')
-        scan_rescan.add_argument('--notify-url', action='store',
-            help='An URL where a POST notification should be sent when the scan finishes.')
-        scan_rescan.add_argument('--notify-changes-only', action='store_true',
-            help='Used in conjunction with --notify-url. Indicates if POST notifications should be sent only if the scan results differ from the previous one.')
+        scan_rescan.add_argument('--notify-url', action='store', help='An URL where a POST notification should be sent when the scan finishes.')
+        scan_rescan.add_argument('--notify-changes-only', action='store_true', help='Used in conjunction with --notify-url. Indicates if POST notifications should be sent only if the scan results differ from the previous one.')
 
     domain_opt = opt.add_argument_group(
         'Domain/IP shared verbose mode options, by default just show resolved IPs/Passive DNS')
-    domain_opt.add_argument('-wh',  '--whois', action='store_true', default=False,
-        help='Whois data')
-    domain_opt.add_argument('-wht',  '--whois-timestamp', action='store_true', default=False,
-        help='Whois timestamp')
-    domain_opt.add_argument('-pdn',  '--passive-dns', action='store_true', default=False,
-        help='Passive DNS resolves')
-    domain_opt.add_argument('--asn', action='store_true', default=False,
-        help='ASN number')
-    domain_opt.add_argument('-aso', '--as-owner', action='store_true', default=False,
-        help='AS details')
-    domain_opt.add_argument('--country', action='store_true', default=False,
-        help='Country')
-    domain_opt.add_argument('--subdomains', action='store_true', default=False,
-        help='Subdomains')
-    domain_opt.add_argument('--domain-siblings', action='store_true', default=False,
-        help='Domain siblings')
-    domain_opt.add_argument('-cat','--categories', action='store_true', default=False,
-        help='Categories')
-    domain_opt.add_argument('-alc', '--alexa-cat', action='store_true', default=False,
-        help='Alexa category')
-    domain_opt.add_argument('-alk', '--alexa-rank', action='store_true', default=False,
-        help='Alexa rank')
-    domain_opt.add_argument('-opi', '--opera-info', action='store_true', default=False,
-        help='Opera info')
-    domain_opt.add_argument('--drweb-cat', action='store_true', default=False,
-        help='Dr.Web Category')
-    domain_opt.add_argument('-adi', '--alexa-domain-info', action='store_true',
-        default=False, help='Just Domain option: Show Alexa domain info')
-    domain_opt.add_argument('-wdi', '--wot-domain-info', action='store_true',
-        default=False, help='Just Domain option: Show WOT domain info')
-    domain_opt.add_argument('-tm',  '--trendmicro', action='store_true',
-        default=False, help='Just Domain option: Show TrendMicro category info')
-    domain_opt.add_argument('-wt',  '--websense-threatseeker', action='store_true',
-        default=False, help='Just Domain option: Show Websense ThreatSeeker category')
-    domain_opt.add_argument('-bd',  '--bitdefender', action='store_true',
-        default=False, help='Just Domain option: Show BitDefender category')
-    domain_opt.add_argument('-wd',  '--webutation-domain', action='store_true',
-        default=False, help='Just Domain option: Show Webutation domain info')
-    domain_opt.add_argument('-du',  '--detected-urls', action='store_true',
-        default=False, help='Just Domain option: Show latest detected URLs')
-    domain_opt.add_argument('--pcaps', action='store_true',
-        default=False, help='Just Domain option: Show all pcaps hashes')
-    domain_opt.add_argument('--samples', action='store_true',
-        help='Will activate -dds -uds -dc -uc -drs -urs')
-    domain_opt.add_argument('-dds', '--detected-downloaded-samples',   action='store_true', default=False,
-        help='Domain/Ip options: Show latest detected files that were downloaded from this ip')
-    domain_opt.add_argument('-uds', '--undetected-downloaded-samples', action='store_true', default=False,
-        help='Domain/Ip options: Show latest undetected files that were downloaded from this domain/ip')
-    domain_opt.add_argument('-dc',  '--detected-communicated', action='store_true', default=False,
-        help='Domain/Ip Show latest detected files that communicate with this domain/ip')
-    domain_opt.add_argument('-uc',  '--undetected-communicated', action='store_true', default=False,
-        help='Domain/Ip Show latest undetected files that communicate with this domain/ip')
-    domain_opt.add_argument('-drs', '--detected-referrer-samples', action='store_true', default=False,
-        help='Undetected referrer samples')
-    domain_opt.add_argument('-urs', '--undetected-referrer-samples', action='store_true', default=False,
-        help='Undetected referrer samples')
+    domain_opt.add_argument('-wh',  '--whois', action='store_true', default=False, help='Whois data')
+    domain_opt.add_argument('-wht',  '--whois-timestamp', action='store_true', default=False, help='Whois timestamp')
+    domain_opt.add_argument('-pdn',  '--passive-dns', action='store_true', default=False, help='Passive DNS resolves')
+    domain_opt.add_argument('--asn', action='store_true', default=False, help='ASN number')
+    domain_opt.add_argument('-aso', '--as-owner', action='store_true', default=False, help='AS details')
+    domain_opt.add_argument('--country', action='store_true', default=False, help='Country')
+    domain_opt.add_argument('--subdomains', action='store_true', default=False, help='Subdomains')
+    domain_opt.add_argument('--domain-siblings', action='store_true', default=False, help='Domain siblings')
+    domain_opt.add_argument('-cat','--categories', action='store_true', default=False, help='Categories')
+    domain_opt.add_argument('-alc', '--alexa-cat', action='store_true', default=False, help='Alexa category')
+    domain_opt.add_argument('-alk', '--alexa-rank', action='store_true', default=False, help='Alexa rank')
+    domain_opt.add_argument('-opi', '--opera-info', action='store_true', default=False, help='Opera info')
+    domain_opt.add_argument('--drweb-cat', action='store_true', default=False, help='Dr.Web Category')
+    domain_opt.add_argument('-adi', '--alexa-domain-info', action='store_true', default=False, help='Just Domain option: Show Alexa domain info')
+    domain_opt.add_argument('-wdi', '--wot-domain-info', action='store_true', default=False, help='Just Domain option: Show WOT domain info')
+    domain_opt.add_argument('-tm',  '--trendmicro', action='store_true', default=False, help='Just Domain option: Show TrendMicro category info')
+    domain_opt.add_argument('-wt',  '--websense-threatseeker', action='store_true', default=False, help='Just Domain option: Show Websense ThreatSeeker category')
+    domain_opt.add_argument('-bd',  '--bitdefender', action='store_true', default=False, help='Just Domain option: Show BitDefender category')
+    domain_opt.add_argument('-wd',  '--webutation-domain', action='store_true', default=False, help='Just Domain option: Show Webutation domain info')
+    domain_opt.add_argument('-du',  '--detected-urls', action='store_true', default=False, help='Just Domain option: Show latest detected URLs')
+    domain_opt.add_argument('--pcaps', action='store_true', default=False, help='Just Domain option: Show all pcaps hashes')
+    domain_opt.add_argument('--samples', action='store_true', help='Will activate -dds -uds -dc -uc -drs -urs')
+    domain_opt.add_argument('-dds', '--detected-downloaded-samples',   action='store_true', default=False, help='Domain/Ip options: Show latest detected files that were downloaded from this ip')
+    domain_opt.add_argument('-uds', '--undetected-downloaded-samples', action='store_true', default=False, help='Domain/Ip options: Show latest undetected files that were downloaded from this domain/ip')
+    domain_opt.add_argument('-dc',  '--detected-communicated', action='store_true', default=False, help='Domain/Ip Show latest detected files that communicate with this domain/ip')
+    domain_opt.add_argument('-uc',  '--undetected-communicated', action='store_true', default=False, help='Domain/Ip Show latest undetected files that communicate with this domain/ip')
+    domain_opt.add_argument('-drs', '--detected-referrer-samples', action='store_true', default=False, help='Undetected referrer samples')
+    domain_opt.add_argument('-urs', '--undetected-referrer-samples', action='store_true', default=False, help='Undetected referrer samples')
 
     email_opt = opt.add_argument_group('Process emails')
     email_opt.add_argument('-pe', '--parse-email', action='store_true', default=False, help='Parse email, can be string or file')
@@ -2750,36 +2757,25 @@ def main():
 
     if vt_config.get('api_type') or vt_config.get('intelligence'):
         downloads = opt.add_argument_group('Download options')
-        downloads.add_argument('-dl', '--download',  dest='download', action='store_const', const='file', default=False,
-            help='The md5/sha1/sha256 hash of the file you want to download or txt file with hashes, or hash and type, one by line, for example: hash,pcap or only hash. Will save with hash as name, can be space separated list of hashes to download')
-        downloads.add_argument('-nm', '--name',  action='store', default=False,
-            help='Name with which file will saved when download it')
+        downloads.add_argument('-dl', '--download',  dest='download', action='store_const', const='file', default=False, help='The md5/sha1/sha256 hash of the file you want to download or txt file with hashes, or hash and type, one by line, for example: hash,pcap or only hash. Will save with hash as name, can be space separated list of hashes to download')
+        downloads.add_argument('-nm', '--name',  action='store', default=False, help='Name with which file will saved when download it')
 
     if vt_config.get('api_type'):
         more_private = opt.add_argument_group('Additional options')
-        more_private.add_argument('--pcap', dest='download', action='store_const', const='pcap', default=False,
-            help='The md5/sha1/sha256 hash of the file whose network traffic dump you want to retrieve. Will save as VTDL_hash.pcap')
-        more_private.add_argument('--clusters', action='store_true',
-            help='A specific day for which we want to access the clustering details, example: 2013-09-10')
+        more_private.add_argument('--pcap', dest='download', action='store_const', const='pcap', default=False, help='The md5/sha1/sha256 hash of the file whose network traffic dump you want to retrieve. Will save as VTDL_hash.pcap')
+        more_private.add_argument('--clusters', action='store_true',help='A specific day for which we want to access the clustering details, example: 2013-09-10')
         # more_private.add_argument('--search-by-cluster-id', action='store_true', help=' the id property of each cluster allows users to list files contained in the given cluster, example: vhash 0740361d051)z1e3z 2013-09-10')
-        more_private.add_argument('--distribution-files', action='store_true',
-            help='Timestamps are just integer numbers where higher values mean more recent files. Both before and after parameters are optional, if they are not provided the oldest files in the queue are returned in timestamp ascending order.')
-        more_private.add_argument('--distribution-urls', action='store_true',
-            help='Timestamps are just integer numbers where higher values mean more recent urls. Both before and after parameters are optional, if they are not provided the oldest urls in the queue are returned in timestamp ascending order.')
+        more_private.add_argument('--distribution-files', action='store_true', help='Timestamps are just integer numbers where higher values mean more recent files. Both before and after parameters are optional, if they are not provided the oldest files in the queue are returned in timestamp ascending order.')
+        more_private.add_argument('--distribution-urls', action='store_true', help='Timestamps are just integer numbers where higher values mean more recent urls. Both before and after parameters are optional, if they are not provided the oldest urls in the queue are returned in timestamp ascending order.')
+
     if vt_config.get('api_type'):
         dist = opt.add_argument_group('Distribution options')
-        dist.add_argument('--before', action='store',
-            help='File/Url option. Retrieve files/urls received before the given timestamp, in timestamp descending order.')
-        dist.add_argument('--after', action='store',
-            help='File/Url option. Retrieve files/urls received after the given timestamp, in timestamp ascending order.')
-        dist.add_argument('--reports', action='store_true', default=False,
-            help='Include the files\' antivirus results in the response. Possible values are \'true\' or \'false\' (default value is \'false\').')
-        dist.add_argument('--limit', action='store',
-            help='File/Url option. Retrieve limit file items at most (default: 1000).')
-        dist.add_argument('--allinfo', action='store_true',
-            help='will include the results for each particular URL scan (in exactly the same format as the URL scan retrieving API). If the parameter is not specified, each item returned will onlycontain the scanned URL and its detection ratio.')
-        dist.add_argument('--massive-download', action='store_true',
-            default=False, help='Show information how to get massive download work')
+        dist.add_argument('--before', action='store', help='File/Url option. Retrieve files/urls received before the given timestamp, in timestamp descending order.')
+        dist.add_argument('--after', action='store', help='File/Url option. Retrieve files/urls received after the given timestamp, in timestamp ascending order.')
+        dist.add_argument('--reports', action='store_true', default=False, help='Include the files\' antivirus results in the response. Possible values are \'true\' or \'false\' (default value is \'false\').')
+        dist.add_argument('--limit', action='store', help='File/Url option. Retrieve limit file items at most (default: 1000).')
+        dist.add_argument('--allinfo', action='store_true', help='will include the results for each particular URL scan (in exactly the same format as the URL scan retrieving API). If the parameter is not specified, each item returned will onlycontain the scanned URL and its detection ratio.')
+        dist.add_argument('--massive-download', action='store_true', default=False, help='Show information how to get massive download work')
 
     options = opt.parse_args()
 

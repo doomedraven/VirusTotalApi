@@ -1,3 +1,10 @@
+**21.02.2016**
+
+* Big code clean up round 1
+* Firmware information added
+    * -rbgi, --rombios-generator-info
+    * -rbi, --rombioscheck-info
+
 **14.02.2016**
 
 * New options for pcap files:

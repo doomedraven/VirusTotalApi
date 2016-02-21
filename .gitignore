@@ -1,6 +1,6 @@
-.*
 *.pyc
 *.txt
+new_features/*
 dist/*
 vt.egg-info/PKG-INFO
 
