@@ -64,6 +64,30 @@ except:
 
 req_timeout = 60
 
+class PRINTER(object):
+
+    def print_key(self,  key, indent='\n', separator='[+]'):
+        print '{0}{1} {2}'.format(indent, separator, key.capitalize().replace('_', ' '))
+
+    def simple_print(self, block, simple_list):
+        for key in simple_list:
+            if block.get(key):
+                self.print_key(key)
+                print '\t', block.get(key)
+
+    def list_print(self, block, list_list):
+        for key in list_list:
+            if block.get(key):
+                self.print_key(key)
+                print '\t', '\n\t'.join(block.get(key))
+
+    def dict_print(self, block, dict_list):
+        for key in dict_list:
+            if block.get(key):
+                self.print_key(key)
+                for sub_key, value in block[key].items():
+                    print '\n', sub_key, '\n\t' ,'\n\t'.join(value)
+
 def private_api_access_error():
     print '\n[!] You don\'t have permission for this operation, Looks like you trying to access to PRIVATE API functions\n'
     sys.exit()
@@ -435,9 +459,11 @@ def get_response(url, method="get", **kwargs):
     return jdata, response
 
 
-class vtAPI():
+class vtAPI(PRINTER):
 
     def __init__(self, apikey):
+
+        super(PRINTER, self).__init__()
 
         self.params = {'apikey': apikey}
         self.base = 'https://www.virustotal.com/vtapi/v2/{}'
@@ -544,7 +570,7 @@ class vtAPI():
 
                         for key in basic_file_info_list:
                             if jdata.get(key):
-                                print '\n', key.capitalize().replace('_', ' ')
+                                self.print_key(key)
                                 print '\t', jdata.get(key)
 
                     if jdata.get('submission_names') and ((kwargs.get('submission_names') or 'submission_names' in args) or kwargs.get('verbose')):
@@ -575,7 +601,7 @@ class vtAPI():
                         )
                         for key in file_info_list:
                             if jdata.get(key):
-                                print '\n', key.capitalize().replace('_', ' ')
+                                self.print_key(key)
                                 if isinstance(jdata[key], list):
                                     print '\t', '\n\t'.join(jdata[key])
                                 else:
@@ -595,7 +621,7 @@ class vtAPI():
                         if kwargs.get('verbose'):
                             for key in add_info_list:
                                 if jdata['additional_info'].get(key):
-                                    print '\n', key.capitalize().replace('_', ' ')
+                                    self.print_key(key)
                                     print '\t', jdata['additional_info'][key].replace('\n', '\n\t')
 
                         if jdata['additional_info'].get('rombioscheck') and ((kwargs.get('rombioscheck_info') or 'rombioscheck_info' in args) or kwargs.get('verbose')):
@@ -606,7 +632,7 @@ class vtAPI():
                                 print '\t'
 
                                 # this removes code duplication
-                                single_keys = (
+                                simple_list = (
                                     'contained_hash',
                                     'executable_file',
                                     'firmware_volume_count',
@@ -618,41 +644,36 @@ class vtAPI():
                                     'win32_file',
                                 )
 
-                                for key in single_keys:
-                                    if jdata['additional_info']['rombioscheck'].get(key) and kwargs.get('verbose'):
-                                        print '\n', key.capitalize().replace('_', ' ')
-                                        print '\t', jdata['additional_info']['rombioscheck'].get(key)
-
                                 list_keys = (
                                     'acpi_tables',
                                     'nvar_variable_names',
                                     'tags'
                                 )
 
-                                for key in list_keys:
-                                    if jdata['additional_info']['rombioscheck'].get(key) and kwargs.get('verbose'):
-                                        print '\n', key.capitalize().replace('_', ' ')
-                                        print '\t', '\n\t'.join(jdata['additional_info']['rombioscheck'].get(key))
-
                                 double_list = (
                                     'apple_data',
                                     'manufacturer_candidates'
                                 )
+
+                                self.simple_print(jdata['additional_info']['rombioscheck'], simple_list)
+                                self.list_print(jdata['additional_info']['rombioscheck'], list_keys)
+
+
                                 for key in double_list:
                                   if jdata['additional_info']['rombioscheck'].get(key) and kwargs.get('verbose'):
-                                      print '\n', key.capitalize().replace('_', ' ')
+                                      self.print_key(key)
                                       for block in  jdata['additional_info']['rombioscheck'].get(key):
                                           print '\t', block[0], ':', block[1]
 
-                                simply_dict = (
+                                simple_dict = (
                                     'smbios_data',
                                     'biosinformation',
                                     'systeminformation'
                                 )
 
-                                for key in simply_dict:
+                                for key in simple_dict:
                                   if jdata['additional_info']['rombioscheck'].get(key) and kwargs.get('verbose'):
-                                      print '\n', key.capitalize().replace('_', ' ')
+                                      self.print_key(key)
                                       plist = [[]]
                                       for sub_key, value in  jdata['additional_info']['rombioscheck'].get(key).items():
                                           if isinstance(value, list):
@@ -670,7 +691,7 @@ class vtAPI():
 
                                 for key in dict_keys:
                                     if jdata['additional_info']['rombioscheck'].get(key) and kwargs.get('verbose'):
-                                        print '\n', key.capitalize().replace('_', ' ')
+                                        self.print_key(key)
 
                                         for block in jdata['additional_info']['rombioscheck'].get(key, {}):
                                             plist = [[]]
@@ -690,7 +711,7 @@ class vtAPI():
 
                                 for key in complex_dict:
                                     if jdata['additional_info']['rombioscheck'].get(key) and kwargs.get('verbose'):
-                                        print '\n', key.capitalize().replace('_', ' ')
+                                        self.print_key(key)
 
                                         for cert in jdata['additional_info']['rombioscheck'].get(key, {}):
                                             plist = [[]]
@@ -728,7 +749,7 @@ class vtAPI():
 
                                 for key in dict_keys:
                                     if jdata['additional_info']['rombios_generator'].get(key) and kwargs.get('verbose'):
-                                        print '\n', key.capitalize().replace('_', ' ')
+                                        self.print_key(key)
                                         plist = [[]]
                                         for key, value in jdata['additional_info']['rombios_generator'].get(key, {}).items():
                                             if isinstance(value, list):
@@ -749,6 +770,60 @@ class vtAPI():
                                      #u'additional_info.rombios_generator.diff.missing_children',
                                      #u'additional_info.rombios_generator.diff.missing_nvar',
                                     """
+
+
+
+                        if jdata['additional_info'].get('debcheck') and ((kwargs.get('debcheck_info') or 'debcheck_info' in args) or kwargs.get('verbose')):
+                            if kwargs.get('return_json'):
+                                return_json['debcheck'] = jdata['additional_info'].get('debcheck')
+                            else:
+                                print '\n[+] DebCheck'
+                                simple_list = (
+                                    'vhash',
+                                    'tags'
+
+                                )
+
+                                dict_list = (
+                                    'structural_metadata',
+                                    'control_metadata',
+                                    'control_scripts'
+                                )
+
+                                complicated_dict_list = (
+                                    'children',
+                                )
+
+                                for key in simple_list:
+                                    if jdata['additional_info']['debcheck'].get(key):
+                                        self.print_key(key)
+                                        if isinstance(jdata['additional_info']['debcheck'].get(key), list):
+                                                print '\t', '\n\t'.join(jdata['additional_info']['debcheck'].get(key))
+                                        elif isinstance(jdata['additional_info']['debcheck'].get(key), basestring):
+                                            print '\t', jdata['additional_info']['debcheck'].get(key)
+
+                                for key in dict_list:
+                                    if jdata['additional_info']['debcheck'].get(key):
+                                        self.print_key(key)
+                                        plist = [[]]
+                                        for sub_key, value in jdata['additional_info']['debcheck'][key].items():
+                                            plist.append([sub_key, value])
+
+                                        if plist != [[]]:
+                                            pretty_print_special(plist, ['Key', 'Value'], False, ['r', 'l'], kwargs.get('email_template'))
+
+                                        del plist
+
+                                for key in complicated_dict_list:
+                                    if jdata['additional_info']['debcheck'].get(key):
+                                        self.print_key(key)
+                                        for block in jdata['additional_info']['debcheck'].get(key, {}):
+                                            for sub_key, sub_value in block.items():
+                                                if sub_key == 'detection_ratio':
+                                                    sub_value = '/'.join([str(ssub) for ssub in sub_value])
+                                                print '\t', sub_key, ':', sub_value
+                                            print '\n'
+
                         if jdata['additional_info'].get('androguard') and ((kwargs.get('androidguard_info') or 'androidguard_info' in args) or kwargs.get('verbose')):
                             if kwargs.get('return_json'):
                                 return_json['androguard'] = jdata['additional_info'].get('androguard')
@@ -768,34 +843,20 @@ class vtAPI():
                                         'Package',
                                         'SourceFile',
                                 )
-
                                 list_list = (
                                     'Libraries',
                                     'Activities',
                                     'StringsInformation'
                                 )
 
-
                                 dict_list = (
                                     'Permissions',
                                     'RiskIndicator',
                                 )
 
-                                for key in simple_list:
-                                    if jdata['additional_info']['androguard'].get(key):
-                                        print '\n[+] {}'.format(key.capitalize().replace('_', ' '))
-                                        print '\t', jdata['additional_info']['androguard'].get(key)
-
-                                for key in list_list:
-                                    if jdata['additional_info']['androguard'].get(key):
-                                        print '\n[+] {}'.format(key.capitalize().replace('_', ' '))
-                                        print '\t', '\n\t'.join(jdata['additional_info']['androguard'].get(key))
-
-                                for key in dict_list:
-                                    if jdata['additional_info']['androguard'].get(key):
-                                        print '\n[+] {}'.format(key.capitalize().replace('_', ' '))
-                                        for sub_key, value in jdata['additional_info']['androguard'][key].items():
-                                            print '\n', sub_key, '\n\t' ,'\n\t'.join(value)
+                                self.simple_print(jdata['additional_info']['androguard'], simple_list)
+                                self.list_print(jdata['additional_info']['androguard'], list_list)
+                                self.dict_print(jdata['additional_info']['androguard'], dict_list)
 
                                 #certificates info
                                 cert_list = (
@@ -810,7 +871,7 @@ class vtAPI():
                                 if jdata['additional_info']['androguard'].get('certificate'):
                                     for key in cert_list:
                                         if jdata['additional_info']['androguard']['certificate'].get(key):
-                                            print '\n[+] {}'.format(key.capitalize().replace('_', ' '))
+                                            self.print_key(key)
                                             if key in ('Subject', 'Issuer'):
                                                 for sub_key, sub_value in jdata['additional_info']['androguard']['certificate'].get(key).items():
                                                     print '\t', sub_key, ':', sub_value
@@ -826,7 +887,6 @@ class vtAPI():
                                             for ssub_key in jdata['additional_info']['androguard']['intent-filters'][key].get(sub_key):
                                                 print '\n\t\t\t', ssub_key
                                                 print '\n\t\t\t\t',  '\n\t\t\t\t'.join(jdata['additional_info']['androguard']['intent-filters'][key][sub_key].get(ssub_key))
-
 
                                 """
                                 ToDo
@@ -855,7 +915,7 @@ class vtAPI():
                                     return_json[key] = jdata['additional_info'].get(key)
                                 else:
                                     if jdata['additional_info'].get(key, ''):
-                                        print '\n[+] {}'.format(key.capitalize())
+                                        self.print_key(key)
                                         for rule in jdata['additional_info'].get(key):
                                             print '\nRule:', rule
                                             print '\tAlert\n\t\t', jdata['additional_info'][key][rule]['alert']
@@ -1052,7 +1112,7 @@ class vtAPI():
                                 for valor in jdata['additional_info']['imports'][imported]:
                                     print '\t\t{0}'.format(valor)
 
-
+                        #DMG Check
                         if jdata['additional_info'].get('dmgcheck') and kwargs.get('verbose'):
                             print '\n[+] dmgCheck:'
 
@@ -1082,7 +1142,7 @@ class vtAPI():
 
                             for key in dmgcheck_list:
                                 if jdata['additional_info']['dmgcheck'].get(key):
-                                    print '\n[+] {}'.format(key.capitalize().replace('_', ' '))
+                                    self.print_key(key)
                                     print '\t', jdata['additional_info']['dmgcheck'][key]
 
                             if jdata['additional_info']['dmgcheck'].get('resourcefork_keys'):
@@ -1103,44 +1163,66 @@ class vtAPI():
 
                                 del plist
 
-                            if jdata['additional_info']['dmgcheck'].get('hfs'):
+                            if jdata['additional_info']['dmgcheck'].get('iso') and jdata['additional_info']['dmgcheck']['iso'].get('volume_data', {}):
+                                print '\n[+] Volume data'
+                                plist = [[]]
+                                for key, value in jdata['additional_info']['dmgcheck']['iso'].get('volume_data', {}).items():
+                                    plist.append([key, value])
 
-                                if jdata['additional_info']['dmgcheck']['hfs'].get('executables'):
-                                    print '\n[+] Executables:'
-                                    plist = [[]]
+                                if plist != [[]]:
+                                    pretty_print_special(plist, ['Key', 'Value'], [22, 80], ['r', 'l', ], kwargs.get('email_template'))
 
-                                    for executables in  jdata['additional_info']['dmgcheck']['hfs']['executables']:
-                                        detection = executables.get('detection_ratio')
-                                        detection = '{0}:{1}'.format(detection[0], detection[1])
-                                        plist.append(
-                                            [detection, executables.get('id'), executables.get('sha256'), executables.get('path')])
+                                del plist
 
-                                    if plist != [[]]:
-                                        pretty_print_special(plist, ['Detection', 'Id', 'sha256', 'path'], [10, 5, 64, 50], ['c', 'c', 'c', 'l'], kwargs.get('email_template'))
+                            hfs_dict_list = (
+                                'executables',
+                                'bundles',
+                                'main_executable',
+                            )
 
-                                    del plist
+                            # ToDo
+                            #  dmgcheck.iso.unreadable_files
 
-                                if jdata['additional_info']['dmgcheck']['hfs'].get('num_files'):
-                                    print '\n[+] Num files:', jdata['additional_info']['dmgcheck']['hfs']['num_files']
+                            for pattern in ('hfs', 'iso'):
+                                for key in hfs_dict_list:
+                                    if jdata['additional_info']['dmgcheck'].get(pattern):
+                                        if jdata['additional_info']['dmgcheck'][pattern].get(key):
+                                            self.print_key(key)
+                                            plist = [[]]
 
-                                if jdata['additional_info']['dmgcheck']['hfs'].get('unreadable_files'):
-                                    print '\n[+] Unreadable files: ', jdata['additional_info']['dmgcheck']['hfs']['unreadable_files']
+                                            if key in ('main_executable', 'volume_data'):
+                                                jdata['additional_info']['dmgcheck'][pattern][key] = [jdata['additional_info']['dmgcheck'][pattern][key]]
 
-                                if jdata['additional_info']['dmgcheck']['hfs'].get('bundles'):
-                                    print '\n[+] Unreadable files: ', jdata['additional_info']['dmgcheck']['hfs']['bundles']
+                                            for executables in jdata['additional_info']['dmgcheck'][pattern].get(key, ''):
+                                                detection = executables.get('detection_ratio')
+                                                detection = '{0}:{1}'.format(detection[0], detection[1])
+                                                plist.append(
+                                                    [detection, executables.get('id'), executables.get('size', '-'), executables.get('sha256'), executables.get('path')])
+                                            if plist != [[]]:
+                                                pretty_print_special(plist, ['Detection', 'Id', 'Size', 'sha256', 'Path'], [10, 10, 10, 64, 50], ['c', 'c', 'c', 'c', 'l'], kwargs.get('email_template'))
 
-                                if jdata['additional_info']['dmgcheck']['hfs'].get('info_plist'):
+                                            del plist
+
+                                hfs_list = (
+                                        'num_files',
+                                        'unreadable_files',
+                                        'dmg'
+                                )
+
+                                for key in hfs_list:
+                                    if jdata['additional_info']['dmgcheck'][pattern].get(key):
+                                        self.print_key(key)
+                                        print '\t', jdata['additional_info']['dmgcheck'][pattern][key]
+
+                                if jdata['additional_info']['dmgcheck'][pattern].get('info_plist', ''):
                                     print '\n[+] Info plist: '
-                                    for key, value in jdata['additional_info']['dmgcheck']['hfs']['info_plist'].items():
+                                    for key, value in jdata['additional_info']['dmgcheck'][pattern]['info_plist'].items():
                                         if isinstance(value, dict):
                                             print '\t', key, ':'
                                             for subkey, subvalue in value.items():
                                                 print '\t\t', subkey, ':', subvalue
                                         else:
                                             print '\t', key, ':', value
-
-                                if jdata['additional_info']['dmgcheck']['hfs'].get('dmg'):
-                                    print '\n[+] dmg: ', jdata['additional_info']['dmgcheck']['hfs']['dmg']
 
                         if jdata['additional_info'].get('compressedview') and ((kwargs.get('compressedview') or 'compressedview' in args) or kwargs.get('verbose')):
                           if kwargs.get('return_json'):
@@ -1157,7 +1239,7 @@ class vtAPI():
                                         print '\n'
                                         for key in compressedview_list:
                                             if child.get(key):
-                                                print key.capitalize().replace('_', ' ')
+                                                self.print_key(key, indent='', separator='')
                                                 if key == 'detection_ratio':
                                                     print '\t{0}/{1}'.format(child[key][0], child[key][1])
                                                 elif key == 'filename':
@@ -1179,7 +1261,7 @@ class vtAPI():
                             if jdata['additional_info']['compressedview'].get('file_types'):
                                 print '\n[+] FileTypes'
                                 for file_types in jdata['additional_info']['compressedview']['file_types']:
-                                    print '\t' ,ext, jdata['additional_info']['compressedview']['file_types'][file_types]
+                                    print '\t' ,file_types, jdata['additional_info']['compressedview']['file_types'][file_types]
 
                             if jdata['additional_info']['compressedview'].get('tags'):
                                 print '\n[+] Tags:'
@@ -1197,7 +1279,7 @@ class vtAPI():
 
                             for key in compressedview_add_list:
                                 if jdata['additional_info']['compressedview'].get(key):
-                                    print '\n[+] {}'.format(key.capitalize().replace('_', ' '))
+                                    self.print_key(key)
                                     print  '\t', jdata['additional_info']['compressedview'][key]
 
                         if jdata['additional_info'].get('detailed_email_parents') and ((kwargs.get('detailed_email_parents') or 'detailed_email_parents' in args) or kwargs.get('verbose')):
@@ -1225,7 +1307,7 @@ class vtAPI():
                                         )
                                         for key in email_list:
                                             if email.get(key):
-                                                print '\n', key.capitalize().replace('_', ' ')
+                                                self.print_key(key, indent='\n', separator='')
                                                 print '\t', email[key]
 
                                         if email.get('message'):
@@ -1704,7 +1786,8 @@ class vtAPI():
                         if kwargs.get('return_json'):
                             return_json.update({key:jdata[key]})
                         else:
-                            print '\n[+] {0}\n\t{1}'.format(key.capitalize().replace('_', ''), jdata.get(key))
+                            self.print_key(key, indent='\n', separator='[+]')
+                            print '\t', jdata.get(key)
 
                 if kwargs.get('return_json'):
                     return_json.update(self.detected_samples(jdata, *args, **kwargs))
@@ -1798,7 +1881,7 @@ class vtAPI():
                         if kwargs.get('return_json'):
                             return_json.update({key: jdata[key]})
                         else:
-                            print '\n[+]', key.capitalize().replace('_', ' ')
+                            self.print_key(key)
                             if isinstance(jdata[key], list):
                                 print '\t', '\n\t'.join(jdata[key])
                             elif key == 'whois_timestamp':
@@ -1811,7 +1894,7 @@ class vtAPI():
                         if kwargs.get('return_json'):
                             return_json.update({key: jdata[key]})
                         else:
-                            print '\n[+]', key.capitalize().replace('_', ' ')
+                            self.print_key(key)
                             plist = [[]]
                             for jdata_part in jdata[key]:
                                 plist.append([jdata_part, jdata[key][jdata_part]])
@@ -1918,12 +2001,12 @@ class vtAPI():
         simple_list = (
             'size_top200',
             'num_clusters',
-
         )
 
+        self.simple_print(jdata, simple_list, indent='\n\t')
         for key in simple_list:
             if jdata.get(key):
-                print '\n\t', key.capitalize().repalce('_', ' ')
+                self.print_key(key, indent='\n\t')
                 print '\n\t', jdata.get(key)
 
         if jdata.get('clusters'):
@@ -1973,18 +2056,20 @@ class vtAPI():
                 url = self.base.format('comments/put')
                 self.params['comment'] = value[1]
                 jdata, response = get_response(url, params=self.params, method="post")
-                if kwargs['return_raw']:
-                    return jdata
+
             elif kwargs.get('action') == 'get':
                 url = self.base.format('comments/get')
                 if value[0]:
                     self.params['before'] = kwargs.get('date')
                 jdata, response = get_response(url, params=self.params)
-                if kwargs.get('return_raw'):
-                    return jdata
+
             else:
                 print '\n[!] Support only get/add comments action \n'
                 return
+
+        if kwargs.get('return_raw'):
+            return jdata
+
         if jdata['response_code'] == 0 or jdata['response_code'] == -1:
             if jdata.get('verbose_msg'):
                 print '\n[!] Status : {verb_msg}\n'.format(verb_msg=jdata['verbose_msg'])
@@ -2344,7 +2429,7 @@ class vtAPI():
                 for key in simple_list:
                     if vt_file.get(key):
                         try:
-                            print '\n\n', key.capitalize().replace('_', ' ')
+                            self.print_key(key, indent='\n\n', separator='')
                             print vt_file[key]
                         except UnicodeEncodeError:
                             print ''
@@ -2366,7 +2451,7 @@ class vtAPI():
                 for key in simple_list:
                     if vt_file.get(key):
                         try:
-                            print '\n\n', key.capitalize().replace('_', ' ')
+                            self.print_key(key, indent='\n\n', separator='')
                             print vt_file[key]
                         except UnicodeEncodeError:
                             print ''
@@ -2640,7 +2725,8 @@ class vtAPI():
                 if kwargs.get('return_json'):
                     return_json.update({key: jdata[key]})
                 else:
-                    print '\n[+] {0}\n'.format(key.capitalize().replace('_', ' '))
+                    self.print_key(key, indent='\n', separator='[+]')
+                    print '\n'
                     pretty_print(sorted(jdata[key], key=methodcaller('get', 'date'), reverse=True), [
                                  'positives', 'total', 'date', 'sha256'], [15, 10, 20, 70], ['c', 'c', 'c', 'c'], kwargs.get('email_template'))
 
@@ -2753,6 +2839,7 @@ def main():
         allinfo_opt.add_argument('-rbgi', '--rombios-generator-info', action='store_true', help='Get RomBios generator info')
         allinfo_opt.add_argument('-rbi', '--rombioscheck-info', action='store_true', help='Get RomBiosCheck info')
         allinfo_opt.add_argument('-agi', '--androidguard-info', action='store_true', help='Get AndroidGuard info')
+        allinfo_opt.add_argument('-dbc', '--debcheck-info', action='store_true', help='Get DebCheck info, also include ios IPA')
 
     opt.add_argument('-ac', '--add-comment', action='store_true', help='The actual review, you can tag it using the "#" twitter-like syntax (e.g. #disinfection #zbot) and reference users using the "@" syntax (e.g. @VirusTotalTeam). supported hashes MD5/SHA1/SHA256')
     opt.add_argument('-gc', '--get-comments', action='store_true', help='Either a md5/sha1/sha256 hash of the file or the URL itself you want to retrieve')

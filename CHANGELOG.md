@@ -1,3 +1,9 @@
+**22.02.2016**
+
+* Big code clean up round 2
+* Deb and IPA files info
+    * -dbc, --debcheck-info
+
 **21.02.2016**
 
 * Big code clean up round 1
