@@ -67,13 +67,19 @@ req_timeout = 60
 class PRINTER(object):
 
     def print_key(self,  key, indent='\n', separator='[+]'):
-        print '{0}{1} {2}'.format(indent, separator, key.capitalize().replace('_', ' '))
+        try:
+            print '{0}{1} {2}'.format(indent, separator, key.capitalize().replace('_', ' '))
+        except:
+            pass
 
     def simple_print(self, block, simple_list):
         for key in simple_list:
             if block.get(key):
                 self.print_key(key)
-                print '\t', block.get(key)
+                if isinstance(block.get(key), list):
+                    print '\t', '\n\t'.join(block.get(key))
+                else:
+                    print '\t', block.get(key)
 
     def list_print(self, block, list_list):
         for key in list_list:
@@ -114,32 +120,24 @@ def get_adequate_table_sizes(scans, short=False, short_list=False):
 
         # Result len
         if short:
-            av_size = max(
-                map(lambda engine:
+            av_size = max(map(lambda engine:
                     len(engine) if engine is not None and engine in short_list else 0, scans)
-                )
-            result = max(
-                map(lambda engine: len(scans[engine]['result']) if scans[engine].has_key(
+            )
+            result = max(map(lambda engine: len(scans[engine]['result']) if scans[engine].has_key(
                 'result') and scans[engine]['result'] is not None and engine in short_list else 0, scans)
             )
-            version = max(
-                map(lambda engine: len(scans[engine]['version']) if scans[engine].has_key(
+            version = max(map(lambda engine: len(scans[engine]['version']) if scans[engine].has_key(
                 'version') and scans[engine]['version'] is not None and engine in short_list else 0, scans)
             )
 
         else:
-            av_size = max(
-                map(
-                    lambda engine: len(engine) if engine is not None else 0, scans)
-                )
-            result = max(
-                map(lambda engine: len(scans[engine]['result']) if scans[
-                         engine].has_key('result') and scans[engine]['result'] is not None else 0, scans)
-                )
-            version = max(
-                map(lambda engine: len(scans[engine]['version']) if scans[
-                          engine].has_key('version') and scans[engine]['version'] is not None else 0, scans)
-                )
+            av_size = max(map(lambda engine: len(engine) if engine is not None else 0, scans))
+            result = max(map(lambda engine: len(scans[engine]['result']) if scans[
+                engine].has_key('result') and scans[engine]['result'] is not None else 0, scans)
+            )
+            version = max(map(lambda engine: len(scans[engine]['version']) if scans[
+                engine].has_key('version') and scans[engine]['version'] is not None else 0, scans)
+            )
 
         if result > result_f:
             result_f = result
@@ -568,29 +566,15 @@ class vtAPI(PRINTER):
                           'malicious_votes',
                         )
 
-                        for key in basic_file_info_list:
-                            if jdata.get(key):
-                                self.print_key(key)
-                                print '\t', jdata.get(key)
+                        self.simple_print(jdata, basic_file_info_list)
 
-                    if jdata.get('submission_names') and ((kwargs.get('submission_names') or 'submission_names' in args) or kwargs.get('verbose')):
-                      if kwargs.get('return_json'):
-                            return_json['submission_names'] =  jdata.get('submission_names')
-                      else:
-                          print '\nSubmission names:'
-                          for name in jdata['submission_names']:
-                            try:
-                              print '\t{name}'.format(name=name)
-                            except:
-                                print '\t', name
+                        self.list_print(jdata, ['submission_names'])
 
                     if jdata.get('ITW_urls') and ((kwargs.get('ITW_urls') or 'ITW_urls' in args) or kwargs.get('verbose')):
                         if kwargs.get('return_json'):
                             return_json['ITW_urls'] =  jdata.get('ITW_urls')
                         else:
-                              print '\nITW urls:'
-                              for itw_url in jdata['ITW_urls']:
-                                  print '\t{itw_url}'.format(itw_url=itw_url)
+                              self.list_print(jdata, 'ITW_urls')
 
                     if kwargs.get('verbose'):
                         file_info_list = (
@@ -599,30 +583,25 @@ class vtAPI(PRINTER):
                             'tags',
                             'unique_sources',
                         )
-                        for key in file_info_list:
-                            if jdata.get(key):
-                                self.print_key(key)
-                                if isinstance(jdata[key], list):
-                                    print '\t', '\n\t'.join(jdata[key])
-                                else:
-                                    print '\t', jdata.get(key)
+                        self.simple_print(jdata,file_info_list)
 
                     if jdata.get('additional_info'):
-                        add_info_list = (
+                        simple_list = (
                             'magic',
-                            'trid',
                             'first_seen_itw',
-                            'compressed_parents',
                             'trendmicro-housecall-heuristic',
                             'deepguard',
                             'unique_sources',
+                            'trid',
+                        )
+
+                        list_list = (
+                            'compressed_parents',
                         )
 
                         if kwargs.get('verbose'):
-                            for key in add_info_list:
-                                if jdata['additional_info'].get(key):
-                                    self.print_key(key)
-                                    print '\t', jdata['additional_info'][key].replace('\n', '\n\t')
+                            self.simple_print(jdata['additional_info'], simple_list)
+                            self.list_print(jdata['additional_info'], list_list)
 
                         if jdata['additional_info'].get('rombioscheck') and ((kwargs.get('rombioscheck_info') or 'rombioscheck_info' in args) or kwargs.get('verbose')):
                             if kwargs.get('return_json'):
@@ -982,25 +961,32 @@ class vtAPI(PRINTER):
                                 plist = [[]]
 
                                 for files in jdata['additional_info']['behaviour-v1'].get('dropped_files'):
-                                    plist.append(
-                                        [files.get('hash'), files.get('filename')])
+                                    plist.append([files.get('hash'), files.get('filename')])
 
                                 if plist != [[]]:
                                     pretty_print_special(plist, ['Hash(sha256?)', 'Filename'], [64, 50], ['c', 'l'], kwargs.get('email_template'))
 
                                 del plist
 
-                            if jdata['additional_info']['behaviour-v1'].get('network') and kwargs.get('verbose'):
-                                print '\n[+] Network'
-                                if jdata['additional_info']['behaviour-v1']['network'].get('tcp'):
-                                    plist = [[]]
-                                    [plist.append([ip]) for ip in jdata['additional_info']['behaviour-v1']['network'].get('tcp')]
-                                    pretty_print_special(plist, ['TCP'], False, False, kwargs.get('email_template'))
 
-                                if jdata['additional_info']['behaviour-v1']['network'].get('udp'):
-                                    plist = [[]]
-                                    [plist.append([ip]) for ip in jdata['additional_info']['behaviour-v1']['network'].get('udp')]
-                                    pretty_print_special(plist, ['UDP'], False, False, kwargs.get('email_template'))
+                            if jdata['additional_info']['behaviour-v1'].get('network', {}) and kwargs.get('verbose'):
+                                print '\n[+] Network'
+                                network_list = (
+                                    'tcp',
+                                    'udp'
+                                )
+                                for key in network_list:
+                                    if jdata['additional_info']['behaviour-v1']['network'].get(key):
+                                        plist = [[]]
+                                        [plist.append([ip]) for ip in jdata['additional_info']['behaviour-v1']['network'].get(key)]
+                                        pretty_print_special(plist, [key.upper()], False, False, kwargs.get('email_template'))
+
+                            if jdata['additional_info']['behaviour-v1']['network'].get('dns'):
+                                print '\n[+] DNS:'
+                                plist = [[]]
+                                for block in  jdata['additional_info']['behaviour-v1']['network'].get('dns'):
+                                    plist.append([block.get('ip'), block.get('hostname')])
+                                pretty_print_special(plist, ['Ip', 'Hostname'], False, False, kwargs.get('email_template'))
 
                                 #if jdata['additional_info']['behaviour-v1']['network'].get('http'):
                                 #    print '\n[+] HTTP:', jdata['additional_info']['behaviour-v1']['network'].get('http')
@@ -1277,10 +1263,7 @@ class vtAPI(PRINTER):
                                 'vhash'
                             )
 
-                            for key in compressedview_add_list:
-                                if jdata['additional_info']['compressedview'].get(key):
-                                    self.print_key(key)
-                                    print  '\t', jdata['additional_info']['compressedview'][key]
+                            self.simple_print(jdata['additional_info']['compressedview'], compressedview_add_list)
 
                         if jdata['additional_info'].get('detailed_email_parents') and ((kwargs.get('detailed_email_parents') or 'detailed_email_parents' in args) or kwargs.get('verbose')):
 
@@ -1543,7 +1526,14 @@ class vtAPI(PRINTER):
 
         if len(kwargs.get('value')) == 1 and isinstance(kwargs.get('value'), list):
             if os.path.isdir(kwargs.get('value')[0]):
-                kwargs['value'] = glob('{files}'.format(files=os.path.join(kwargs.get('value')[0], '*')))
+                # ToDo os.walk for Marc
+                kwargs['value'] = glob(os.path.join(kwargs.get('value')[0], '*'))
+                if kwargs.get('file_scan_recursive'):
+                    all_files = list()
+                    for path, dirs, files in os.walk(kwargs['value']):
+                        for file in files:
+                          all_files.append(os.path.join(path, file))
+                    kwargs['value'] = all_files
 
         if kwargs.get('notify_url'):
             self.params['notify_url'] = kwargs.get('notify_url')
@@ -1580,17 +1570,15 @@ class vtAPI(PRINTER):
                             if kwargs.get('return_raw'):
                                 return jdata
 
-                            if jdata.get('md5'):
-                                print '\n\tResults for MD5    : {md5_hash}'.format(md5_hash=jdata['md5'])
-                            if jdata.get('sha1'):
-                                print '\tResults for SHA1   : {sha1}'.format(sha1=jdata['sha1'])
-                            if jdata.get('sha256'):
-                                print '\tResults for SHA256 : {sha256}'.format(sha256=jdata['sha256'])
+                            simple_list = (
+                              'md5',
+                              'sha1',
+                              'sha256',
+                              'verbose_msg',
+                              'permalink'
+                            )
 
-                            if jdata.get('verbose_msg'):
-                                print '\n\tStatus         : {verb_msg}'.format(verb_msg=jdata['verbose_msg'])
-                            if jdata.get('permalink'):
-                                print '\tPermanent link : {permalink}\n'.format(permalink=jdata['permalink'])
+                            self.simple_print(jdata, simple_list)
 
                         except UnicodeDecodeError:
                             print '\n[!] Sorry filaname is not utf-8 format, other format not suported at the moment'
@@ -2426,22 +2414,14 @@ class vtAPI(PRINTER):
                     return
 
             if kwargs.get('action') == 'file':
-                for key in simple_list:
-                    if vt_file.get(key):
-                        try:
-                            self.print_key(key, indent='\n\n', separator='')
-                            print vt_file[key]
-                        except UnicodeEncodeError:
-                            print ''
+                self.simple_print(vt_file, simple_list)
 
                 if vt_file.get('report'):
                     plist = [[]]
                     for key in vt_file['report']:
                         plist.append(
-                        [key, 'True' if jdata[0]['report'][key][0] else 'False', jdata[0]['report'][key][1], jdata[0]['report'][key][2]]
-                        )
-                        pretty_print_special(
-                            plist, ['Vendor name', 'Detection', 'Version', 'Update'], False, False, kwargs.get('email_template'))
+                        [key, 'True' if jdata[0]['report'][key][0] else 'False', jdata[0]['report'][key][1], jdata[0]['report'][key][2]])
+                        pretty_print_special(plist, ['Vendor name', 'Detection', 'Version', 'Update'], False, False, kwargs.get('email_template'))
 
                 if vt_file.get('link'):
                     print '\nLink : {link}'.format(link=vt_file['link'])
@@ -2528,21 +2508,20 @@ class vtAPI(PRINTER):
                     if kwargs.get('return_json'):
                         return_json.update({'http':jdata['network']['http']})
                     else:
+                        simple_list = (
+                            'uri',
+                            'host',
+                            'port',
+                            'path',
+                            'method',
+                            'user-agent',
+                            'version',
+                            'data'
+                        )
+
 
                         for http in jdata['network']['http']:
-
-                            if http.get('uri'):
-                                print '\tURL        : {0}'.format(http['uri'])
-                            if http.get('host'):
-                                print '\tHost       : {0}'.format(http['host'])
-                            # if http.get('port') : print 'port       : {0}'.format(http['port'])
-                            # if http.get('path') : print 'path       :
-                            # {0}'.format(http['path'])
-                            if http.get('method'):
-                                print '\tMethod     : {0}'.format(http['method'])
-                            if http.get('user-agent'):
-                                print '\tUser-agent : {0}'.format(http['user-agent'])
-                            # if http.get('version') : print 'version    : {0}'.format(http['version'])
+                            self.simple_print(http, simple_list)
                             # if http.get('data')    : print 'data       : {0}'.format(http['data'].replace('\r\n\r\n', '\n\t').replace('\r\n','\n\t\t'))
                             if http.get('body'):
                                 print '\tbody hex encoded:\n\t  {}\n'.format(http['body'].encode('hex'))
@@ -2560,40 +2539,25 @@ class vtAPI(PRINTER):
                         print '\nDNS requests\n'
                         pretty_print(jdata['network']['dns'], ['ip', 'hostname'], False, False, kwargs.get('email_template'))
 
-                if jdata['network'].get('tcp'):
-                    if kwargs.get('return_json'):
-                        return_json.update({'tcp': jdata['network']['tcp']})
-                    else:
-                        print '\nTCP Connections'
 
-                        unique = []
+                simple_list = (
+                    'tcp',
+                    'upd'
+                )
+                for key in simple_list:
+                    if jdata['network'].get(key):
+                        if kwargs.get('return_json'):
+                            return_json.update({key: jdata['network'][key]})
+                        else:
+                            print '\n{0} Connections'.format(key.upper())
 
-                        for block in jdata['network']['tcp']:
-                            if not [block['src'],  block['dst'], block['sport'], block['dport']] in unique:
-                                unique.append(
-                                    [block['src'], block['dst'], block['sport'], block['dport']]
-                                )
-                        pretty_print_special(unique,   ['src', 'dst', 'sport', 'dport'], False, False, kwargs.get('email_template'))
-                        del unique
+                            unique = []
 
-                if jdata['network'].get('udp'):
-                    if kwargs.get('return_json'):
-                        return_json.update({'udp': jdata['network']['udp']})
-                    else:
-                        print '\nUDP Connections'
-                        unique = []
-                        for block in jdata['network']['udp']:
-                            if not [block['src'],  block['dst'], block['sport'], block['dport']] in unique:
-                                unique.append(
-                                    [block['src'], block['dst'], block['sport'], block['dport']]
-                                    )
-                        pretty_print_special(
-                          unique,
-                          ['src', 'dst', 'sport', 'dport'],
-                          False, False,
-                          kwargs.get('email_template')
-                          )
-                        del unique
+                            for block in jdata['network'][key]:
+                                if not [block['src'],  block['dst'], block['sport'], block['dport']] in unique:
+                                    unique.append([block['src'], block['dst'], block['sport'], block['dport']])
+                            pretty_print_special(unique,   ['src', 'dst', 'sport', 'dport'], False, False, kwargs.get('email_template'))
+                            del unique
 
         if (kwargs.get('behavior_process') or 'behavior_process' in args) or kwargs.get('verbose'):
             if jdata.get('behaviour'):
@@ -2606,22 +2570,15 @@ class vtAPI(PRINTER):
 
                         plist = []
 
-                        if process_id.get('parent_id'):
-                            print '\nParent  Id : {0}'.format(process_id['parent_id'])
-                        if process_id.get('process_id'):
-                            print 'Process Id : {0}'.format(process_id['process_id'])
+                        simple_list = (
+                            'parent_id',
+                            'process_id',
+                            'process_name'
+                        )
+                        self.simple_print(process_id, keys)
 
                         if process_id.get('first_seen'):
-
-                            date_format = time.strptime(
-                                process_id['first_seen'][:14], '%Y%m%d%H%M%S')
-                            date_formated = '{year}:{month}:{day} {hour}:{minuts}:{seconds}'.format(year=date_format.tm_year, month=date_format.tm_mon,
-                                day=date_format.tm_mday, hour=date_format.tm_hour,
-                                minuts=date_format.tm_min, seconds=date_format.tm_sec)
-                            print 'First Seen : {0}'.format(date_formated)
-
-                        if process_id.get('process_name'):
-                            print '\nProcess Name : {0}'.format(process_id['process_name'])
+                            print 'First Seen : {0}'.format(datetime.strptime(process_id['first_seen'][:14], '%Y%m%d%H%M%S').strftime('%Y:%m:%d %H:%M:%S'))
 
                         if process_id.get('calls'):
                             for process_part in process_id['calls']:
@@ -2631,26 +2588,21 @@ class vtAPI(PRINTER):
                                         if process_part[key] != [] and isinstance(process_part[key][0], dict):
                                             temp_list = []
                                             for part in process_part[key]:
-                                                temp_list.append('\n'.join(map(lambda key_temp: '{key_temp}:{value}\n'.format(
-                                                    key_temp=key_temp, value=part[key_temp]), part.keys())))
+                                                temp_list.append('\n'.join(map(lambda key_temp: '{key_temp}:{value}\n'.format(key_temp=key_temp, value=part[key_temp]), part.keys())))
                                             plist.append([key, ''.join(temp_list)])
                                             del temp_list
                                         else:
-                                            plist.append(
-                                                [key, '\n'.join(process_part[key])])
+                                            plist.append([key, '\n'.join(process_part[key])])
 
                                     elif isinstance(process_part[key], dict):
                                         temp_list = []
                                         for part in process_part[key]:
-                                            temp_list += map(lambda key_temp: '{key_temp}:{value}\n'.format(
-                                                key_temp=key_temp, value=part[key_temp]), part.keys()
-                                            )
+                                            temp_list += map(lambda key_temp: '{key_temp}:{value}\n'.format(key_temp=key_temp, value=part[key_temp]), part.keys())
                                         plist.append([key, ''.join(temp_list)])
                                         del temp_list
                                     else:
                                         plist.append([key, process_part[key]])
-                                pretty_print_special(
-                                    plist, ['Name', 'Value'], [10, 50], False, kwargs.get('email_template'))
+                                pretty_print_special(plist, ['Name', 'Value'], [10, 50], False, kwargs.get('email_template'))
                                 del plist
 
                             print '\n' + '=' * 20 + ' FIN ' + '=' * 20
@@ -2664,32 +2616,21 @@ class vtAPI(PRINTER):
 
         if (kwargs.get('behavior_summary') or 'behavior_summary' in args) or kwargs.get('verbose'):
             if jdata.get('behavior') and jdata['behavior'].get('summary'):
-                if jdata['behavior']['summary'].get('files'):
-                    if kwargs.get('return_json'):
-                            return_json.update({'files':  jdata['behavior']['summary']['files']})
-                    else:
-                        if jdata['behavior']['summary']['files']:
-                            print '\n[+] Opened files\n'
-                            pretty_print(
-                                sorted(jdata['behavior']['summary']['files']), ['files'], [100], False, kwargs.get('email_template'))
 
-                if jdata['behavior']['summary'].get('keys'):
-                    if kwargs.get('return_json'):
-                        return_json.update({'keys':  jdata['behavior']['summary']['keys']})
-                    else:
-                        print '\n[+] Set keys\n'
-                        pretty_print(
-                            sorted(jdata['behavior']['summary']['keys']), ['keys'], [100], False, kwargs.get('email_template'))
+                simple_tt_list = (
+                    'files',
+                    'keys',
+                    'mutex'
+                )
 
-                if jdata['behavior']['summary'].get('mutexes') is not None and jdata['behavior']['summary']['mutexes'] != [u'(null)'] and jdata['behavior']['summary']['mutexes']:
-                    if kwargs.get('return_json'):
-                        return_json.update({'mutex':  jdata['behavior']['summary']['mutex']})
-                    else:
-                        print '\n[+] Created mutexes\n'
-                        pretty_print(
-                            sorted(jdata['behavior']['summary']['mutexes']), ['mutexes'], [100],
-                            False, kwargs.get('email_template')
-                            )
+                for key in simple_tt_list:
+                    if jdata['behavior']['summary'].get(key):
+                        if kwargs.get('return_json'):
+                                return_json.update({key:  jdata['behavior']['summary'][key]})
+                        else:
+                            if jdata['behavior']['summary']['files']:
+                                self.printe_key(key, indent='\n', separator='[+]')
+                                pretty_print(sorted(jdata['behavior']['summary'][key]), [key], [100], False, kwargs.get('email_template'))
 
         if kwargs.get('dump') is True:
             md5_hash = hashlib.md5(name).hexdigest()
@@ -2783,7 +2724,6 @@ def read_conf(config_file = False):
       except Exception:
           sys.exit(help)
 
-
       for key in vt_config:
           #backward compartibility
           if key == 'type':
@@ -2798,7 +2738,6 @@ def read_conf(config_file = False):
 
           if vt_config[key] in ('False', 'True'):
               vt_config[key] = ast.literal_eval(vt_config[key])
-
 
       return vt_config
 
@@ -2816,6 +2755,7 @@ def main():
     opt.add_argument('value', nargs='*', help='Enter the Hash, Path to File(s) or Url(s)')
     opt.add_argument('-fs', '--file-search', action='store_true', help='File(s) search, this option, don\'t upload file to VirusTotal, just search by hash, support linux name wildcard, example: /home/user/*malware*, if file was scanned, you will see scan info, for full scan report use verbose mode, and dump if you want save already scanned samples')
     opt.add_argument('-f',  '--file-scan', action='store_true', dest='files',  help='File(s) scan, support linux name wildcard, example: /home/user/*malware*, if file was scanned, you will see scan info, for full scan report use verbose mode, and dump if you want save already scanned samples')
+    opt.add_argument('-fr',  '--file-scan-recursive', action='store_true', dest='files',  help='Recursive dir walk, use this insted of --file-scan if you want recursive')
     opt.add_argument('-u',  '--url-scan', action='store_true', help='Url scan, support space separated list, Max 4 urls (or 25 if you have private api), but you can provide more urls, for example with public api,  5 url - this will do 2 requests first with 4 url and other one with only 1, or you can specify file filename with one url per line')
     opt.add_argument('-ur', '--url-report', action='store_true', help='Url(s) report, support space separated list, Max 4 (or 25 if you have private api) urls, you can use --url-report --url-scan options for analysing url(s) if they are not in VT data base, read previev description about more then max limits or file with urls')
     opt.add_argument('-d', '--domain-info',   action='store_true', dest='domain', help='Retrieves a report on a given domain (PRIVATE API ONLY! including the information recorded by VirusTotal\'s Passive DNS infrastructure)')
@@ -2953,7 +2893,7 @@ def main():
     if options.get('date'):
         options['date'] = options['date'].replace( '-', '').replace(':', '').replace(' ', '')
 
-    if options.get('files'):
+    if options.get('files') or options.get('file_scan_recursive'):
         options.update({'scan': True})
         vt.fileScan(**options)
 

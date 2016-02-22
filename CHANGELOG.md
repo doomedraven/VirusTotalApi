@@ -3,6 +3,8 @@
 * Big code clean up round 2
 * Deb and IPA files info
     * -dbc, --debcheck-info
+* Recursive file scan, not only wildcard as in -f
+    * -fr, --file-scan-recursive 
 
 **21.02.2016**
 
