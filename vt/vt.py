@@ -1859,6 +1859,7 @@ class vtAPI(PRINTER):
                 complicated_dict = (
                      'WOT domain info',
                      'Webutation domain info',
+                     'resolutions'
                 )
 
                 for key in single_dict:
@@ -1882,22 +1883,12 @@ class vtAPI(PRINTER):
                             self.print_key(key)
                             plist = [[]]
                             for jdata_part in jdata[key]:
-                                plist.append([jdata_part, jdata[key][jdata_part]])
+                                if isinstance(jdata_part, basestring):
+                                    plist.append([jdata_part, jdata[key][jdata_part]])
+                                elif isinstance(jdata_part, dict):
+                                    plist.append(jdata_part.values())
                             pretty_print_special(plist, ['Name', 'Value'], [25, 20], ['c', 'c'], kwargs.get('email_template'))
                             del plist
-
-                # ToDo move to gen printer
-                if jdata.get('resolutions') and ((kwargs.get('resolutions') or key in 'resolutions') or kwargs.get('verbose')):
-                        if kwargs.get('return_json'):
-                            return_json.update({'resolutions': jdata['resolutions']})
-                        else:
-                            self.print_key('resolutions')
-                            plist = [[]]
-                            for jdata_part in jdata['resolutions']:
-                                plist.append([jdata_part.values()[0], jdata_part.values()[1]])
-                            pretty_print_special(plist, ['Name', 'Value'], [25, 20], ['c', 'c'], kwargs.get('email_template'))
-                            del plist
-
 
                 if jdata.get('whois') and ((kwargs.get('whois') or 'whois' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
