@@ -439,7 +439,8 @@ def get_response(url, method="get", **kwargs):
                     jdata = response.json
 
                 break
-
+        else:
+            return {}, ''
         # Determine minimum time we need to wait for limit to reset
         wait_time = 59 - int(time.time() - get_response.start_time)
 
@@ -981,6 +982,7 @@ class vtAPI(PRINTER):
                                         [plist.append([ip]) for ip in jdata['additional_info']['behaviour-v1']['network'].get(key)]
                                         pretty_print_special(plist, [key.upper()], False, False, kwargs.get('email_template'))
 
+                            # ToDo hosts
                             if jdata['additional_info']['behaviour-v1']['network'].get('dns'):
                                 print '\n[+] DNS:'
                                 plist = [[]]
@@ -1009,12 +1011,16 @@ class vtAPI(PRINTER):
 
                                     del plist
 
-                            if jdata['additional_info']['behaviour-v1'].get('knockknock') and kwargs.get('verbose'):
-                                print '\n[+] Knock Knock:', jdata['additional_info']['behaviour-v1'].get('knockknock')
-                            if jdata['additional_info']['behaviour-v1'].get('run_time') and kwargs.get('verbose'):
-                                print '\n[+] Run time:', jdata['additional_info']['behaviour-v1'].get('tun_time')
-                            if jdata['additional_info']['behaviour-v1'].get('internal_tags') and kwargs.get('verbose'):
-                                print '\n[+] Internal tags:', jdata['additional_info']['behaviour-v1'].get('internal_tags')
+                            if kwargs.get('verbose'):
+                                simple_list = (
+                                    'knockknock',
+                                    'tun_time',
+                                    'internal_tags',
+                                    'num_screenshots',
+                                    'version'
+                                )
+                            self.simple_print(jdata['additional_info']['behaviour-v1'], simple_list)
+
                             if jdata['additional_info']['behaviour-v1'].get('signals') and kwargs.get('verbose'):
                                 print '\n[+] Signals:'
 
@@ -1028,10 +1034,7 @@ class vtAPI(PRINTER):
                                     pretty_print_special(plist, ['CMD', 'Target', 'Signo', 'PID', 'WallTimeStamp', 'ExecName'], False, False, kwargs.get('email_template'))
 
                                 del plist
-                            if jdata['additional_info']['behaviour-v1'].get('version') and kwargs.get('verbose'):
-                                print '\n[+] Version:', jdata['additional_info']['behaviour-v1'].get('version')
-                            if jdata['additional_info']['behaviour-v1'].get('num_screenshots') and kwargs.get('verbose'):
-                                print '\n[+] Num screenshots:', jdata['additional_info']['behaviour-v1'].get('num_screenshots')
+
                             if jdata['additional_info']['behaviour-v1'].get('filesystem') and kwargs.get('verbose'):
                                 print '\n[+] Filesystem:',
                                 if jdata['additional_info']['behaviour-v1']['filesystem'].get('opened'):
@@ -1125,11 +1128,6 @@ class vtAPI(PRINTER):
                                 'running_data_fork_offset',
                                 'rsrc_fork_offset',
                             )
-
-                            for key in dmgcheck_list:
-                                if jdata['additional_info']['dmgcheck'].get(key):
-                                    self.print_key(key)
-                                    print '\t', jdata['additional_info']['dmgcheck'][key]
 
                             if jdata['additional_info']['dmgcheck'].get('resourcefork_keys'):
                                 print '\n[+] resourcefork keys:'
@@ -1861,7 +1859,6 @@ class vtAPI(PRINTER):
                 complicated_dict = (
                      'WOT domain info',
                      'Webutation domain info',
-                     'resolutions'
                 )
 
                 for key in single_dict:
@@ -1888,6 +1885,19 @@ class vtAPI(PRINTER):
                                 plist.append([jdata_part, jdata[key][jdata_part]])
                             pretty_print_special(plist, ['Name', 'Value'], [25, 20], ['c', 'c'], kwargs.get('email_template'))
                             del plist
+
+                # ToDo move to gen printer
+                if jdata.get('resolutions') and ((kwargs.get('resolutions') or key in 'resolutions') or kwargs.get('verbose')):
+                        if kwargs.get('return_json'):
+                            return_json.update({'resolutions': jdata['resolutions']})
+                        else:
+                            self.print_key('resolutions')
+                            plist = [[]]
+                            for jdata_part in jdata['resolutions']:
+                                plist.append([jdata_part.values()[0], jdata_part.values()[1]])
+                            pretty_print_special(plist, ['Name', 'Value'], [25, 20], ['c', 'c'], kwargs.get('email_template'))
+                            del plist
+
 
                 if jdata.get('whois') and ((kwargs.get('whois') or 'whois' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
@@ -2197,19 +2207,15 @@ class vtAPI(PRINTER):
         sha1_hash = ''
         md5_hash = ''
 
-        content_disposition = message_part.get("Content-Disposition", None)
-        if content_disposition:
-            dispositions = content_disposition.strip().split(";")
-            if bool(content_disposition and dispositions[0].lower() == "attachment"):
-                attachment = message_part.get_payload(decode=True)
-                filename = message_part.get_filename()
-                content_type = message_part.get_content_type()
-                if attachment:
-                    size = len(attachment)
-                    sha256_hash = hashlib.sha256(attachment).hexdigest()
-                    sha1_hash = hashlib.sha1(attachment).hexdigest()
-                    md5_hash = hashlib.md5(attachment).hexdigest()
-
+        if message_part.get_filename():
+            filename = message_part.get_filename()
+            content_type = message_part.get_content_type()
+            attachment = message_part.get_payload(decode=True)
+            if attachment:
+                size = len(attachment)
+                sha256_hash = hashlib.sha256(attachment).hexdigest()
+                sha1_hash = hashlib.sha1(attachment).hexdigest()
+                md5_hash = hashlib.md5(attachment).hexdigest()
 
         return attachment, filename, size, content_type, sha256_hash, sha1_hash, md5_hash
 
@@ -2470,6 +2476,19 @@ class vtAPI(PRINTER):
 
     def behaviour(self, *args,  **kwargs):
 
+        # ToDo
+        """
+        [u'behavior.processes',
+         u'behavior.processtree',
+         u'info.started',
+         u'info.version',
+         u'network.dns',
+         u'network.hosts',
+         u'network.http',
+         u'network.tcp',
+         u'network.udp']
+        """
+
         return_json = dict()
         result, name = is_file(kwargs.get('value')[0])
 
@@ -2518,7 +2537,6 @@ class vtAPI(PRINTER):
                             'version',
                             'data'
                         )
-
 
                         for http in jdata['network']['http']:
                             self.simple_print(http, simple_list)
@@ -2620,7 +2638,7 @@ class vtAPI(PRINTER):
                 simple_tt_list = (
                     'files',
                     'keys',
-                    'mutex'
+                    'mutexes'
                 )
 
                 for key in simple_tt_list:
@@ -2629,8 +2647,7 @@ class vtAPI(PRINTER):
                                 return_json.update({key:  jdata['behavior']['summary'][key]})
                         else:
                             if jdata['behavior']['summary']['files']:
-                                self.printe_key(key, indent='\n', separator='[+]')
-                                pretty_print(sorted(jdata['behavior']['summary'][key]), [key], [100], False, kwargs.get('email_template'))
+                                self.simple_print(jdata['behavior']['summary'], [key])
 
         if kwargs.get('dump') is True:
             md5_hash = hashlib.md5(name).hexdigest()
