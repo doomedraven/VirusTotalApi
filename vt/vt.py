@@ -68,12 +68,13 @@ class PRINTER(object):
 
     def print_key(self,  key, indent='\n', separator='[+]'):
         try:
-            print '{0}{1} {2}'.format(indent, separator, key.capitalize().replace('_', ' '))
+            print '{0}{1} {2}'.format(indent, separator, key.capitalize().replace('_', ' ').replace('-', ' '))
         except:
             pass
 
-    def simple_print(self, block, simple_list):
-        for key in simple_list:
+    # key:value
+    def simple_print(self, block, keys):
+        for key in keys:
             if block.get(key):
                 self.print_key(key)
                 if isinstance(block.get(key), list):
@@ -81,18 +82,43 @@ class PRINTER(object):
                 else:
                     print '\t', block.get(key)
 
-    def list_print(self, block, list_list):
-        for key in list_list:
+    # key:[]
+    def list_print(self, block, keys):
+        for key in keys:
             if block.get(key):
                 self.print_key(key)
                 print '\t', '\n\t'.join(block.get(key))
 
-    def dict_print(self, block, dict_list):
-        for key in dict_list:
+    # key:{subkey:[]}
+    def dict_list_print(self, block, keys):
+      for key in keys:
+        if block.get(key):
+            self.print_key(key)
+            if isinstance(block.get(key), list):
+                for sub_list in block.get(key):
+                  if isinstance(sub_list, list):
+                      print '\n\t' ,'\n\t'.join([str(part) for part in sub_list])
+                  elif isinstance(sub_list, dict):
+                      for sub_key, sub_value in sub_list.items():
+                          print '\t', sub_key, sub_value
+
+            elif isinstance(block.get(key), dict):
+                for sub_key in block.get(key):
+                    self.print_key(sub_key)
+                    for ssub_dict in block[key].get(sub_key):
+                      for ssub_key, ssub_value in ssub_dict.items():
+                          print '\t', ssub_key, ssub_value
+
+    # key:{subkey:{}}
+    def dict_print(self, block, keys):
+        for key in keys:
             if block.get(key):
                 self.print_key(key)
                 for sub_key, value in block[key].items():
-                    print '\n', sub_key, '\n\t' ,'\n\t'.join(value)
+                    if isinstance(value, list):
+                        print '\n', sub_key, '\n\t' ,'\n\t'.join(value)
+                    else:
+                        print '\n', sub_key, '\n\t' ,value
 
 def private_api_access_error():
     print '\n[!] You don\'t have permission for this operation, Looks like you trying to access to PRIVATE API functions\n'
@@ -568,7 +594,6 @@ class vtAPI(PRINTER):
                         )
 
                         self.simple_print(jdata, basic_file_info_list)
-
                         self.list_print(jdata, ['submission_names'])
 
                     if jdata.get('ITW_urls') and ((kwargs.get('ITW_urls') or 'ITW_urls' in args) or kwargs.get('verbose')):
@@ -594,15 +619,29 @@ class vtAPI(PRINTER):
                             'deepguard',
                             'unique_sources',
                             'trid',
+                            'pe-timestamp'
                         )
 
                         list_list = (
                             'compressed_parents',
                         )
 
+                        dict_keys = (
+                          'pe-overlay',
+                          'pe-resource-langs',
+                          'pe-resource-types',
+                          'pe-resource-list',
+                        )
+
+                        dict_list_keys = (
+                          'sections',
+                        )
+
                         if kwargs.get('verbose'):
                             self.simple_print(jdata['additional_info'], simple_list)
                             self.list_print(jdata['additional_info'], list_list)
+                            self.dict_print(jdata['additional_info'], dict_keys)
+                            self.dict_list_print(jdata['additional_info'], dict_list_keys)
 
                         if jdata['additional_info'].get('rombioscheck') and ((kwargs.get('rombioscheck_info') or 'rombioscheck_info' in args) or kwargs.get('verbose')):
                             if kwargs.get('return_json'):
@@ -637,7 +676,6 @@ class vtAPI(PRINTER):
 
                                 self.simple_print(jdata['additional_info']['rombioscheck'], simple_list)
                                 self.list_print(jdata['additional_info']['rombioscheck'], list_keys)
-
 
                                 for key in double_list:
                                   if jdata['additional_info']['rombioscheck'].get(key) and kwargs.get('verbose'):
@@ -951,6 +989,13 @@ class vtAPI(PRINTER):
                                         del plist
 
                         if jdata['additional_info'].get('behaviour-v1'):
+
+
+                            dict_keys = (
+                                'mutex',
+                            )
+
+                            self.dict_list_print(jdata['additional_info']['behaviour-v1'], dict_keys)
                             if jdata['additional_info']['behaviour-v1'].get('tags') and kwargs.get('verbose'):
                                 print '\n[+] Tags:'
                                 for tag in jdata['additional_info']['behaviour-v1'].get('tags'):
@@ -997,19 +1042,44 @@ class vtAPI(PRINTER):
                                 print '\n[+] Codesign:\n\t',jdata['additional_info']['behaviour-v1'].get('codesign').replace('\n', '\n\t')
 
                             if jdata['additional_info']['behaviour-v1'].get('process') and kwargs.get('verbose'):
+                                dict_keys = (
+                                    'injected',
+                                    'shellcmds',
+                                    'terminated',
+                                    'tree'
+                                )
                                 print '\n[+] Process'
-                                if jdata['additional_info']['behaviour-v1']['process'].get('created'):
-                                    print '\t[+] Created:'
-                                    plist = [[]]
+                                self.dict_list_print(jdata['additional_info']['behaviour-v1']['process'], dict_keys)
 
-                                    for created in jdata['additional_info']['behaviour-v1']['process'].get('created'):
-                                        plist.append(
-                                            [created.get('success'), created.get('start_time'),created.get('end_time'),created.get('pid'),created.get('ppid'),created.get('execname'),created.get('psargs')])
+                            if jdata['additional_info']['behaviour-v1'].get('registry') and kwargs.get('verbose'):
+                                dict_keys = (
+                                    'deleted',
+                                    'set'
+                                )
+                                #print '\n[+] Registry'
+                                #self.dict_list_print(jdata['additional_info']['behaviour-v1']['registry'], dict_keys)
 
-                                    if plist != [[]]:
-                                        pretty_print_special(plist, ['Sucess', 'Start time', 'End time', 'pid', 'ppid', 'execname', 'psargs'], [6, 8, 8, 5, 6, 30, 30], ['c','c','c','c','c','c','l', ], kwargs.get('email_template'))
+                            if jdata['additional_info']['behaviour-v1'].get('windows') and kwargs.get('verbose'):
+                                dict_keys = (
+                                    'windows',
+                                    'runtime-dlls',
+                                    'hooking',
+                                    'filesystem'
+                                )
+                                self.dict_list_print(jdata['additional_info']['behaviour-v1'], dict_keys)
+                                """
+                                u'additional_info.behaviour-v1.extra',
+                                 u'additional_info.behaviour-v1.hosts_file',
+                                 u'additional_info.behaviour-v1.registry.deleted',
+                                 u'additional_info.behaviour-v1.registry.set',
+                                 u'additional_info.behaviour-v1.service.controlled',
+                                 u'additional_info.behaviour-v1.service.created',
+                                 u'additional_info.behaviour-v1.service.deleted',
+                                 u'additional_info.behaviour-v1.service.opened',
+                                 u'additional_info.behaviour-v1.service.opened-managers',
+                                 u'additional_info.behaviour-v1.service.started',
 
-                                    del plist
+                                """
 
                             if kwargs.get('verbose'):
                                 simple_list = (
@@ -1054,10 +1124,11 @@ class vtAPI(PRINTER):
 
                         if jdata['additional_info'].get('sigcheck') and kwargs.get('verbose'):
 
-                            print '\nPE signature block:'
+                            print '\n[+] PE signature block:'
                             plist = [[]]
                             for sig in jdata['additional_info']['sigcheck']:
                                 if isinstance(jdata['additional_info']['sigcheck'][sig], list):
+                                  self.print_key(sig)
                                   for data in  jdata['additional_info']['sigcheck'][sig]:
                                       sub_plist = [[]]
                                       for key in data.keys():
@@ -1073,35 +1144,11 @@ class vtAPI(PRINTER):
                             del plist
 
                         if jdata['additional_info'].get('exiftool') and kwargs.get('verbose'):
-
-                            print '\n[+] ExifTool file metadata:'
-                            plist = [[]]
-
-                            for exiftool in jdata['additional_info']['exiftool']:
-                                plist.append(
-                                    [exiftool, jdata['additional_info']['exiftool'][exiftool]])
-
-                            pretty_print_special(plist, ['Name', 'Value'], False, False, kwargs.get('email_template'))
-                            del plist
-
-                        if jdata['additional_info'].get('sections') and kwargs.get('verbose'):
-                            pretty_print_special(jdata['additional_info']['sections'],
-                                                 ['Name', 'Virtual address', 'Virtual size',
-                                                     'Raw size', 'Entropy', 'MD5'],
-                                                 [10, 10, 10, 10, 10, 35],
-                                                 ['c', 'c', 'c', 'c', 'c', 'c'],
-                                                 kwargs.get('email_template')
-                                                 )
+                            self.dict_print(jdata['additional_info'], ['exiftool'])
 
                         if jdata['additional_info'].get('imports') and kwargs.get('verbose'):
+                            self.dict_print(jdata['additional_info'], ['imports'])
 
-                            print '\nImports:'
-                            for imported in jdata['additional_info']['imports']:
-                                print '\t{0}'.format(imported)
-                                for valor in jdata['additional_info']['imports'][imported]:
-                                    print '\t\t{0}'.format(valor)
-
-                        #DMG Check
                         if jdata['additional_info'].get('dmgcheck') and kwargs.get('verbose'):
                             print '\n[+] dmgCheck:'
 
@@ -2393,15 +2440,20 @@ class vtAPI(PRINTER):
             'md5',
             'sha1',
             'sha256',
+            'pe-imphash',
+            'authentihash',
             'size',
             'filetype',
+            'peid'
             'source_id',
             'first_seen',
             'last_seen',
             'scan_date',
             'score',
             'timestamp',
-            'url'
+            'url',
+            'pe-entry-point',
+            'pe-machine-type'
         )
 
         for vt_file in jdata:
@@ -2506,9 +2558,7 @@ class vtAPI(PRINTER):
                 return_json.update({'info': jdata['info']})
             else:
                 print '\nInfo\n'
-
-                pretty_print(
-                    jdata['info'], ['started', 'ended', 'duration', 'version'])
+                pretty_print(jdata['info'], ['started', 'ended', 'duration', 'version'])
 
         if (kwargs.get('behavior_network') or 'behavior_network' in args) or kwargs.get('verbose'):
 
