@@ -1067,7 +1067,7 @@ class vtAPI(PRINTER):
                                     'filesystem'
                                 )
                                 self.dict_list_print(jdata['additional_info']['behaviour-v1'], dict_keys)
-                                """
+                                """ToDo
                                 u'additional_info.behaviour-v1.extra',
                                  u'additional_info.behaviour-v1.hosts_file',
                                  u'additional_info.behaviour-v1.registry.deleted',
@@ -2490,27 +2490,27 @@ class vtAPI(PRINTER):
                     print '\n\nAdditional info:'
                     plist = [[]]
 
-                for key in vt_file['additional_info']:
-                    if isinstance(vt_file['additional_info'][key], dict):
-                        plist.append([key, ''.join(map(lambda key_temp:'{key_temp}:{value}\n'.format(
-                            key_temp=key_temp, value=vt_file['additional_info'][key][key_temp]), vt_file['additional_info'][key]))])
-                    elif isinstance(vt_file['additional_info'][key], list):
-                        plist.append(
-                            [key, '\n'.join(vt_file['additional_info'][key])])
-                    else:
-                        plist.append([key, vt_file['additional_info'][key]])
-                pretty_print_special(plist, ['Name', 'Value'], [40, 70], False, kwargs.get('email_template'))
+                    for key in vt_file.get('additional_info'):
+                        if isinstance(vt_file['additional_info'][key], dict):
+                            plist.append([key, ''.join(map(lambda key_temp:'{key_temp}:{value}\n'.format(
+                                key_temp=key_temp, value=vt_file['additional_info'][key][key_temp]), vt_file['additional_info'][key]))])
+                        elif isinstance(vt_file['additional_info'][key], list):
+                            plist.append(
+                                [key, '\n'.join(vt_file['additional_info'][key])])
+                        else:
+                            plist.append([key, vt_file['additional_info'][key]])
+                    pretty_print_special(plist, ['Name', 'Value'], [40, 70], False, kwargs.get('email_template'))
 
-                if vt_file.get('scans'):
-                    plist = [[]]
-                    for key in vt_file['scans']:
-                        plist.append([key, 'True' if vt_file['scans'][key]['detected'] else 'False', vt_file['scans'][key]['result']])
+                    if vt_file.get('scans'):
+                        plist = [[]]
+                        for key in vt_file['scans']:
+                            plist.append([key, 'True' if vt_file['scans'][key]['detected'] else 'False', vt_file['scans'][key]['result']])
 
-                    if plist != [[]]:
-                        pretty_print_special(plist, ['Vendor name', 'Detection', 'Result'], False, False, kwargs.get('email_template'))
+                        if plist != [[]]:
+                            pretty_print_special(plist, ['Vendor name', 'Detection', 'Result'], False, False, kwargs.get('email_template'))
 
-                    if vt_file.get('permalink'):
-                        print '\nPermanent link : {link}\n'.format(link=vt_file['permalink'])
+                        if vt_file.get('permalink'):
+                            print '\nPermanent link : {link}\n'.format(link=vt_file['permalink'])
 
             if kwargs.get('dump'):
                 jsondump(jdata, 'distribution_{date}'.format(
