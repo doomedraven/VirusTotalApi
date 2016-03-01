@@ -2314,6 +2314,14 @@ class vtAPI(PRINTER):
 
         return original_email
 
+    def email_remove_bad_char(self, email):
+        ''' I saw few emails which start with ">" and they not parsed correctly'''
+
+        if email.startswith('>'):
+            email = email[1:]
+
+        return email
+
     def parse_email(self, *args,  **kwargs):
 
         msg = ''
@@ -2327,7 +2335,7 @@ class vtAPI(PRINTER):
 
         for email_id in kwargs.get('value'):
             if os.path.exists(email_id):
-                msg = email.message_from_file(open(email_id))
+                email_id = open(email_id, 'rb').read()
             else:
                 if email_id.startswith('http'):
                     email_id = re.findall('[\w\d]{64}', email_id, re.I)
@@ -2336,18 +2344,15 @@ class vtAPI(PRINTER):
                     else:
                         print '[-] Hash not found in url'
 
-                elif len(email_id) in (32, 40, 64): # md5, sha1, sha256
-                    original_email = self.__download_email(email_id, *args, **kwargs)
+            if len(email_id) in (32, 40, 64): # md5, sha1, sha256
+                email_id = self.__download_email(email_id, *args, **kwargs)
 
-                    if original_email and  isinstance(original_email, basestring):
-                        msg = email.message_from_string(original_email)
-                else:
-                  #permit parse emails from library
-                  try:
-                      msg = email.message_from_string(email_id)
-                  except Exception as e:
-                      print e
-                      return ''
+            try:
+                email_id = self.email_remove_bad_char(email_id)
+                msg = email.message_from_string(email_id)
+            except Exception as e:
+                print e
+                return ''
 
             if msg:
                 email_dict = dict()
