@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+# -*- coding: utf-8 -*-
 
 # Full VT APIv2 functions added by Andriy Brukhovetskyy
 # doomedraven -  Twitter : @d00m3dr4v3n
@@ -10,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.3.0'
+__version__ = '2.1.3.2'
 __license__ = 'For fun :)'
 
 import os
@@ -40,7 +41,6 @@ try:
     OUTLOOK_prsr = True
 except ImportError:
     OUTLOOK_prsr = False
-
 
 try:
     from requests.packages.urllib3.exceptions import InsecureRequestWarning, InsecurePlatformWarning
@@ -995,11 +995,12 @@ class vtAPI(PRINTER):
                                 'mutex',
                             )
 
-                            self.dict_list_print(jdata['additional_info']['behaviour-v1'], dict_keys)
-                            if jdata['additional_info']['behaviour-v1'].get('tags') and kwargs.get('verbose'):
-                                print '\n[+] Tags:'
-                                for tag in jdata['additional_info']['behaviour-v1'].get('tags'):
-                                    print '\t', tag
+                            if kwargs.get('verbose'):
+                                self.dict_list_print(jdata['additional_info']['behaviour-v1'], dict_keys)
+                                if jdata['additional_info']['behaviour-v1'].get('tags'):
+                                    print '\n[+] Tags:'
+                                    for tag in jdata['additional_info']['behaviour-v1'].get('tags'):
+                                        print '\t', tag
 
                             if jdata['additional_info']['behaviour-v1'].get('dropped_files') and kwargs.get('verbose'):
                                 print '\n[+] Dropped files:'
@@ -1089,7 +1090,7 @@ class vtAPI(PRINTER):
                                     'num_screenshots',
                                     'version'
                                 )
-                            self.simple_print(jdata['additional_info']['behaviour-v1'], simple_list)
+                                self.simple_print(jdata['additional_info']['behaviour-v1'], simple_list)
 
                             if jdata['additional_info']['behaviour-v1'].get('signals') and kwargs.get('verbose'):
                                 print '\n[+] Signals:'
@@ -1120,7 +1121,7 @@ class vtAPI(PRINTER):
 
                                     del plist
                             if jdata['additional_info']['behaviour-v1'].get('output'):
-                                print '\n[+] Output:', jdata['additional_info']['behaviour-v1'].get('output'),15
+                                print '\n[+] Output:', jdata['additional_info']['behaviour-v1'].get('output')
 
                         if jdata['additional_info'].get('sigcheck') and kwargs.get('verbose'):
 
@@ -1962,7 +1963,7 @@ class vtAPI(PRINTER):
                         print '\n'
                         pretty_print(jdata['pcaps'], ['pcaps'], [70], ['c'], kwargs.get('email_template'))
 
-                if jdata.get('resolutions') and ((kwargs.get('passive_dns') or 'passive_dns' in args)  or kwargs.get('verbose')):
+                if jdata.get('resolutions') and ((kwargs.get('resolutions') or 'resolutions' in args)  or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
                         return_json.update({'passive_dns': jdata['resolutions']})
                     else:
@@ -2349,6 +2350,19 @@ class vtAPI(PRINTER):
 
             try:
                 email_id = self.email_remove_bad_char(email_id)
+
+                # save
+                if kwargs.get('download'):
+                    if kwargs.get('name'):
+                        name = kwargs.get('name')
+                    else:
+                        name = hashlib.sha256(email_id).hexdigest() + '.eml'
+
+                    #save email
+                    save_email = open(name, 'wb')
+                    save_email.write(email_id)
+                    save_email.close()
+
                 msg = email.message_from_string(email_id)
             except Exception as e:
                 print e
@@ -2392,6 +2406,19 @@ class vtAPI(PRINTER):
                     email_id = self.__download_email(email_id, *args, **kwargs)
 
                 try:
+
+                    if kwargs.get('download'):
+                        name = 'email'
+                        if kwargs.get('name'):
+                            name = kwargs.get('name')
+                        else:
+                            name = hashlib.sha256(email_id).hexdigest() + '.eml'
+
+                        #save email
+                        save_email = open(name, 'wb')
+                        save_email.write(email_id)
+                        save_email.close()
+
                     msg = OUTLOOK(email_id)
                     email_dict = msg.parse_outlook_email()
 
@@ -3014,7 +3041,7 @@ def main():
         options.update({'allinfo': 0})
         vt.getReport(**options)
 
-    elif options.get('download'):
+    elif options.get('download') and not (options.get('parse_email') or options.get('parse_email_outlook')):
         vt.download(**options)
 
     elif options.get('parse_email'):
