@@ -7,7 +7,7 @@ https://www.virustotal.com/en/documentation/public-api/
 Before using the tool you must set your api key in one of this file:
 * Home Dicrectory:
     * __~.vtapi__, __~vtapi.conf__
-* or currect directory where vt script placed 
+* or current directory where vt script placed 
     * __.vtapi__, __vtapi.conf__
 
 * ~.vtapi file content:
