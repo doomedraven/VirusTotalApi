@@ -491,7 +491,7 @@ class vtAPI(PRINTER):
         super(PRINTER, self).__init__()
 
         self.params = {'apikey': apikey}
-        self.base = 'https://www.virustotal.com/vtapi/v2/{}'
+        self.base = 'https://www.virustotal.com/vtapi/v2/{0}'
 
     def getReport(self, *args, **kwargs):
         """
