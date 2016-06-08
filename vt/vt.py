@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.3.2'
+__version__ = '2.1.3.3'
 __license__ = 'For fun :)'
 
 import os
@@ -43,9 +43,11 @@ except ImportError:
     OUTLOOK_prsr = False
 
 try:
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning, InsecurePlatformWarning
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-    requests.packages.urllib3.disable_warnings(InsecurePlatformWarning)
+    import urllib3
+    urllib3.disable_warnings()
+    #from requests.packages.urllib3.exceptions import InsecureRequestWarning, InsecurePlatformWarning
+    #requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+    #requests.packages.urllib3.disable_warnings(InsecurePlatformWarning)
 except (AttributeError, ImportError):
     pass
 
@@ -75,7 +77,7 @@ class PRINTER(object):
     # key:value
     def simple_print(self, block, keys):
         for key in keys:
-            if block.get(key):
+            if block.get(key) and block[key]:
                 self.print_key(key)
                 if isinstance(block.get(key), list):
                     print '\t', '\n\t'.join(block.get(key))
@@ -85,34 +87,37 @@ class PRINTER(object):
     # key:[]
     def list_print(self, block, keys):
         for key in keys:
-            if block.get(key):
+            if block.get(key) and block[key]:
                 self.print_key(key)
                 print '\t', '\n\t'.join(block.get(key))
 
     # key:{subkey:[]}
     def dict_list_print(self, block, keys):
       for key in keys:
-        if block.get(key):
+        if block.get(key) and block[key]:
             self.print_key(key)
             if isinstance(block.get(key), list):
                 for sub_list in block.get(key):
                   if isinstance(sub_list, list):
-                      print '\n\t' ,'\n\t'.join([str(part) for part in sub_list])
+                      print '\n\t', '\n\t'.join([str(part) for part in sub_list])
                   elif isinstance(sub_list, dict):
                       for sub_key, sub_value in sub_list.items():
                           print '\t', sub_key, sub_value
+                      print '\n'
 
             elif isinstance(block.get(key), dict):
-                for sub_key in block.get(key):
-                    self.print_key(sub_key)
-                    for ssub_dict in block[key].get(sub_key):
-                      for ssub_key, ssub_value in ssub_dict.items():
-                          print '\t', ssub_key, ssub_value
+                for sub_key in block.get(key, []):
+                    if block[key].get(sub_key, {}):
+                        self.print_key(sub_key)
+                        for ssub_dict in block[key].get(sub_key, {}):
+                          print '\n'
+                          for ssub_key, ssub_value in ssub_dict.items():
+                              print '\t', ssub_key, ssub_value
 
     # key:{subkey:{}}
     def dict_print(self, block, keys):
         for key in keys:
-            if block.get(key):
+            if block.get(key, []):
                 self.print_key(key)
                 for sub_key, value in block[key].items():
                     if isinstance(value, list):
@@ -953,7 +958,7 @@ class vtAPI(PRINTER):
                                         for block in jdata['additional_info'].get('traffic_inspection')[proto]:
                                             plist = [[]]
                                             for key, value in block.items():
-                                                plist.append([key, value])
+                                                plist.append([key, str(value)])
 
                                             if plist != [[]]:
                                                 pretty_print_special(plist, ['Key', 'Value'], False, ['r', 'l'], kwargs.get('email_template'))
@@ -1028,16 +1033,18 @@ class vtAPI(PRINTER):
                                         [plist.append([ip]) for ip in jdata['additional_info']['behaviour-v1']['network'].get(key)]
                                         pretty_print_special(plist, [key.upper()], False, False, kwargs.get('email_template'))
 
+
                             # ToDo hosts
-                            if jdata['additional_info']['behaviour-v1']['network'].get('dns'):
+
+                            if jdata['additional_info']['behaviour-v1']['network'].get('dns') and kwargs.get('verbose'):
                                 print '\n[+] DNS:'
                                 plist = [[]]
                                 for block in  jdata['additional_info']['behaviour-v1']['network'].get('dns'):
                                     plist.append([block.get('ip'), block.get('hostname')])
                                 pretty_print_special(plist, ['Ip', 'Hostname'], False, False, kwargs.get('email_template'))
 
-                                #if jdata['additional_info']['behaviour-v1']['network'].get('http'):
-                                #    print '\n[+] HTTP:', jdata['additional_info']['behaviour-v1']['network'].get('http')
+                            #if jdata['additional_info']['behaviour-v1']['network'].get('http'):
+                            #    print '\n[+] HTTP:', jdata['additional_info']['behaviour-v1']['network'].get('http')
 
                             if jdata['additional_info']['behaviour-v1'].get('codesign') and kwargs.get('verbose'):
                                 print '\n[+] Codesign:\n\t',jdata['additional_info']['behaviour-v1'].get('codesign').replace('\n', '\n\t')
@@ -2940,7 +2947,7 @@ def main():
             hence, there are no guarantees about a report being generated for a given file in our dataset. a file did indeed produce a behavioural report,\
             a summary of it can be obtained by using the file scan lookup call providing the additional HTTP POST parameter allinfo=1. The summary will\
             appear under the behaviour-v1 property of the additional_info field in the JSON report.This API allows you to retrieve the full JSON report\
-            of the file\'s execution as outputted by the Cuckoo JSON report encoder.')
+            of the files execution as outputted by the Cuckoo JSON report encoder.')
         behaviour.add_argument('-bn', '--behavior-network', action='store_true', help='Show network activity')
         behaviour.add_argument('-bp', '--behavior-process', action='store_true', help='Show processes')
         behaviour.add_argument('-bs', '--behavior-summary', action='store_true', help='Show summary')
