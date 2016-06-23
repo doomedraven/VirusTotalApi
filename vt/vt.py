@@ -2907,7 +2907,7 @@ def main():
         'Domain/IP shared verbose mode options, by default just show resolved IPs/Passive DNS')
     domain_opt.add_argument('-wh',  '--whois', action='store_true', default=False, help='Whois data')
     domain_opt.add_argument('-wht',  '--whois-timestamp', action='store_true', default=False, help='Whois timestamp')
-    domain_opt.add_argument('-pdn',  '--passive-dns', action='store_true', default=False, help='Passive DNS resolves')
+    domain_opt.add_argument('-pdns',  '--resolutions', action='store_true', default=False, help='Passive DNS resolves')
     domain_opt.add_argument('--asn', action='store_true', default=False, help='ASN number')
     domain_opt.add_argument('-aso', '--as-owner', action='store_true', default=False, help='AS details')
     domain_opt.add_argument('--country', action='store_true', default=False, help='Country')
