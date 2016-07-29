@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.3.3'
+__version__ = '2.1.3.5'
 __license__ = 'For fun :)'
 
 import os
@@ -575,7 +575,6 @@ class vtAPI(PRINTER):
                             print '[+] Matched hash(es):'
                             for file_hash in  jdata['hashes']:
                                 print '\t{0}'.format(file_hash)
-
                 if kwargs.get('allinfo') == 1:
 
                     if kwargs.get('dump'):
@@ -1808,7 +1807,7 @@ class vtAPI(PRINTER):
                 return jdatas
 
         for ip, jdata in jdatas:
-            if jdata['response_code'] == 0 or jdata['response_code'] == -1:
+            if jdata.get('response_code', "") == 0 or jdata.get('response_code', -1) == -1:
                 if jdata.get('verbose_msg'):
                     print '\n[-] Status {ip}: {verb_msg}\n'.format(verb_msg=jdata['verbose_msg'], ip=ip)
 
@@ -2987,7 +2986,7 @@ def main():
 
     options.update(vt_config)
 
-    if options.get('date'):
+    if options.get('date', ""):
         options['date'] = options['date'].replace( '-', '').replace(':', '').replace(' ', '')
 
     if options.get('files') or options.get('file_scan_recursive'):
@@ -3016,7 +3015,7 @@ def main():
 
     elif options.get('rescan'):
 
-        if options['date']:
+        if options.get('date', ""):
 
             if len(options['date']) < 14:
                 print '\n[!] Date format is: 20120725170000 or 2012-07-25 17 00 00 or 2012-07-25 17:00:00\n'
