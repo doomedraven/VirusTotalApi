@@ -5,7 +5,7 @@ This script was made public into the official VT API documentation page.
 https://www.virustotal.com/en/documentation/public-api/
 
 Before using the tool you must set your api key in one of this file:
-* Home Dicrectory:
+* Home Directory:
     * __~.vtapi__, __~vtapi.conf__
 * or current directory where vt script placed 
     * __.vtapi__, __vtapi.conf__
