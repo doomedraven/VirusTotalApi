@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.3.5'
+__version__ = '2.1.4.0'
 __license__ = 'For fun :)'
 
 import os
@@ -25,9 +25,11 @@ import email
 import hashlib
 import argparse
 import requests
+import threading
 import ConfigParser
 from glob import glob
 from re import match
+from collections import deque
 from urlparse import urlparse
 from operator import methodcaller
 from datetime import datetime
@@ -2145,101 +2147,126 @@ class vtAPI(PRINTER):
 
     def download(self, *args,  **kwargs):
         """
-          About pcaps
-          VirusTotal runs a distributed setup of Cuckoo sandbox machines that execute the files we receive.
-          Execution is attempted only once, upon first submission to VirusTotal, and only Portable Executables
-          under 10MB in size are ran. The execution of files is a best effort process, hence, there are no guarantees
-          about a report being generated for a given file in our dataset.
+            About pcaps
+            VirusTotal runs a distributed setup of Cuckoo sandbox machines that execute the files we receive.
+            Execution is attempted only once, upon first submission to VirusTotal, and only Portable Executables
+            under 10MB in size are ran. The execution of files is a best effort process, hence, there are no guarantees
+            about a report being generated for a given file in our dataset.
 
-          Files that are successfully executed may communicate with certain network resources, all this communication
-          is recorded in a network traffic dump (pcap file). This API allows you to retrieve the network traffic dump
-          generated during the file's execution.
+            Files that are successfully executed may communicate with certain network resources, all this communication
+            is recorded in a network traffic dump (pcap file). This API allows you to retrieve the network traffic dump
+            generated during the file's execution.
 
           The md5/sha1/sha256 hash of the file whose network traffic dump you want to retrieve.
         """
-        response = ''
-        super_file_type = kwargs.get('download')
+        super_file_type = kwargs.get("download")
 
-        if isinstance(kwargs.get('value'), list) and len(kwargs.get('value')) == 1:
-            pass
-        elif isinstance(kwargs.get('value'), basestring):
-            kwargs['value'] = [kwargs.get('value')]
+        if isinstance(kwargs.get("value"), list) and len(kwargs.get("value")) == 1:
+            if os.path.exists(kwargs.get("value")[0]):
+                kwargs["value"] = [dl_hash.strip() for dl_hash in open(kwargs.get("value")[0], "rb").readlines()]
+        elif isinstance(kwargs.get("value"), basestring):
+            kwargs["value"] = [kwargs.get("value")]
 
-        for f_hash in kwargs.get('value'):
-            f_hash = f_hash.strip()
-            if f_hash != '':
-                if f_hash.find(',') != -1:
-                    file_type = f_hash.split(',')[-1]
-                    f_hash = f_hash.split(',')[0]
-                else:
-                    file_type = super_file_type
+        kwargs["value"] = deque(kwargs["value"])
+        if len(kwargs["value"]) < kwargs["download_threads"]:
+            kwargs["download_threads"] = len(kwargs["value"])
 
-                if f_hash.startswith('http'):
-                        result_hash = re.findall('[\w\d]{64}', f_hash, re.I)
-                        if result_hash:
-                            f_hash = result_hash[0]
-                        else:
-                            print '[-] Hash not found in url'
+        threads_list = list()
 
-                self.params['hash'] = f_hash
+        self.downloaded_to_return = dict()
+        for worked in xrange(kwargs["download_threads"]):
+            thread = threading.Thread(target=self.__downloader, args=args, kwargs=kwargs)
+            thread.daemon = True
+            thread.start()
 
-                if kwargs.get('api_type'):
-                    if file_type not in ('file', 'pcap'):
-                        print '\n[!] File_type must be pcap or file\n'
+            threads_list.append(thread)
+
+        for thread in threads_list:
+            thread.join()
+
+        if kwrgs.get("return_raw", False):
+            return self.downloaded_to_return
+
+    def __downloader(self, *args,  **kwargs):
+            """
+                Auxiliar threaded downloader
+            """
+
+            super_file_type = kwargs.get('download')
+            while kwargs['value']:
+                f_hash = kwargs['value'].pop()
+                f_hash = f_hash.strip()
+                if f_hash != '':
+
+                    if f_hash.find(',') != -1:
+                        file_type = f_hash.split(',')[-1]
+                        f_hash = f_hash.split(',')[0]
+                    else:
+                        file_type = super_file_type
+
+                    file_type = kwargs.get('download')
+                    if f_hash.startswith('http'):
+                            result_hash = re.findall('[\w\d]{64}', f_hash, re.I)
+                            if result_hash:
+                                f_hash = result_hash[0]
+                            else:
+                                print '[-] Hash not found in url'
+
+                    #self.params['hash'] = f_hash
+
+                    if kwargs.get('api_type'):
+                        if file_type not in ('file', 'pcap'):
+                            print '\n[!] File_type must be pcap or file\n'
+                            return
+                        if file_type == 'pcap':
+                            url = self.base.format('file/network-traffic')
+                        elif file_type == 'file':
+                            url = self.base.format('file/download')
+                    elif kwargs.get('intelligence'):
+                        url = 'https://www.virustotal.com/intelligence/download/'
+                    else:
+                        print '[-] You don\'t have permission for download'
                         return
-                    if file_type == 'pcap':
-                        url = self.base.format('file/network-traffic')
-                    elif file_type == 'file':
-                        url = self.base.format('file/download')
-                elif kwargs.get('intelligence'):
-                    url = 'https://www.virustotal.com/intelligence/download/'
-                else:
-                    print '[-] You don\'t have permission for download'
-                    return
+                    params = dict()
+                    params["apikey"] = self.params["apikey"]
+                    params["hash"] = f_hash
+                    response = requests.get(url, params=params)
+                    if response:
+                        if response.status_code == 404:
+                                print '\n[!] File not found - {0}\n'.format(f_hash)
 
-                jdata, response = get_response(url, params=self.params, stream=True)
-                if response:
-                    if response.status_code == 404:
-                            print '\n[!] File not found - {0}\n'.format(f_hash)
+                        if response.status_code == 200:
+                            if kwargs.get('name'):
+                                name = kwargs.get('name')
+                            else:
+                                name = '{hash}'.format(hash=f_hash)
+                            if "VirusTotal - Free Online Virus, Malware and URL Scanner" in response.content and \
+                               '{"response_code": 0, "hash":' not in response.content: # filter out keep-alive new chunks
+                                    try:
+                                        json_data = response.json()
+                                        print '\n\t{0}: {1}'.format(json_data['verbose_msg'], f_hash)
+                                    except:
+                                        print '\tFile can\'t be downloaded: {0}'.format(f_hash)
+                            #Sanity checks
+                            downloaded_hash = ''
+                            if len(f_hash) == 32:
+                                downloaded_hash = hashlib.md5(response.content).hexdigest()
+                            elif len(f_hash) == 40:
+                                downloaded_hash = hashlib.sha1(response.content).hexdigest()
+                            elif len(f_hash) == 64:
+                                downloaded_hash = hashlib.sha256(response.content).hexdigest()
 
-                    if response.status_code == 200:
-                        if kwargs.get('name'):
-                            name = kwargs.get('name')
-                        else:
-                            name = '{hash}'.format(hash=f_hash)
-
-                        if "VirusTotal - Free Online Virus, Malware and URL Scanner" in response.content and '{"response_code": 0, "hash":' not in response.content: # filter out keep-alive new chunks
-                                try:
-                                    json_data = response.json()
-                                    print '\n\t{0}: {1}'.format(json_data['verbose_msg'], f_hash)
-                                except:
-                                    print '\tFile can\'t be downloaded: {0}'.format(f_hash)
-
-                        sample = ''
-                        for chunk in response.iter_content(chunk_size=1024):
-                            if chunk:
-                                sample += chunk
-
-                        #Sanity checks
-                        downloaded_hash = ''
-                        if len(f_hash) == 32:
-                            downloaded_hash = hashlib.md5(sample).hexdigest()
-                        elif len(f_hash) == 40:
-                            downloaded_hash = hashlib.sha1(sample).hexdigest()
-                        elif len(f_hash) == 64:
-                            downloaded_hash = hashlib.sha256(sample).hexdigest()
-
-                        if f_hash != downloaded_hash:
-                            print '[-] Downloaded content has not the same hash as requested'
-                        if kwargs.get('return_raw'):
-                            return sample
-                        else:
-                            dumped = open(name, 'wb')
-                            dumped.write(sample)
-                            dumped.close()
-                            print '\tDownloaded to File -- {name}'.format(name=name)
-                else:
-                    return {'status':'failed'}
+                            if f_hash != downloaded_hash:
+                                print '[-] Downloaded content has not the same hash as requested'
+                            if kwargs.get('return_raw'):
+                                self.downloaded_to_return.setdefault(f_hash, response.content)
+                            else:
+                                dumped = open(f_hash, 'wb')
+                                dumped.write(response.content)
+                                dumped.close()
+                                print '\tDownloaded to File -- {name}'.format(name=f_hash)
+                    else:
+                         self.downloaded_to_return.setdefault(f_hash, 'failed')
 
     # normal email attachment extractor
     def __email_parse_attachment(self, message_part):
@@ -2955,6 +2982,7 @@ def main():
         downloads = opt.add_argument_group('Download options')
         downloads.add_argument('-dl', '--download',  dest='download', action='store_const', const='file', default=False, help='The md5/sha1/sha256 hash of the file you want to download or txt file with hashes, or hash and type, one by line, for example: hash,pcap or only hash. Will save with hash as name, can be space separated list of hashes to download')
         downloads.add_argument('-nm', '--name',  action='store', default=False, help='Name with which file will saved when download it')
+        downloads.add_argument('-dt', '--download-threads',  action='store', default=5, type=int, help='Number of simultaneous downloaders')
 
     if vt_config.get('api_type'):
         more_private = opt.add_argument_group('Additional options')
@@ -3043,7 +3071,9 @@ def main():
         options.update({'allinfo': 1})
         vt.getReport(**options)
 
-    elif (options.get('search') or options.get('search_intelligence')) and not options['domain'] and not options['ip'] and not options['url_scan'] and not options['url_report']:
+    elif (options.get('search') or options.get('search_intelligence')) and \
+          not options['domain'] and not options['ip'] and not options['url_scan'] and \
+          not options['url_report']:
         options.update({'allinfo': 0})
         vt.getReport(**options)
 
