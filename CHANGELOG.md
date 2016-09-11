@@ -1,3 +1,7 @@
+**11.09.2016**
+
+* Threaded downloads, to specify number of thread use `-dt` or `--download-threads`, by default 5
+
 **22.02.2016**
 
 * Big code clean up round 2
