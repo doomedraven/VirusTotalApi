@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.4.2'
+__version__ = '2.2.0'
 __license__ = 'For fun :)'
 
 import os
@@ -2382,14 +2382,14 @@ class vtAPI(PRINTER):
                 email_ids = self.__download_email(email_id, *args, **kwargs)
             try:
                 for email_id in email_ids:
-                    email_id = self.email_remove_bad_char(email_ids[email_id])
-
+                    email_id = email_ids[email_id]
+                    email_id = self.email_remove_bad_char(email_id)
                     # save
                     if kwargs.get('download'):
                         if kwargs.get('name'):
                             name = kwargs.get('name')
                         else:
-                            name = hashlib.sha256(email_ids[email_id]).hexdigest() + '.eml'
+                            name = hashlib.sha256(email_id).hexdigest() + '.eml'
 
                         #save email
                         save_email = open(name, 'wb')
@@ -2403,6 +2403,7 @@ class vtAPI(PRINTER):
 
             if msg:
                 email_dict = dict()
+                email_dict.setdefault("email_id", hashlib.sha256(email_id).hexdigest())
                 email_dict['Attachments'] = list()
                 for k, v in msg.items():
                    email_dict[k] = v
