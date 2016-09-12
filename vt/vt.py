@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.1.4.0'
+__version__ = '2.1.4.2'
 __license__ = 'For fun :)'
 
 import os
@@ -2168,7 +2168,7 @@ class vtAPI(PRINTER):
             kwargs["value"] = [kwargs.get("value")]
 
         kwargs["value"] = deque(kwargs["value"])
-        if len(kwargs["value"]) < kwargs["download_threads"]:
+        if len(kwargs["value"]) < kwargs.get("download_threads", 5):
             kwargs["download_threads"] = len(kwargs["value"])
 
         threads_list = list()
@@ -2184,7 +2184,7 @@ class vtAPI(PRINTER):
         for thread in threads_list:
             thread.join()
 
-        if kwrgs.get("return_raw", False):
+        if kwargs.get("return_raw", False):
             return self.downloaded_to_return
 
     def __downloader(self, *args,  **kwargs):
@@ -2379,24 +2379,24 @@ class vtAPI(PRINTER):
                         print '[-] Hash not found in url'
 
             if len(email_id) in (32, 40, 64): # md5, sha1, sha256
-                email_id = self.__download_email(email_id, *args, **kwargs)
-
+                email_ids = self.__download_email(email_id, *args, **kwargs)
             try:
-                email_id = self.email_remove_bad_char(email_id)
+                for email_id in email_ids:
+                    email_id = self.email_remove_bad_char(email_ids[email_id])
 
-                # save
-                if kwargs.get('download'):
-                    if kwargs.get('name'):
-                        name = kwargs.get('name')
-                    else:
-                        name = hashlib.sha256(email_id).hexdigest() + '.eml'
+                    # save
+                    if kwargs.get('download'):
+                        if kwargs.get('name'):
+                            name = kwargs.get('name')
+                        else:
+                            name = hashlib.sha256(email_ids[email_id]).hexdigest() + '.eml'
 
-                    #save email
-                    save_email = open(name, 'wb')
-                    save_email.write(email_id)
-                    save_email.close()
+                        #save email
+                        save_email = open(name, 'wb')
+                        save_email.write(email_id)
+                        save_email.close()
 
-                msg = email.message_from_string(email_id)
+                    msg = email.message_from_string(email_id)
             except Exception as e:
                 print e
                 return ''
