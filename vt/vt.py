@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.2.0'
+__version__ = '2.2.1'
 __license__ = 'For fun :)'
 
 import os
@@ -2212,8 +2212,6 @@ class vtAPI(PRINTER):
                             else:
                                 print '[-] Hash not found in url'
 
-                    #self.params['hash'] = f_hash
-
                     if kwargs.get('api_type'):
                         if file_type not in ('file', 'pcap'):
                             print '\n[!] File_type must be pcap or file\n'
@@ -2238,6 +2236,11 @@ class vtAPI(PRINTER):
                         if response.status_code == 200:
                             if kwargs.get('name'):
                                 name = kwargs.get('name')
+                                if os.path.exists(kwargs.get('name')):
+                                    for i in xrange(9999999999999):
+                                        if not os.path.exists('{}_{}'.format(name, i)):
+                                            name = '{}_{}'.format(name, i)
+                                            break
                             else:
                                 name = '{hash}'.format(hash=f_hash)
                             if "VirusTotal - Free Online Virus, Malware and URL Scanner" in response.content and \
@@ -2261,10 +2264,10 @@ class vtAPI(PRINTER):
                             if kwargs.get('return_raw'):
                                 self.downloaded_to_return.setdefault(f_hash, response.content)
                             else:
-                                dumped = open(f_hash, 'wb')
+                                dumped = open(name, 'wb')
                                 dumped.write(response.content)
                                 dumped.close()
-                                print '\tDownloaded to File -- {name}'.format(name=f_hash)
+                                print '\tDownloaded to File -- {name}'.format(name=name)
                     else:
                          self.downloaded_to_return.setdefault(f_hash, 'failed')
 
@@ -3000,7 +3003,6 @@ def main():
         dist.add_argument('--reports', action='store_true', default=False, help='Include the files\' antivirus results in the response. Possible values are \'true\' or \'false\' (default value is \'false\').')
         dist.add_argument('--limit', action='store', help='File/Url option. Retrieve limit file items at most (default: 1000).')
         dist.add_argument('--allinfo', action='store_true', help='will include the results for each particular URL scan (in exactly the same format as the URL scan retrieving API). If the parameter is not specified, each item returned will onlycontain the scanned URL and its detection ratio.')
-        dist.add_argument('--massive-download', action='store_true', default=False, help='Show information how to get massive download work')
 
     options = opt.parse_args()
 
@@ -3097,13 +3099,6 @@ def main():
     elif options.get('distribution_urls'):
         options.update({'action': 'url'})
         vt.distribution(**options)
-
-    elif options.get('massive_download'):
-        print """
-                Check download help, if need more advanced download, give me a touch or check this:
-                https://www.virustotal.com/es/documentation/scripts/vtfiles.py
-              """
-        sys.exit()
 
     elif options.get('add_comment') and len(options.value) == 2:
         options.update({'action': 'add'})
