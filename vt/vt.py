@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.2.1'
+__version__ = '2.2.2'
 __license__ = 'For fun :)'
 
 import os
@@ -2168,13 +2168,14 @@ class vtAPI(PRINTER):
             kwargs["value"] = [kwargs.get("value")]
 
         kwargs["value"] = deque(kwargs["value"])
-        if len(kwargs["value"]) < kwargs.get("download_threads", 5):
-            kwargs["download_threads"] = len(kwargs["value"])
+        threads = kwargs.get("download_threads", 5)
+        if len(kwargs["value"]) < threads:
+            threads = len(kwargs["value"])
 
         threads_list = list()
 
         self.downloaded_to_return = dict()
-        for worked in xrange(kwargs["download_threads"]):
+        for worked in xrange(threads):
             thread = threading.Thread(target=self.__downloader, args=args, kwargs=kwargs)
             thread.daemon = True
             thread.start()
@@ -2186,6 +2187,15 @@ class vtAPI(PRINTER):
 
         if kwargs.get("return_raw", False):
             return self.downloaded_to_return
+
+    def __name_auxiliar(self, *args, **kwargs):
+        name = kwargs.get('name')
+        if os.path.exists(kwargs.get('name')):
+            for i in xrange(9999999999999):
+                if not os.path.exists('{}_{}'.format(name, i)):
+                    name = '{}_{}'.format(name, i)
+                    break
+        return name
 
     def __downloader(self, *args,  **kwargs):
             """
@@ -2235,12 +2245,7 @@ class vtAPI(PRINTER):
 
                         if response.status_code == 200:
                             if kwargs.get('name'):
-                                name = kwargs.get('name')
-                                if os.path.exists(kwargs.get('name')):
-                                    for i in xrange(9999999999999):
-                                        if not os.path.exists('{}_{}'.format(name, i)):
-                                            name = '{}_{}'.format(name, i)
-                                            break
+                                self.__name_auxiliar(args, kwargs)
                             else:
                                 name = '{hash}'.format(hash=f_hash)
                             if "VirusTotal - Free Online Virus, Malware and URL Scanner" in response.content and \
@@ -2390,7 +2395,7 @@ class vtAPI(PRINTER):
                     # save
                     if kwargs.get('download'):
                         if kwargs.get('name'):
-                            name = kwargs.get('name')
+                            self.__name_auxiliar(args, kwargs)
                         else:
                             name = hashlib.sha256(email_id).hexdigest() + '.eml'
 
@@ -2437,35 +2442,36 @@ class vtAPI(PRINTER):
     def parse_email_outlook(self, *args, **kwargs):
 
         if OUTLOOK_prsr:
+            email_dict = dict()
             for email_id in kwargs.get('value'):
-
                 if len(email_id) in (32, 40, 64): # md5, sha1, sha256
                     email_id = self.__download_email(email_id, *args, **kwargs)
-
                 try:
+                    for email_hash in email_id:
+                        if kwargs.get('download', False):
 
-                    if kwargs.get('download'):
-                        name = 'email'
-                        if kwargs.get('name'):
-                            name = kwargs.get('name')
-                        else:
-                            name = hashlib.sha256(email_id).hexdigest() + '.eml'
+                            if kwargs.get('name'):
+                                self.__name_auxiliar(args, kwargs)
+                            else:
+                                name = hashlib.sha256(email_id).hexdigest() + '.eml'
 
-                        #save email
-                        save_email = open(name, 'wb')
-                        save_email.write(email_id)
-                        save_email.close()
+                            #save email
+                            save_email = open(name, 'wb')
+                            save_email.write(email_id[email_hash])
+                            save_email.close()
 
-                    msg = OUTLOOK(email_id)
-                    email_dict = msg.parse_outlook_email()
+                        msg = OUTLOOK(email_id[email_hash])
+                        email_dict.update(msg.parse_outlook_email())
 
-                    if not kwargs.get('return_json'):
-                        self.__email_print(email_dict, email_id, *args, **kwargs)
-                    else:
-                        return email_dict
+                        if not kwargs.get('return_json'):
+                            self.__email_print(email_dict, email_id[email_hash], *args, **kwargs)
+
                 except IOError:
                     print '\n[-]Not OLE file\n'
                     return {'status':'Not OLE file'}
+
+            if  kwargs.get('return_json'):
+                    return email_dict
 
         return {'status':'missed library'}
 
