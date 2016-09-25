@@ -16,8 +16,9 @@ Before using the tool you must set your api key in one of this file:
 apikey=your-apikey-here
 type=public
 intelligence=False
-engines= #put there coma separated engine list, or only one, or leave it empty
-timeout= #default 60, if you want change it, specify number here
+#coma separated engine list, can be empty
+engines=
+timeout=60
 ```
 * your type of api access, if private: type=private, if public, you can leave it empty, it will be automatically reconized as public
 * if you have access to VT Intelligence, you need set intelligence=True
