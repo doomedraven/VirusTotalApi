@@ -3106,7 +3106,7 @@ def main():
         options.update({'action': 'url'})
         vt.distribution(**options)
 
-    elif options.get('add_comment') and len(options.value) == 2:
+    elif options.get('add_comment') and len(options['value']) == 2:
         options.update({'action': 'add'})
         vt.comment(**options)
 
