@@ -308,5 +308,5 @@ class OUTLOOK(OleFile.OleFileIO):
 if __name__ == "__main__":
 
         msg = OUTLOOK(sys.argv[1])
-        print msg.parse_outlook_email()
+        print(msg.parse_outlook_email())
         #msg.debug()
