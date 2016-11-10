@@ -457,7 +457,7 @@ def get_response(url, method="get", **kwargs):
 
         except requests.exceptions.ConnectionError:
             print '\n[!] Can\'t resolv hostname, check your internet conection\n'
-            return '', ''
+            return {}, ''
 
         if response:
             if response.status_code == 403:
@@ -1605,7 +1605,7 @@ class vtAPI(PRINTER):
         if not kwargs.get('scan'):
             for index, c_file in enumerate(kwargs.get('value')):
                 if os.path.isfile(c_file):
-                    if  (os.path.getsize(submit_file) / 1048576) <= 128:
+                    if  (os.path.getsize(c_file) / 1048576) <= 128:
                         kwargs.get('value')[index] = hashlib.md5(open(c_file, 'rb').read()).hexdigest()
                     else:
                         print '[!] Ignored file: {file}, size is to big, permitted size is 128Mb'.format(file=c_file)
