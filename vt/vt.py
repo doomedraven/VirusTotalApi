@@ -1605,7 +1605,10 @@ class vtAPI(PRINTER):
         if not kwargs.get('scan'):
             for index, c_file in enumerate(kwargs.get('value')):
                 if os.path.isfile(c_file):
-                   kwargs.get('value')[index] = hashlib.md5(open(c_file, 'rb').read()).hexdigest()
+                    if  (os.path.getsize(submit_file) / 1048576) <= 128:
+                        kwargs.get('value')[index] = hashlib.md5(open(c_file, 'rb').read()).hexdigest()
+                    else:
+                        print '[!] Ignored file: {file}, size is to big, permitted size is 128Mb'.format(file=c_file)
 
         kwargs['not_exit'] = True
         hash_list = kwargs.get('value')
@@ -1614,37 +1617,33 @@ class vtAPI(PRINTER):
             # Check all list of files, not only one
             result = self.getReport(**kwargs)
             if not result and kwargs.get('scan') == True:
-                if (os.path.getsize(submit_file) / 1048576) <= 128:
-                    if os.path.isfile(submit_file):
-                        file_name = os.path.split(submit_file)[-1]
-                        files = {"file": (file_name, open(submit_file, 'rb'))}
-                        try:
-                            jdata, response = get_response(
-                                url,
-                                files=files,
-                                params=self.params,
-                                method="post"
-                            )
+                if os.path.isfile(submit_file):
+                    file_name = os.path.split(submit_file)[-1]
+                    files = {"file": (file_name, open(submit_file, 'rb'))}
+                    try:
+                        jdata, response = get_response(
+                            url,
+                            files=files,
+                            params=self.params,
+                            method="post"
+                        )
 
-                            if kwargs.get('return_raw'):
-                                return jdata
+                        if kwargs.get('return_raw'):
+                            return jdata
 
-                            simple_list = (
-                              'md5',
-                              'sha1',
-                              'sha256',
-                              'verbose_msg',
-                              'permalink'
-                            )
+                        simple_list = (
+                            'md5',
+                            'sha1',
+                            'sha256',
+                            'verbose_msg',
+                            'permalink'
+                        )
 
-                            self.simple_print(jdata, simple_list)
+                        self.simple_print(jdata, simple_list)
 
-                        except UnicodeDecodeError:
-                            print '\n[!] Sorry filaname is not utf-8 format, other format not suported at the moment'
-                            print '[!] Ignored file: {file}\n'.format(file=submit_file)
-
-                else:
-                    print '[!] Ignored file: {file}, size is to big, permitted size is 128Mb'.format(file=submit_file)
+                    except UnicodeDecodeError:
+                        print '\n[!] Sorry filaname is not utf-8 format, other format not suported at the moment'
+                        print '[!] Ignored file: {file}\n'.format(file=submit_file)
 
             elif not result and kwargs.get('scan') == False:
                 print '\nReport for file/hash : {0} not found'.format(submit_file)
