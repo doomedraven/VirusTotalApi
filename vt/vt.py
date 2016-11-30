@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.2.3'
+__version__ = '2.2.4'
 __license__ = 'For fun :)'
 
 import os
@@ -260,7 +260,6 @@ def is_file(value):
 
     try:
         if isinstance(value, list):
-
             if os.path.isfile(value[0]) and value[0].endswith('.json'):
                 return True, value[0]
 
@@ -1509,10 +1508,11 @@ class vtAPI(PRINTER):
                 except:
                     pass
 
-                print("ASLR:", bool(pe.OPTIONAL_HEADER.DllCharacteristics & 0x0040))
-                print("DEP:", bool(pe.OPTIONAL_HEADER.DllCharacteristics & 0x0100))
-                print("SEG:", bool(pe.OPTIONAL_HEADER.DllCharacteristics & 0x0400))
-                print("CFG:", bool(pe.OPTIONAL_HEADER.DllCharacteristics & 0x4000))
+                print "\n[+] Protections:"
+                print "\tASLR:", bool(pe.OPTIONAL_HEADER.DllCharacteristics & 0x0040)
+                print "\tDEP:", bool(pe.OPTIONAL_HEADER.DllCharacteristics & 0x0100)
+                print "\tSEG:", bool(pe.OPTIONAL_HEADER.DllCharacteristics & 0x0400)
+                print "\tCFG:", bool(pe.OPTIONAL_HEADER.DllCharacteristics & 0x4000)
 
                 if pe.FILE_HEADER.TimeDateStamp:
                     print "\n[+]  Created"
@@ -2194,7 +2194,8 @@ class vtAPI(PRINTER):
 
     def __name_auxiliar(self, *args, **kwargs):
         name = kwargs.get('name')
-        if os.path.exists(kwargs.get('name')):
+        print name
+        if os.path.exists(name):
             for i in xrange(9999999999999):
                 if not os.path.exists('{}_{}'.format(name, i)):
                     name = '{}_{}'.format(name, i)
@@ -2248,8 +2249,8 @@ class vtAPI(PRINTER):
                                 print '\n[!] File not found - {0}\n'.format(f_hash)
 
                         if response.status_code == 200:
-                            if kwargs.get('name'):
-                                self.__name_auxiliar(args, kwargs)
+                            if kwargs.get('name', ""):
+                                name = self.__name_auxiliar(*args, **kwargs)
                             else:
                                 name = '{hash}'.format(hash=f_hash)
                             if "VirusTotal - Free Online Virus, Malware and URL Scanner" in response.content and \
@@ -2401,7 +2402,7 @@ class vtAPI(PRINTER):
                     # save
                     if kwargs.get('download'):
                         if kwargs.get('name'):
-                            self.__name_auxiliar(args, kwargs)
+                            self.__name_auxiliar(*args, **kwargs)
                         else:
                             name = hashlib.sha256(email__id).hexdigest() + '.eml'
 
@@ -2997,7 +2998,7 @@ def main():
     if vt_config.get('api_type') or vt_config.get('intelligence'):
         downloads = opt.add_argument_group('Download options')
         downloads.add_argument('-dl', '--download',  dest='download', action='store_const', const='file', default=False, help='The md5/sha1/sha256 hash of the file you want to download or txt file with hashes, or hash and type, one by line, for example: hash,pcap or only hash. Will save with hash as name, can be space separated list of hashes to download')
-        downloads.add_argument('-nm', '--name',  action='store', default=False, help='Name with which file will saved when download it')
+        downloads.add_argument('-nm', '--name',  action='store', default="", help='Name with which file will saved when download it')
         downloads.add_argument('-dt', '--download-threads',  action='store', default=5, type=int, help='Number of simultaneous downloaders')
 
     if vt_config.get('api_type'):
