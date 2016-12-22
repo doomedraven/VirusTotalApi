@@ -455,7 +455,7 @@ def get_response(url, method="get", **kwargs):
             response = getattr(requests, method)(url, **kwargs)
 
         except requests.exceptions.ConnectionError:
-            print '\n[!] Can\'t resolv hostname, check your internet conection\n'
+            print '\n[!] Some network connection happend, check your internet conection, or it can be VT API server side issue\n'
             return {}, ''
 
         if response:
@@ -1323,7 +1323,8 @@ class vtAPI(PRINTER):
                             if kwargs.get('return_json') and  (kwargs.get('original-email') or 'original-email' in args):
                                 return_json['detailed_email_parents'] = jdata['additional_info']['detailed_email_parents']
                             else:
-                                print '\nDetailed email parents:'
+                                if not kwargs.get('return_json'):
+                                    print '\nDetailed email parents:'
                                 for email in jdata['additional_info']['detailed_email_parents']:
                                     if kwargs.get('email_original'):
                                         kwargs['value'] = [email.get('message_id')]
@@ -1482,7 +1483,7 @@ class vtAPI(PRINTER):
 
                 else:
                     if jdata.get('sha256'):
-                        print '[+] Check rescan result with sha256 in few minuts : \n\tSHA256 : {sha256}'.format(sha256=jdata['sha256'])
+                        print '[+] Check rescan result with sha256 in few minutes : \n\tSHA256 : {sha256}'.format(sha256=jdata['sha256'])
                     if jdata.get('permalink'):
                         print '\tPermanent link : {permalink}\n'.format(permalink=jdata['permalink'])
 
@@ -2136,12 +2137,12 @@ class vtAPI(PRINTER):
 
                         date_format = time.strptime(
                             comment['date'], '%Y%m%d%H%M%S')
-                        date_formated = '{year}:{month}:{day} {hour}:{minuts}:{seconds}'.format(
+                        date_formated = '{year}:{month}:{day} {hour}:{minutes}:{seconds}'.format(
                             year=date_format.tm_year,
                             month=date_format.tm_mon,
                             day=date_format.tm_mday,
                             hour=date_format.tm_hour,
-                            minuts=date_format.tm_min,
+                            minutes=date_format.tm_min,
                             seconds=date_format.tm_sec
                         )
                         if comment.get('date'):
