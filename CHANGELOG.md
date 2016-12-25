@@ -1,3 +1,7 @@
+**25.12.2016**
+
+* Config generated function introduced for first run
+
 **11.09.2016**
 
 * Threaded downloads, to specify number of thread use `-dt` or `--download-threads`, by default 5

@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.2.4'
+__version__ = '2.2.5'
 __license__ = 'For fun :)'
 
 import os
@@ -1477,7 +1477,7 @@ class vtAPI(PRINTER):
 
             for jdata in jdatas:
 
-                if jdata['response_code'] == 0 or jdata['response_code'] == -1:
+                if jdata.get('response_code', 0) == 0 or jdata.get('response_code', -1) == -1:
                     if jdata.get('verbose_msg'):
                         print '\n[!] Status : {verb_msg}\n'.format(verb_msg=jdata['verbose_msg'])
 
@@ -1895,7 +1895,7 @@ class vtAPI(PRINTER):
                 return jdatas
 
         for domain, jdata in jdatas:
-            if jdata['response_code'] == 0 or jdata['response_code'] == -1:
+            if jdata.get('response_code', 0) == 0 or jdata.get('response_code') == -1:
                 if jdata.get('verbose_msg'):
                     print '\n[!] Status : {verb_msg} : {domain}\n'.format(verb_msg=jdata['verbose_msg'], domain=domain)
 
@@ -2041,7 +2041,7 @@ class vtAPI(PRINTER):
             if kwargs.get('return_raw'):
                 return jdata
 
-        if jdata['response_code'] == 0 or jdata['response_code'] == -1:
+        if jdata.get('response_code', 0) == 0 or jdata.get('response_code', -1) == -1:
             if jdata.get('verbose_msg'):
                 print '\n[!] Status : {verb_msg}\n'.format(verb_msg=jdata['verbose_msg'])
             return
@@ -2120,7 +2120,7 @@ class vtAPI(PRINTER):
         if kwargs.get('return_raw'):
             return jdata
 
-        if jdata['response_code'] == 0 or jdata['response_code'] == -1:
+        if jdata.get('response_code', 0) == 0 or jdata.get('response_code',-1) == -1:
             if jdata.get('verbose_msg'):
                 print '\n[!] Status : {verb_msg}\n'.format(verb_msg=jdata['verbose_msg'])
             return
@@ -2829,9 +2829,51 @@ class vtAPI(PRINTER):
         if kwargs.get('return_json'):
             return return_json
 
+def create_config_file(paths):
+    path = False
+    conf_template = """
+[vt]
+apikey={}
+type={}
+intelligence={}
+    """
+
+    while True:
+
+        print("[+] Config setup start")
+        for key, value in paths.items():
+            print("\t[{}] {}".format(key, value))
+        path = raw_input("[+] Select option, where you want to create config, or type custom path:")
+        path = path.strip()
+        if path.isdigit():
+            path = int(path)
+        if path in paths:
+            path = os.path.expanduser(paths[path])
+        else:
+            print("[-] Incorrect config path")
+            continue
+        apikey = raw_input("[+] Provide your apikey:")
+        type_key = raw_input("[+] Your apikey is pubic/private:")
+        intelligence = raw_input("[+] You have access to VT intelligence True/False:")
+        try:
+            tmp = open(path, "wb")
+            tmp.write(conf_template.format(apikey.strip(), type_key.strip(), intelligence.strip()))
+            tmp.close()
+            print("[+] Config created at: {}".format(path))
+            break
+        except Exception as e:
+            print(e)
+
+    return path
+
 def read_conf(config_file = False):
       vt_config = {'intelligence': False, 'apikey': '', 'type': False}
-
+      paths = {
+        0:'.vtapi',
+        1:'vtapi.conf',
+        2:'~/.vtapi',
+        3:'~/vtapi.conf'
+        }
       help = '''
                       No API key provided or cannot read ~ /.vtapi. Specify an API key in vt.py or in ~ /.vtapi.
                       Format:
@@ -2846,10 +2888,14 @@ def read_conf(config_file = False):
 
       if not config_file:
           # config in home or in local dirrectory
-          for conf in ('.vtapi', 'vtapi.conf', '~/.vtapi', '~/vtapi.conf'):
+          for conf in paths.values():
               if os.path.exists(os.path.expanduser(conf)):
                   config_file = conf
                   break
+
+      if not config_file:
+        config_file = create_config_file(paths)
+
       try:
         confpath = os.path.expanduser(config_file)
         if os.path.exists(confpath):
@@ -3127,10 +3173,6 @@ def main():
 
     # elif options.search_by_cluster_id:
     #    vt.clusters(options.value, options.dump, True)
-
-    else:
-        sys.exit(opt.print_help())
-
 
 if __name__ == '__main__':
     main()
