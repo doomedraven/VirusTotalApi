@@ -1,3 +1,8 @@
+## Support on Beerpay
+Hey dude! Help me out for a couple of :beers:!
+
+[![Beerpay](https://beerpay.io/doomedraven/VirusTotalApi/badge.svg?style=beer-square)](https://beerpay.io/doomedraven/VirusTotalApi)  [![Beerpay](https://beerpay.io/doomedraven/VirusTotalApi/make-wish.svg?style=flat-square)](https://beerpay.io/doomedraven/VirusTotalApi?focus=wish)
+
 VirusTotal public and private APIv2 Full support
 ===================
 
@@ -309,8 +314,3 @@ Distribution options:
                         detection ratio.
   --massive-download    Show information how to get massive download work
 ```
-
-## Support on Beerpay
-Hey dude! Help me out for a couple of :beers:!
-
-[![Beerpay](https://beerpay.io/doomedraven/VirusTotalApi/badge.svg?style=beer-square)](https://beerpay.io/doomedraven/VirusTotalApi)  [![Beerpay](https://beerpay.io/doomedraven/VirusTotalApi/make-wish.svg?style=flat-square)](https://beerpay.io/doomedraven/VirusTotalApi?focus=wish)
