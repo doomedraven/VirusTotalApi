@@ -1,3 +1,7 @@
+**08.01.2017**
+
+* Engines in config now can be lowercase
+
 **25.12.2016**
 
 * Config generated function introduced for first run

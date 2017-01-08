@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.2.5'
+__version__ = '2.2.6'
 __license__ = 'For fun :)'
 
 import os
@@ -312,18 +312,22 @@ def get_detections(scans, **kwargs):
     else:
         return
 
-    for engine in engines:
+    # lower case for easier comparation
+    engines = [eng.lower().strip() for eng in engines]
+    short_list = list()
+    for engine in scans.keys():
         engine = engine.strip()
-        if scans.get(engine) and scans[engine].get('result'):
+        if engine.lower() in engines and scans[engine].get('result'):
+            short_list.append(engine)
             plist.append([engine,
                           scans[engine]['result'],
                           scans[engine]['version'] if 'version' in scans[engine] and scans[engine]['version'] else ' -- ',
                           scans[engine]['update'] if 'update' in scans[engine] and scans[engine]['update'] else ' -- '
                           ])
+
     if plist != [[]]:
         av_size, result_size, version = get_adequate_table_sizes(
-            scans, True, engines)
-
+            scans, True, short_list)
         pretty_print_special(plist,
                 ['Vendor name',  'Result', 'Version', 'Last Update'],
                 [av_size, result_size, version, 11],
