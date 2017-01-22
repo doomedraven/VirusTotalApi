@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.2.6'
+__version__ = '2.2.7'
 __license__ = 'For fun :)'
 
 import os
@@ -578,8 +578,12 @@ class vtAPI(PRINTER):
                     else:
                         if 'hashes' in jdata and jdata['hashes']:
                             print '[+] Matched hash(es):'
-                            for file_hash in  jdata['hashes']:
+                            for file_hash in jdata['hashes']:
                                 print '\t{0}'.format(file_hash)
+                            if kwargs.get('download'):
+                                kwargs.update({'value':jdata['hashes'], 'download':'file'})
+                                self.download(**kwargs)
+
                 if kwargs.get('allinfo') == 1:
 
                     if kwargs.get('dump'):
@@ -2184,15 +2188,23 @@ class vtAPI(PRINTER):
         threads_list = list()
 
         self.downloaded_to_return = dict()
+        self._stop = threading.Event()
+        self._stop.set()
+
         for worked in xrange(threads):
             thread = threading.Thread(target=self.__downloader, args=args, kwargs=kwargs)
             thread.daemon = True
             thread.start()
 
             threads_list.append(thread)
-
-        for thread in threads_list:
-            thread.join()
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            self._stop.clear()
+        else:
+            for thread in threads_list:
+                thread.join()
 
         if kwargs.get("return_raw", False):
             return self.downloaded_to_return
@@ -2213,79 +2225,81 @@ class vtAPI(PRINTER):
             """
 
             super_file_type = kwargs.get('download')
-            while kwargs['value']:
-                f_hash = kwargs['value'].pop()
-                f_hash = f_hash.strip()
-                if f_hash != '':
+            while kwargs['value'] and self._stop.is_set():
+                try:
+                    f_hash = kwargs['value'].pop()
+                    f_hash = f_hash.strip()
+                    if f_hash != '':
 
-                    if f_hash.find(',') != -1:
-                        file_type = f_hash.split(',')[-1]
-                        f_hash = f_hash.split(',')[0]
-                    else:
-                        file_type = super_file_type
+                        if f_hash.find(',') != -1:
+                            file_type = f_hash.split(',')[-1]
+                            f_hash = f_hash.split(',')[0]
+                        else:
+                            file_type = super_file_type
 
-                    file_type = kwargs.get('download')
-                    if f_hash.startswith('http'):
-                            result_hash = re.findall('[\w\d]{64}', f_hash, re.I)
-                            if result_hash:
-                                f_hash = result_hash[0]
-                            else:
-                                print '[-] Hash not found in url'
+                        file_type = kwargs.get('download')
+                        if f_hash.startswith('http'):
+                                result_hash = re.findall('[\w\d]{64}', f_hash, re.I)
+                                if result_hash:
+                                    f_hash = result_hash[0]
+                                else:
+                                    print '[-] Hash not found in url'
 
-                    if kwargs.get('api_type'):
-                        if file_type not in ('file', 'pcap'):
-                            print '\n[!] File_type must be pcap or file\n'
+                        if kwargs.get('api_type'):
+                            if file_type not in ('file', 'pcap'):
+                                print '\n[!] File_type must be pcap or file\n'
+                                return
+                            if file_type == 'pcap':
+                                url = self.base.format('file/network-traffic')
+                            elif file_type == 'file':
+                                url = self.base.format('file/download')
+                        elif kwargs.get('intelligence'):
+                            url = 'https://www.virustotal.com/intelligence/download/'
+                        else:
+                            print '[-] You don\'t have permission for download'
                             return
-                        if file_type == 'pcap':
-                            url = self.base.format('file/network-traffic')
-                        elif file_type == 'file':
-                            url = self.base.format('file/download')
-                    elif kwargs.get('intelligence'):
-                        url = 'https://www.virustotal.com/intelligence/download/'
-                    else:
-                        print '[-] You don\'t have permission for download'
-                        return
-                    params = dict()
-                    params["apikey"] = self.params["apikey"]
-                    params["hash"] = f_hash
-                    response = requests.get(url, params=params)
-                    if response:
-                        if response.status_code == 404:
-                                print '\n[!] File not found - {0}\n'.format(f_hash)
+                        params = dict()
+                        params["apikey"] = self.params["apikey"]
+                        params["hash"] = f_hash
+                        response = requests.get(url, params=params)
+                        if response:
+                            if response.status_code == 404:
+                                    print '\n[!] File not found - {0}\n'.format(f_hash)
 
-                        if response.status_code == 200:
-                            if kwargs.get('name', ""):
-                                name = self.__name_auxiliar(*args, **kwargs)
-                            else:
-                                name = '{hash}'.format(hash=f_hash)
-                            if "VirusTotal - Free Online Virus, Malware and URL Scanner" in response.content and \
-                               '{"response_code": 0, "hash":' not in response.content: # filter out keep-alive new chunks
-                                    try:
-                                        json_data = response.json()
-                                        print '\n\t{0}: {1}'.format(json_data['verbose_msg'], f_hash)
-                                    except:
-                                        print '\tFile can\'t be downloaded: {0}'.format(f_hash)
-                            #Sanity checks
-                            downloaded_hash = ''
-                            if len(f_hash) == 32:
-                                downloaded_hash = hashlib.md5(response.content).hexdigest()
-                            elif len(f_hash) == 40:
-                                downloaded_hash = hashlib.sha1(response.content).hexdigest()
-                            elif len(f_hash) == 64:
-                                downloaded_hash = hashlib.sha256(response.content).hexdigest()
+                            if response.status_code == 200:
+                                if kwargs.get('name', ""):
+                                    name = self.__name_auxiliar(*args, **kwargs)
+                                else:
+                                    name = '{hash}'.format(hash=f_hash)
+                                if "VirusTotal - Free Online Virus, Malware and URL Scanner" in response.content and \
+                                   '{"response_code": 0, "hash":' not in response.content: # filter out keep-alive new chunks
+                                        try:
+                                            json_data = response.json()
+                                            print '\n\t{0}: {1}'.format(json_data['verbose_msg'], f_hash)
+                                        except:
+                                            print '\tFile can\'t be downloaded: {0}'.format(f_hash)
+                                #Sanity checks
+                                downloaded_hash = ''
+                                if len(f_hash) == 32:
+                                    downloaded_hash = hashlib.md5(response.content).hexdigest()
+                                elif len(f_hash) == 40:
+                                    downloaded_hash = hashlib.sha1(response.content).hexdigest()
+                                elif len(f_hash) == 64:
+                                    downloaded_hash = hashlib.sha256(response.content).hexdigest()
 
-                            if f_hash != downloaded_hash:
-                                print '[-] Downloaded content has not the same hash as requested'
-                            if kwargs.get('return_raw'):
-                                self.downloaded_to_return.setdefault(f_hash, response.content)
-                            else:
-                                dumped = open(name, 'wb')
-                                dumped.write(response.content)
-                                dumped.close()
-                                print '\tDownloaded to File -- {name}'.format(name=name)
-                    else:
-                         self.downloaded_to_return.setdefault(f_hash, 'failed')
-
+                                if f_hash != downloaded_hash:
+                                    print '[-] Downloaded content has not the same hash as requested'
+                                if kwargs.get('return_raw'):
+                                    self.downloaded_to_return.setdefault(f_hash, response.content)
+                                else:
+                                    dumped = open(name, 'wb')
+                                    dumped.write(response.content)
+                                    dumped.close()
+                                    print '\tDownloaded to File -- {name}'.format(name=name)
+                        else:
+                             self.downloaded_to_return.setdefault(f_hash, 'failed')
+                except:
+                    self._stop.set()
     # normal email attachment extractor
     def __email_parse_attachment(self, message_part):
 
@@ -2458,6 +2472,10 @@ class vtAPI(PRINTER):
             for email_id in kwargs.get('value'):
                 if len(email_id) in (32, 40, 64): # md5, sha1, sha256
                     email_id = self.__download_email(email_id, *args, **kwargs)
+                else:
+                    email_id = dict()
+                    for value in kwargs.get('value'):
+                        email_id.update({value: value})
                 try:
                     for email_hash in email_id:
                         if kwargs.get('download', False):

@@ -1,3 +1,9 @@
+**22.01.2017**
+
+* parse email outlook fixed
+* search intelligence now support `download` and `download-threads options
+
+
 **08.01.2017**
 
 * Engines in config now can be lowercase

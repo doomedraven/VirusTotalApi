@@ -1,7 +1,10 @@
 *.pyc
 *.txt
+.idea/*
 new_features/*
 dist/*
 vt.egg-info/PKG-INFO
 
 vt/keys
+
+.idea/misc.xml
