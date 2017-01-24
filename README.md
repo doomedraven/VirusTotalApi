@@ -9,7 +9,7 @@ VirusTotal public and private APIv2 Full support
 This script was made public into the official VT API documentation page.
 https://www.virustotal.com/en/documentation/public-api/
 
-Before using the tool you must set your api key in one of this file:
+Before using the tool you must set your api key in one of this file or you can start without creating it and you will be promted to provide the data:
 * Home Directory:
     * __~.vtapi__, __~vtapi.conf__
 * or current directory where vt script placed 
@@ -314,3 +314,7 @@ Distribution options:
                         detection ratio.
   --massive-download    Show information how to get massive download work
 ```
+
+
+### Mention of tool:
+ * by @seifreed - [Hunting .NET malware](https://medium.com/@seifreed/hunting-net-malware-40235e11dc05#.tzavobki0)
