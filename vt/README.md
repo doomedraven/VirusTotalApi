@@ -329,4 +329,5 @@ Options -v/--verbose active verbose mode in search, and if you look for domain i
 this will be activate all domain verbose mode options
 </code></pre>
  
- Tested on Mac Os X 10.8.5/10.9 and Ubuntu 12.04.4
+ ### Mention of tool:
+ * by @seifreed - [Hunting .NET malware](https://medium.com/@seifreed/hunting-net-malware-40235e11dc05#.tzavobki0)
