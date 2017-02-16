@@ -2175,7 +2175,7 @@ class vtAPI(PRINTER):
         super_file_type = kwargs.get("download")
 
         if isinstance(kwargs.get("value"), list) and len(kwargs.get("value")) == 1:
-            if os.path.exists(kwargs.get("value")[0]):
+            if os.path.exists(kwargs.get("value")[0]) and kwargs.get("value")[0].endswith(".txt"):
                 kwargs["value"] = [dl_hash.strip() for dl_hash in open(kwargs.get("value")[0], "rb").readlines()]
         elif isinstance(kwargs.get("value"), basestring):
             kwargs["value"] = [kwargs.get("value")]
@@ -2211,7 +2211,8 @@ class vtAPI(PRINTER):
 
     def __name_auxiliar(self, *args, **kwargs):
         name = kwargs.get('name')
-        print name
+        file_type = kwargs.get('download')
+        print file_type
         if os.path.exists(name):
             for i in xrange(9999999999999):
                 if not os.path.exists('{}_{}'.format(name, i)):
@@ -2271,6 +2272,8 @@ class vtAPI(PRINTER):
                                     name = self.__name_auxiliar(*args, **kwargs)
                                 else:
                                     name = '{hash}'.format(hash=f_hash)
+                                if file_type == "pcap":
+                                    name += ".pcap"
                                 if "VirusTotal - Free Online Virus, Malware and URL Scanner" in response.content and \
                                    '{"response_code": 0, "hash":' not in response.content: # filter out keep-alive new chunks
                                         try:
@@ -3066,13 +3069,13 @@ def main():
 
     if vt_config.get('api_type') or vt_config.get('intelligence'):
         downloads = opt.add_argument_group('Download options')
-        downloads.add_argument('-dl', '--download',  dest='download', action='store_const', const='file', default=False, help='The md5/sha1/sha256 hash of the file you want to download or txt file with hashes, or hash and type, one by line, for example: hash,pcap or only hash. Will save with hash as name, can be space separated list of hashes to download')
+        downloads.add_argument('-dl', '--download',  dest='download', action='store_const', const='file', default=False, help='The md5/sha1/sha256 hash of the file you want to download or txt file with .txt extension, with hashes, or hash and type, one by line, for example: hash,pcap or only hash. Will save with hash as name, can be space separated list of hashes to download')
         downloads.add_argument('-nm', '--name',  action='store', default="", help='Name with which file will saved when download it')
         downloads.add_argument('-dt', '--download-threads',  action='store', default=5, type=int, help='Number of simultaneous downloaders')
 
     if vt_config.get('api_type'):
         more_private = opt.add_argument_group('Additional options')
-        more_private.add_argument('--pcap', dest='download', action='store_const', const='pcap', default=False, help='The md5/sha1/sha256 hash of the file whose network traffic dump you want to retrieve. Will save as VTDL_hash.pcap')
+        more_private.add_argument('--pcap', dest='download', action='store_const', const='pcap', default=False, help='The md5/sha1/sha256 hash of the file whose network traffic dump you want to retrieve. Will save as hash.pcap')
         more_private.add_argument('--clusters', action='store_true',help='A specific day for which we want to access the clustering details, example: 2013-09-10')
         # more_private.add_argument('--search-by-cluster-id', action='store_true', help=' the id property of each cluster allows users to list files contained in the given cluster, example: vhash 0740361d051)z1e3z 2013-09-10')
         more_private.add_argument('--distribution-files', action='store_true', help='Timestamps are just integer numbers where higher values mean more recent files. Both before and after parameters are optional, if they are not provided the oldest files in the queue are returned in timestamp ascending order.')
