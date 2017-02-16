@@ -2197,14 +2197,14 @@ class vtAPI(PRINTER):
             thread.start()
 
             threads_list.append(thread)
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            self._stop.clear()
-        else:
-            for thread in threads_list:
-                thread.join()
+
+        while kwargs["value"]:
+            time.sleep(1)
+
+        self._stop.clear()
+
+        for thread in threads_list:
+            thread.join()
 
         if kwargs.get("return_raw", False):
             return self.downloaded_to_return
