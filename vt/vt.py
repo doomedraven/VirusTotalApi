@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.2.7'
+__version__ = '2.2.9'
 __license__ = 'For fun :)'
 
 import os
@@ -1885,8 +1885,9 @@ class vtAPI(PRINTER):
             return
 
         if not jdatas:
-            if isinstance(kwargs.get('value'), list) and len(kwargs.get('value')) == 1:
-                    pass
+            if isinstance(kwargs.get('value'), list) and len(kwargs.get('value')) == 1 and \
+                os.path.exists(kwargs.get("value")[0]) and kwargs.get("value")[0].endswith(".txt"):
+                kwargs["value"] = [domain.strip() for domain in open(kwargs.get("value")[0], "rb").readlines()]
             elif isinstance(kwargs.get('value'), basestring):
                 kwargs['value'] = [kwargs.get('value')]
 
