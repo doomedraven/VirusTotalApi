@@ -1672,7 +1672,7 @@ class vtAPI(PRINTER):
         url_uploads = []
         result = False
         md5_hash = ''
-
+        urls = list()
         if kwargs.get('value')[0].endswith('.json'):
             result, name = is_file(kwargs.get('value'))
 
