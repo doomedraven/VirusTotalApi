@@ -1716,7 +1716,6 @@ class vtAPI(PRINTER):
 
         for url_upload in url_uploads:
             cont += 1
-            url_upload = url_upload.strip()
             if kwargs.get('key') == 'scan':
                 print 'Submitting url(s) for analysis: \n\t{url}'.format(url=url_upload.replace(', ', '\n\t'))
                 self.params['url'] = url_upload
