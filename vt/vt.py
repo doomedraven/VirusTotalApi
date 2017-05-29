@@ -1669,7 +1669,7 @@ class vtAPI(PRINTER):
         request with one single call (up to 4 resources or 25 if you have private api, per call with the standard request rate).
         """
 
-        url_uploads = []
+        url_uploads = list()
         result = False
         md5_hash = ''
         urls = list()
@@ -1700,29 +1700,32 @@ class vtAPI(PRINTER):
 
                     start += increment
 
-                    if len(urls) > end + increment:
+                    if len(kwargs.get('value')) > end + increment:
                         end += increment
-                    elif len(urls) <= end + increment:
-                        end = len(urls)
+                    elif len(kwargs.get('value')) <= end + increment:
+                        end = len(kwargs.get('value'))
 
                     if kwargs.get('key') == 'scan':
-                        url_uploads.append(['\n'.join(map(lambda url: url.replace(',', '').strip(), urls[start:end]))])
+                        url_uploads.append(['\n'.join(map(lambda url: url.replace(',', '').strip(), kwargs.get('value')[start:end]))])
                     elif kwargs.get('key') == 'report':
-                        url_uploads.append(['\n'.join(map(lambda url: url.replace(',', '').strip(), urls[start:end]))])
+                        url_uploads.append(['\n'.join(map(lambda url: url.replace(',', '').strip(), kwargs.get('value')[start:end]))])
 
-                    if end == len(urls):
+                    if end == len(kwargs.get('value')):
                         break
         cont = 0
-
         for url_upload in url_uploads:
             cont += 1
+            to_show = url_upload
+            if isinstance(url_upload, list) and "\n" in url_upload[0]:
+                to_show = url_upload[0].split("\n")
+
             if kwargs.get('key') == 'scan':
-                print 'Submitting url(s) for analysis: \n\t{url}'.format(url=url_upload.replace(', ', '\n\t'))
+                print 'Submitting url(s) for analysis: \n\t{url}'.format(url="\n\t".join(to_show))
                 self.params['url'] = url_upload
                 url = self.base.format('url/scan')
 
             elif kwargs.get('key') == 'report':
-                print '\nSearching for url(s) report: \n\t{url}'.format(url=url_upload.replace(', ', '\n\t'))
+                print '\nSearching for url(s) report: \n\t{url}'.format(url="\n\t".join(to_show))
                 self.params['resource'] = url_upload
                 self.params['scan'] = kwargs.get('action')
                 url = self.base.format('url/report')
@@ -1747,7 +1750,7 @@ class vtAPI(PRINTER):
 
                         if kwargs.get('key') == 'report':
                             kwargs.update({'url_report':True})
-                            parse_report(jdata, **kwargs)
+                            parse_report(jdata_part, **kwargs)
 
                         elif kwargs.get('key') == 'scan':
                             if jdata_part.get('verbose_msg'):
