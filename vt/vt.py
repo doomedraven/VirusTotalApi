@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.2.9'
+__version__ = '2.2.11'
 __license__ = 'For fun :)'
 
 import os
@@ -22,6 +22,7 @@ import csv
 import time
 import json
 import email
+import base64
 import hashlib
 import argparse
 import requests
@@ -2346,6 +2347,11 @@ class vtAPI(PRINTER):
                             os.makedirs(path_where_save)
                         print '[+] Saving attachment with hash: {0}'.format(email_dict['Attachments'][i]['sha256'])
                         dump_file = open(os.path.join(path_where_save, email_dict['Attachments'][i]['sha256']), 'wb')
+                        # ToDo improve this
+                        if email_dict['Attachments'][i]['attachment'].startswith("filename="):
+                            attach_parts = email_dict['Attachments'][i]['attachment'].split("\r\n\r\n")
+                            if len(attach_parts) == 2:
+                                email_dict['Attachments'][i]['attachment'] = base64.b64decode(attach_parts[1])
                         dump_file.write(email_dict['Attachments'][i]['attachment'])
                         dump_file.close()
 
@@ -2359,7 +2365,13 @@ class vtAPI(PRINTER):
                   for part in email_dict['Attachments']:
                         #to have order
                         for value in ('md5', 'sha1', 'sha256', 'name', 'size', 'content_type'):
-                            line += '{0} : {1}\n'.format(value, part.get(value))
+                            if value == "name":
+                                try:
+                                    line += '{0} : {1}\n'.format(value, part.get(value, "").encode("utf-8", "replace"))
+                                except Exception as e:
+                                    print(value, e)
+                            else:
+                                 line += '{0} : {1}\n'.format(value, part.get(value, ""))
 
                   plist.append([k,line])
                 else:
@@ -2503,11 +2515,10 @@ class vtAPI(PRINTER):
                             self.__email_print(email_dict, email_id[email_hash], *args, **kwargs)
 
                 except IOError:
-                    print '\n[-]Not OLE file\n'
                     return {'status':'Not OLE file'}
 
             if  kwargs.get('return_json'):
-                    return email_dict
+                return email_dict
 
         return {'status':'missed library'}
 
