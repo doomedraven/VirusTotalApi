@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.2.11'
+__version__ = '2.2.12'
 __license__ = 'For fun :)'
 
 import os
@@ -68,6 +68,7 @@ except:
     MAGIC = False
 
 req_timeout = 60
+re_compile_orig = re.compile
 
 class PRINTER(object):
 
@@ -2348,10 +2349,12 @@ class vtAPI(PRINTER):
                         print '[+] Saving attachment with hash: {0}'.format(email_dict['Attachments'][i]['sha256'])
                         dump_file = open(os.path.join(path_where_save, email_dict['Attachments'][i]['sha256']), 'wb')
                         # ToDo improve this
+                        """
                         if email_dict['Attachments'][i]['attachment'].startswith("filename="):
                             attach_parts = email_dict['Attachments'][i]['attachment'].split("\r\n\r\n")
-                            if len(attach_parts) == 2:
+                            if len(attach_parts) >= 2:
                                 email_dict['Attachments'][i]['attachment'] = base64.b64decode(attach_parts[1])
+                        """
                         dump_file.write(email_dict['Attachments'][i]['attachment'])
                         dump_file.close()
 
@@ -2411,6 +2414,9 @@ class vtAPI(PRINTER):
         msg = ''
         email_dict = dict()
 
+        def re_compile_our(pattern):
+            return re_compile_orig(pattern.replace("?P<end>--", "?P<end>--+"))
+
         if kwargs.get('value'):
             result, name = is_file(kwargs.get('value'))
             if result:
@@ -2448,7 +2454,10 @@ class vtAPI(PRINTER):
                         save_email.write(email__id)
                         save_email.close()
 
+                    re.compile = re_compile_our
                     msg = email.message_from_string(email__id)
+                    re.compile = re_compile_orig
+
             except Exception as e:
                 print e
                 return ''
@@ -2481,7 +2490,7 @@ class vtAPI(PRINTER):
                 if not kwargs.get('return_json'):
                     self.__email_print(email_dict, hashlib.sha256(email__id).hexdigest(), *args, **kwargs)
 
-            return email_dict
+        return email_dict
 
     def parse_email_outlook(self, *args, **kwargs):
 
