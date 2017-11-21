@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.2.12'
+__version__ = '2.2.14'
 __license__ = 'For fun :)'
 
 import os
@@ -615,7 +615,7 @@ class vtAPI(PRINTER):
                         if kwargs.get('return_json'):
                             return_json['ITW_urls'] =  jdata.get('ITW_urls')
                         else:
-                              self.list_print(jdata, 'ITW_urls')
+                            self.list_print(jdata, ['ITW_urls'])
 
                     if kwargs.get('verbose'):
                         file_info_list = (
@@ -1718,16 +1718,19 @@ class vtAPI(PRINTER):
         for url_upload in url_uploads:
             cont += 1
             to_show = url_upload
-            if isinstance(url_upload, list) and "\n" in url_upload[0]:
-                to_show = url_upload[0].split("\n")
+            if isinstance(url_upload, list):
+                if "\n" in url_upload[0]:
+                    to_show = "\n\t".join(url_upload[0].split("\n"))
+                else:
+                    to_show = "\n\t".join(url_upload)
 
             if kwargs.get('key') == 'scan':
-                print 'Submitting url(s) for analysis: \n\t{url}'.format(url="\n\t".join(to_show))
+                print 'Submitting url(s) for analysis: \n\t{url}'.format(url=to_show)
                 self.params['url'] = url_upload
                 url = self.base.format('url/scan')
 
             elif kwargs.get('key') == 'report':
-                print '\nSearching for url(s) report: \n\t{url}'.format(url="\n\t".join(to_show))
+                print '\nSearching for url(s) report: \n\t{url}'.format(url=to_show)
                 self.params['resource'] = url_upload
                 self.params['scan'] = kwargs.get('action')
                 url = self.base.format('url/report')
@@ -1933,7 +1936,7 @@ class vtAPI(PRINTER):
                 complicated_dict = (
                      'WOT domain info',
                      'Webutation domain info',
-                     'resolutions'
+                     #'resolutions'
                 )
 
                 for key in single_dict:
@@ -2286,6 +2289,10 @@ class vtAPI(PRINTER):
                                             print '\n\t{0}: {1}'.format(json_data['verbose_msg'], f_hash)
                                         except:
                                             print '\tFile can\'t be downloaded: {0}'.format(f_hash)
+                                elif "failed" == response.content:
+                                    print '\tFile not exists on VT?: {0}'.format(f_hash)
+                                    self.downloaded_to_return.setdefault(f_hash, 'failed')
+                                    continue
                                 #Sanity checks
                                 downloaded_hash = ''
                                 if len(f_hash) == 32:
