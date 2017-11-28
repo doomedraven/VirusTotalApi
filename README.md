@@ -54,6 +54,7 @@ License: Do whatever you want with it :)<br />
 Small manual with examples
 http://www.doomedraven.com/2013/11/script-virustotal-public-and-private.html
 
+* ___BEAR IN MIND THIS IS AN OLD EXAMPLE, use -h for current help___
 ```
 vt -h
 usage: value [-h] [-fi] [-udb USERDB] [-fs] [-f] [-u] [-ur] [-d] [-i] [-w]
@@ -68,7 +69,6 @@ usage: value [-h] [-fi] [-udb USERDB] [-fs] [-f] [-u] [-ur] [-d] [-i] [-w]
              [-bs] [-dl] [-nm NAME] [--pcap] [--clusters]
              [--distribution-files] [--distribution-urls] [--before BEFORE]
              [--after AFTER] [--reports] [--limit LIMIT] [--allinfo]
-             [--massive-download]
              [value [value ...]]
 
 Scan/Search/ReScan/JSON parse
@@ -312,7 +312,6 @@ Distribution options:
                         API). If the parameter is not specified, each item
                         returned will onlycontain the scanned URL and its
                         detection ratio.
-  --massive-download    Show information how to get massive download work
 ```
 
 
