@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.2.14'
+__version__ = '2.2.15'
 __license__ = 'For fun :)'
 
 import os
@@ -1498,6 +1498,16 @@ class vtAPI(PRINTER):
                         print '\tPermanent link : {permalink}\n'.format(permalink=jdata['permalink'])
 
     def fileInfo(self, *args,  **kwargs):
+        mem_perm = {
+            "0x0": "-",
+            "0x2": "x",
+            "0x4": "r",
+            "0x6": "rx",
+            "0x8": "w",
+            "0xa": "wx",
+            "0xc": "rw",
+        }
+
         if PEFILE:
             files = kwargs.get('value')
             for file in files:
@@ -1541,9 +1551,12 @@ class vtAPI(PRINTER):
                         print '    ', ts
 
                 if pe.sections:
-                    print "\n[+] Sections"
+                    print("\n[+] Sections")
+                    plist = []
                     for section in pe.sections:
-                        print '    {0}: {1}'.format(section.Name, section.SizeOfRawData)
+                        plist.append([section.Name.rstrip("\0"), section.SizeOfRawData, hex(section.VirtualAddress), hex(section.Misc_VirtualSize), hex(section.Characteristics), mem_perm[hex(section.Characteristics)[:3]]])
+                    pretty_print_special(plist, ['Name', 'SizeOfRawData', "VA", "Virtual Size", "Characteristics", "R|W|X"], [10, 15, 10, 10, 15, 5], ['c', 'c', 'c', 'c', 'c', 'c'], True)
+                    del plist
 
                 if pe.DIRECTORY_ENTRY_IMPORT:
                     print "\n[+] Imports"
@@ -1567,8 +1580,8 @@ class vtAPI(PRINTER):
                             print "\n[+] File type"
                             ms = magic.from_file(file)
                             print '    ',ms
-                    except:
-                        pass
+                    except Exception as e:
+                        print(e)
 
                 if kwargs.get('userdb') and os.path.exists(kwargs.get('userdb')):
 
