@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '2.2.15'
+__version__ = '2.2.16'
 __license__ = 'For fun :)'
 
 import os
@@ -1500,8 +1500,11 @@ class vtAPI(PRINTER):
     def fileInfo(self, *args,  **kwargs):
         mem_perm = {
             "0x0": "-",
+            "0x1": "s",
             "0x2": "x",
+            "0x3": "sx",
             "0x4": "r",
+            "0x5": "sr",
             "0x6": "rx",
             "0x8": "w",
             "0xa": "wx",
