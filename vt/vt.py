@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '3'
+__version__ = '3.0.0.a2'
 __license__ = 'For fun :)'
 
 import os
@@ -2376,7 +2376,7 @@ class vtAPI(PRINTER):
 
             if len(email_id) >=64:
                 # in case if you pass full email instead of hash
-                email_id = hashlib.sha256(email_id).hexdigest()
+                email_id = hashlib.sha256(email_id.encode('utf-8')).hexdigest()
 
             print('\n[+] Details of email: {0}'.format(email_id))
             plist = [[]]
@@ -2444,10 +2444,11 @@ class vtAPI(PRINTER):
 
     def email_remove_bad_char(self, email):
         ''' I saw few emails which start with ">" and they not parsed correctly'''
-
-        if email.startswith('>'):
-            email = email[1:]
-
+        try:
+            if email.startswith('>'):
+                email = email[1:]
+        except Exception as e:
+            print(e)
         return email
 
     def parse_email(self, *args,  **kwargs):
@@ -2479,6 +2480,8 @@ class vtAPI(PRINTER):
                 email_id = self.__download_email(email_id, *args, **kwargs)
             if isinstance(email_id, str):
                 email_id = {"email":email_id}
+            if isinstance(email_id, bytes):
+                email_id = {"email":email_id.decode('utf-8')}
             try:
                 for email__id in email_id:
                     email__id = email_id[email__id]
@@ -2505,7 +2508,7 @@ class vtAPI(PRINTER):
 
             if msg:
                 email_dict = dict()
-                email_dict.setdefault("email_id", hashlib.sha256(email__id).hexdigest())
+                email_dict.setdefault("email_id", hashlib.sha256(email__id.encode('utf-8')).hexdigest())
                 email_dict['Attachments'] = list()
                 for k, v in msg.items():
                    email_dict[k] = v
@@ -2529,7 +2532,7 @@ class vtAPI(PRINTER):
                         email_dict['Body_html'] = part.get_payload(decode=True)
 
                 if not kwargs.get('return_json'):
-                    self.__email_print(email_dict, hashlib.sha256(email__id).hexdigest(), *args, **kwargs)
+                    self.__email_print(email_dict, hashlib.sha256(email__id.encode('utf-8')).hexdigest(), *args, **kwargs)
 
         return email_dict
 
