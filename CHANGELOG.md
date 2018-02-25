@@ -1,11 +1,11 @@
-** 25.02.2018**
+**25.02.2018**
 
 * Python3 friendly, still may have some bugs, so feel free to report
 
 **22.01.2017**
 
 * parse email outlook fixed
-* search intelligence now support `download` and `download-threads options
+* search intelligence now support `download` and `download-threads` options
 
 
 **08.01.2017**
