@@ -1,3 +1,7 @@
+** 25.02.2018**
+
+* Python3 friendly, still may have some bugs, so feel free to report
+
 **22.01.2017**
 
 * parse email outlook fixed
