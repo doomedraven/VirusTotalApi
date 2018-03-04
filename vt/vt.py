@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Full VT APIv2 functions added by Andriy Brukhovetskyy
