@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '3.0.0.a2'
+__version__ = '3.0.0'
 __license__ = 'For fun :)'
 
 import os
@@ -44,7 +44,6 @@ else:
     # python-dateutil
 
 #print mysql style tables
-#import thirdpart.texttable.texttable as tt
 import texttable as tt
 #parse OUTLOOK .msg
 try:
@@ -72,7 +71,7 @@ except ImportError:
 try:
     import magic
     MAGIC = True
-except:
+except ImportError:
     MAGIC = False
 
 req_timeout = 60
@@ -478,7 +477,7 @@ def get_response(url, method="get", **kwargs):
                 try:
                     jdata = response.json()
 
-                except:
+                except Exception as e:
                     jdata = response.json
 
                 break
@@ -527,7 +526,6 @@ class vtAPI(PRINTER):
             else:
                 jdatas = [jdatas]
 
-
             kwargs['dump'] = False
 
         else:
@@ -544,8 +542,6 @@ class vtAPI(PRINTER):
                 if os.path.isfile(hashes_report):
                     print('\nCalculating hash for:', hashes_report)
                     hashes_report = hashlib.sha256(open(hashes_report, 'rb').read()).hexdigest()
-                    #print '\n\t Hash is:', hashes_report
-
                 if (kwargs.get('search_intelligence') or 'search_intelligence' in args):
                     self.params['query'] = [hashes_report]
                     url = self.base.format('file/search')
@@ -588,7 +584,7 @@ class vtAPI(PRINTER):
                             for file_hash in jdata['hashes']:
                                 print('\t{0}'.format(file_hash))
                             if kwargs.get('download'):
-                                kwargs.update({'value':jdata['hashes'], 'download':'file'})
+                                kwargs.update({'value': jdata['hashes'], 'download':'file'})
                                 self.download(**kwargs)
 
                 if kwargs.get('allinfo') == 1:
@@ -618,7 +614,7 @@ class vtAPI(PRINTER):
 
                     if jdata.get('ITW_urls') and ((kwargs.get('ITW_urls') or 'ITW_urls' in args) or kwargs.get('verbose')):
                         if kwargs.get('return_json'):
-                            return_json['ITW_urls'] =  jdata.get('ITW_urls')
+                            return_json['ITW_urls'] = jdata.get('ITW_urls')
                         else:
                             self.list_print(jdata, ['ITW_urls'])
 
@@ -629,7 +625,7 @@ class vtAPI(PRINTER):
                             'tags',
                             'unique_sources',
                         )
-                        self.simple_print(jdata,file_info_list)
+                        self.simple_print(jdata, file_info_list)
 
                     if jdata.get('additional_info'):
                         simple_list = (
@@ -939,8 +935,8 @@ class vtAPI(PRINTER):
                                 print('\t{email}'.format(email=email))
 
                         if jdata['additional_info'].get('referers') and kwargs.get('verbose'):
-                            print ('\n[+] Referers:')
-                            print ('\t', '\n\t'.join(jdata['additional_info']['referers']))
+                            print('\n[+] Referers:')
+                            print('\t', '\n\t'.join(jdata['additional_info']['referers']))
 
                         # IDS, splited to be easily getted throw imported vt as library
                         ids = (
@@ -955,12 +951,12 @@ class vtAPI(PRINTER):
                                     if jdata['additional_info'].get(key, ''):
                                         self.print_key(key)
                                         for rule in jdata['additional_info'].get(key):
-                                            print ('\nRule:', rule)
-                                            print ('\tAlert\n\t\t', jdata['additional_info'][key][rule]['alert'])
-                                            print ('\tClassification\n\t\t', jdata['additional_info'][key][rule]['classification'])
-                                            print ('\tDescription:')
+                                            print('\nRule:', rule)
+                                            print('\tAlert\n\t\t', jdata['additional_info'][key][rule]['alert'])
+                                            print('\tClassification\n\t\t', jdata['additional_info'][key][rule]['classification'])
+                                            print('\tDescription:')
                                             for desc in jdata['additional_info'][key][rule]['destinations']:
-                                                print ('\t\t', desc)
+                                                print('\t\t', desc)
 
                         if jdata['additional_info'].get('traffic_inspection') and (kwargs.get('traffic_inspection') or 'traffic_inspection' in args) or kwargs.get('verbose'):
                             if kwargs.get('return_json'):
@@ -1308,14 +1304,14 @@ class vtAPI(PRINTER):
                                                     print('\t', child.get(key))
 
                             if jdata['additional_info']['compressedview'].get('extensions'):
-                                print ('\n[+] Extensions:')
+                                print('\n[+] Extensions:')
                                 for ext in jdata['additional_info']['compressedview']['extensions']:
-                                    print ('\t', ext, jdata['additional_info']['compressedview']['extensions'][ext])
+                                    print('\t', ext, jdata['additional_info']['compressedview']['extensions'][ext])
 
                             if jdata['additional_info']['compressedview'].get('file_types'):
-                                print ('\n[+] FileTypes')
+                                print('\n[+] FileTypes')
                                 for file_types in jdata['additional_info']['compressedview']['file_types']:
-                                    print ('\t' ,file_types, jdata['additional_info']['compressedview']['file_types'][file_types])
+                                    print('\t' ,file_types, jdata['additional_info']['compressedview']['file_types'][file_types])
 
                             if jdata['additional_info']['compressedview'].get('tags'):
                                 print('\n[+] Tags:')
@@ -1525,15 +1521,15 @@ class vtAPI(PRINTER):
                     print('[-] Not PE file')
                     return
 
-                print ("\nName: {0}".format(file.split("/")[-1]))
+                print("\nName: {0}".format(file.split("/")[-1]))
 
-                print ("\n[+] Hashes")
-                print ("MD5: {0}".format(pe.sections[0].get_hash_md5()))
-                print ("SHA1: {0}".format(pe.sections[0].get_hash_sha1()))
-                print ("SHA256: {0}".format(pe.sections[0].get_hash_sha256()))
-                print ("SHA512: {0}".format(pe.sections[0].get_hash_sha512()))
+                print("\n[+] Hashes")
+                print("MD5: {0}".format(pe.sections[0].get_hash_md5()))
+                print("SHA1: {0}".format(pe.sections[0].get_hash_sha1()))
+                print("SHA256: {0}".format(pe.sections[0].get_hash_sha256()))
+                print("SHA512: {0}".format(pe.sections[0].get_hash_sha512()))
                 try:
-                    print ('ImpHash: {0}'.format(pe.get_imphash()))
+                    print('ImpHash: {0}'.format(pe.get_imphash()))
                 except Exception as e:
                     pass
 
@@ -1561,7 +1557,7 @@ class vtAPI(PRINTER):
                     except Exception as e:
                         ts += ' [SUSPICIOUS]'
                     if ts:
-                        print ('\t{}'.format(ts))
+                        print('\t{}'.format(ts))
 
                 if pe.sections:
                     print("\n[+] Sections")
@@ -1596,7 +1592,7 @@ class vtAPI(PRINTER):
                         if ms:
                             print("\n[+] File type")
                             ms = magic.from_file(file)
-                            print ('\t{}'.format(ms))
+                            print('\t{}'.format(ms))
                     except Exception as e:
                         print(e)
 
@@ -1609,8 +1605,8 @@ class vtAPI(PRINTER):
                     else:
                         pack = peutils.is_probably_packed(pe)
                         if pack == 1:
-                            print ("\n[+] Packer")
-                            print ("\t[+] Based on the sections entropy check! file is possibly packed")
+                            print("\n[+] Packer")
+                            print("\t[+] Based on the sections entropy check! file is possibly packed")
 
     def fileScan(self, *args,  **kwargs):
         """
@@ -1683,8 +1679,8 @@ class vtAPI(PRINTER):
                         self.simple_print(jdata, simple_list)
 
                     except UnicodeDecodeError:
-                        print ('\n[!] Sorry filaname is not utf-8 format, other format not suported at the moment')
-                        print ('[!] Ignored file: {file}\n'.format(file=submit_file))
+                        print('\n[!] Sorry filaname is not utf-8 format, other format not suported at the moment')
+                        print('[!] Ignored file: {file}\n'.format(file=submit_file))
 
             elif not result and kwargs.get('scan') == False:
                 print('\nReport for file/hash : {0} not found'.format(submit_file))
@@ -2658,7 +2654,7 @@ class vtAPI(PRINTER):
                             self.print_key(key, indent='\n\n', separator='')
                             print(vt_file[key])
                         except UnicodeEncodeError:
-                            print ('')
+                            print('')
                 print('\nDetections:\n\t{positives}/{total} Positives/Total\n'.format(positives=vt_file.get('positives', 0), total=vt_file.get('total')))
 
                 if vt_file.get('additional_info'):
