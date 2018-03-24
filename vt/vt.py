@@ -1,3 +1,4 @@
+from __future__ import print_function
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
@@ -11,7 +12,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '3.1.0'
+__version__ = '3.1.2'
 __license__ = 'For fun :)'
 
 import os
@@ -19,6 +20,7 @@ import re
 import ast
 import sys
 import csv
+import six
 import time
 import json
 import email
@@ -34,14 +36,7 @@ from operator import methodcaller
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
-if sys.version_info[0] == 2:
-    import ConfigParser as configparser
-    from urlparse import urlparse, urljoin
-
-else:
-    import configparser
-    from urllib.parse import urlparse, urljoin
-    # python-dateutil
+from six.moves.urllib.parse import urlparse, urljoin
 
 # print mysql style tables
 import texttable as tt
@@ -671,9 +666,9 @@ def get_detections(scans, **kwargs):
     engines = kwargs.get('engines')
     if engines == []:
       return
-    elif isinstance(engines, str) and engines.find(',') != -1:
+    elif isinstance(engines, six.string_types) and engines.find(',') != -1:
         engines = engines.split(',')
-    elif isinstance(engines, str):
+    elif isinstance(engines, six.string_types):
         engines = [engines]
     else:
         return
@@ -713,7 +708,7 @@ def dump_csv(filename, scans):
                          'True' if scans[x]['detected'] else 'False', scans[
                              x]['result'] if scans[x]['result'] else ' -- ',
                          scans[x]['version'] if 'version' in scans[x] and scans[x]['version'] else ' -- ',
-+                        scans[x]['update'] if 'update' in scans[x] and scans[x]['update'] else ' -- '
+                         scans[x]['update'] if 'update' in scans[x] and scans[x]['update'] else ' -- '
         ])
 
     f.close()
@@ -893,7 +888,7 @@ class vtAPI(PRINTER):
             if isinstance(kwargs.get('value'), list) and len(kwargs.get('value')) == 1:
                 pass
 
-            elif isinstance(kwargs.get('value'), str):
+            elif isinstance(kwargs.get('value'), six.string_types):
                 kwargs['value'] = [kwargs.get('value')]
 
             #ToDo support for private api and up to 25 hashes
@@ -1193,7 +1188,7 @@ class vtAPI(PRINTER):
                                         self.print_key(key)
                                         if isinstance(jdata['additional_info']['debcheck'].get(key), list):
                                                 print('\t', '\n\t'.join(jdata['additional_info']['debcheck'].get(key)))
-                                        elif isinstance(jdata['additional_info']['debcheck'].get(key), str):
+                                        elif isinstance(jdata['additional_info']['debcheck'].get(key), six.string_types):
                                             print('\t', jdata['additional_info']['debcheck'].get(key))
 
                                 for key in dict_list:
@@ -1779,10 +1774,10 @@ class vtAPI(PRINTER):
         if len(kwargs.get('value')) == 1:
             pass
 
-        elif isinstance(kwargs.get('value'), str):
+        elif isinstance(kwargs.get('value'), six.string_types):
             kwargs['value'] = [kwargs.get('value')]
 
-        elif len(kwargs.get('value')) > 1 and not isinstance(kwargs.get('value'), str):
+        elif len(kwargs.get('value')) > 1 and not isinstance(kwargs.get('value'), six.string_types):
 
                 start = -25
                 increment = 25
@@ -2073,9 +2068,9 @@ class vtAPI(PRINTER):
                     url_uploads = open(kwargs.get('value')[0], 'rb').readlines()
                 else:
                     url_uploads = kwargs.get('value')
-            elif isinstance(kwargs.get('value'), str):
+            elif isinstance(kwargs.get('value'), six.string_types):
                 url_uploads = [kwargs.get('value')]
-            elif len(kwargs.get('value')) > 1 and not isinstance(kwargs.get('value'), str):
+            elif len(kwargs.get('value')) > 1 and not isinstance(kwargs.get('value'), six.string_types):
                 if kwargs.get('api_type'):
                     start = -25
                     increment = 25
@@ -2196,7 +2191,7 @@ class vtAPI(PRINTER):
 
             if isinstance(kwargs.get('value'), list) and len(kwargs.get('value')) == 1:
                 pass
-            elif isinstance(kwargs.get('value'), str):
+            elif isinstance(kwargs.get('value'), six.string_types):
                 kwargs['value'] = [kwargs.get('value')]
 
             kwargs['value'] = [urlparse(ip).netloc if ip.startswith(('http://', 'https://')) else ip for ip in kwargs.get('value')]
@@ -2281,7 +2276,7 @@ class vtAPI(PRINTER):
             if isinstance(kwargs.get('value'), list) and len(kwargs.get('value')) == 1 and \
                 os.path.exists(kwargs.get("value")[0]) and kwargs.get("value")[0].endswith(".txt"):
                 kwargs["value"] = [domain.strip() for domain in open(kwargs.get("value")[0], "rb").readlines()]
-            elif isinstance(kwargs.get('value'), str):
+            elif isinstance(kwargs.get('value'), six.string_types):
                 kwargs['value'] = [kwargs.get('value')]
 
             kwargs['value'] = [urlparse(domain).netloc.lower() if domain.startswith(('http://', 'https://')) else domain for domain in kwargs.get('value')]
@@ -2346,7 +2341,7 @@ class vtAPI(PRINTER):
                             self.print_key(key)
                             plist = [[]]
                             for jdata_part in jdata[key]:
-                                if isinstance(jdata_part, str):
+                                if isinstance(jdata_part, six.string_types):
                                     plist.append([jdata_part, jdata[key][jdata_part]])
                                 elif isinstance(jdata_part, dict):
                                     plist.append(jdata_part.values())
@@ -2571,7 +2566,7 @@ class vtAPI(PRINTER):
         if isinstance(kwargs.get("value"), list) and len(kwargs.get("value")) == 1:
             if os.path.exists(kwargs.get("value")[0]) and kwargs.get("value")[0].endswith(".txt"):
                 kwargs["value"] = [dl_hash.strip() for dl_hash in open(kwargs.get("value")[0], "rb").readlines()]
-        elif isinstance(kwargs.get("value"), str):
+        elif isinstance(kwargs.get("value"), six.string_types):
             kwargs["value"] = [kwargs.get("value")]
 
         kwargs["value"] = deque(kwargs["value"])
@@ -2834,7 +2829,7 @@ class vtAPI(PRINTER):
 
             if len(email_id) in (32, 40, 64): # md5, sha1, sha256
                 email_id = self.__download_email(email_id, *args, **kwargs)
-            if isinstance(email_id, str):
+            if isinstance(email_id, six.string_types):
                 email_id = {"email":email_id}
             if isinstance(email_id, bytes):
                 email_id = {"email":email_id.decode('utf-8')}
@@ -2855,7 +2850,10 @@ class vtAPI(PRINTER):
                         save_email.close()
 
                     re.compile = re_compile_our
-                    msg = email.message_from_string(email__id)
+                    if six.PY3:
+                        e = email.message_from_bytes(email__id)
+                    else:
+                        e = email.message_from_string(email__id)
                     re.compile = re_compile_orig
 
             except Exception as e:
@@ -3293,7 +3291,7 @@ daily_limit=100
         print("[+] Config setup start")
         for key, value in paths.items():
             print("\t[{}] {}".format(key, value))
-        path = raw_input("[+] Select option, where you want to create config, or type custom path:")
+        path = six.imput("[+] Select option, where you want to create config, or type custom path:")
         path = path.strip()
         if path.isdigit():
             path = int(path)
@@ -3302,30 +3300,30 @@ daily_limit=100
         else:
             print("[-] Incorrect config path")
             continue
-        apikey = raw_input("[+] Provide your apikey:")
-        type_key = raw_input("[+] Your apikey is pubic/private:")
-        intelligence = raw_input("[+] You have access to VT intelligence True/False:")
+        apikey = six.imput("[+] Provide your apikey:")
+        type_key = six.imput("[+] Your apikey is pubic/private:")
+        intelligence = six.imput("[+] You have access to VT intelligence True/False:")
 
         if "VT_USERNAME" in os.environ:
             self.username = os.environ["VT_USERNAME"]
         else:
-            user = raw_input("[optional] Your username for weblogin, only for rule menagment")
+            user = six.imput("[optional] Your username for weblogin, only for rule menagment")
 
         if "VT_PASSWORD" in os.environ:
             password = os.environ["VT_PASSWORD"]
         else:
-            password = raw_input("[optional] Your password for weblogin, only for rule menagment")
+            password = six.imput("[optional] Your password for weblogin, only for rule menagment")
 
         # email
         if "VT_NOTIFY" in os.environ:
             notify = os.environ["VT_NOTIFY"]
         else:
-            notify = raw_input("[optional] Rule match notification email")
+            notify = six.imput("[optional] Rule match notification email")
 
         if "VT_SHARE_USER" in os.environ:
             self.optional_share_user = os.environ["VT_SHARE_USER"]
         else:
-            share_user = raw_input("[optional] Share rules with user")
+            share_user = six.imput("[optional] Share rules with user")
 
         try:
             tmp = open(path, "wb")
@@ -3387,7 +3385,7 @@ def read_conf(config_file = False):
     try:
         confpath = os.path.expanduser(config_file)
         if os.path.exists(confpath):
-            config = configparser.RawConfigParser()
+            config = six.moves.configparser.RawConfigParser()
             config.read(confpath)
             if config.has_section('vt'):
                 vt_config = dict(config.items('vt'))

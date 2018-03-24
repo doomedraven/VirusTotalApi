@@ -1,7 +1,7 @@
 **24.03.2018**
 
 * Integrated VTI hunting yara managment, thanks to @silascutler for his permission to use his [code](https://github.com/silascutler/VirusTotalTools/blob/master/VT_RuleMGR.py)
-
+* Config generation py3 friendly
 
 **25.02.2018**
 
