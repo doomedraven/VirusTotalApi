@@ -11,7 +11,7 @@
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '3.0.0'
+__version__ = '3.1.0'
 __license__ = 'For fun :)'
 
 import os
@@ -43,14 +43,20 @@ else:
     from urllib.parse import urlparse, urljoin
     # python-dateutil
 
-#print mysql style tables
+# print mysql style tables
 import texttable as tt
-#parse OUTLOOK .msg
+# parse OUTLOOK .msg
 try:
     from thirdpart.outlook_parser import OUTLOOK
     OUTLOOK_prsr = True
 except ImportError:
     OUTLOOK_prsr = False
+try:
+    import HTMLParser
+    HAVE_HTMLPARSER = True
+except ImportError:
+    HAVE_HTMLPARSER = False
+
 
 try:
     import urllib3
@@ -76,6 +82,360 @@ except ImportError:
 
 req_timeout = 60
 re_compile_orig = re.compile
+
+def is_valid_file(path):
+    if os.path.exists(path) and path.endswith(('.yara', '.yar')):
+        return path
+    else:
+        print("The file {fname} does not exist!".format(fname=path))
+    return False
+
+class VT_Rule_Handler(object):
+    '''
+        Taken with permission from
+        https://github.com/silascutler/VirusTotalTools/blob/master/VT_RuleMGR.py
+    '''
+    def __init__(self, vt_conf):
+        self.username = vt_conf.get("username", False)
+        self.password = vt_conf.get("password", False)
+        self.csrf_token_cache = ""
+
+        # Optional Variables for tweaking
+        self.optional_notify = vt_conf.get("notify", "")
+        self.optional_daily_limit = vt_conf.get("daily_limit", 100)
+        self.optional_share_user = vt_conf.get("share_user", "")
+
+        # Create Requests session for handling requests
+        self.session = requests.Session()
+        self.session.headers.update({'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) VTUser:{username}'.format(username=self.username)})
+
+    # Ensure we keep the most recent CSRF token cached
+    def updateCSRFToken(self):
+        if 'VT_CSRF' in self.session.cookies:
+            self.csrf_token_cache = self.session.cookies['VT_CSRF']
+            return True
+        return False
+
+    # Login by passing credentials
+    def doLogin(self):
+        # Fail out if username/password not set
+        if self.username == "" and self.password == "":
+            print("[X] You must specify username and password!")
+            return False
+
+        creds = {
+            'username': self.username,
+            'password': self.password,
+            'next': '/intelligence/',
+            'response_format': 'json'
+        }
+        login_req = self.session.post('https://www.virustotal.com/en/account/signin/', data=creds)
+        self.updateCSRFToken()
+
+        try:
+            if login_req.json()['signed_in'] is False:
+                print("Failed Sign-In")
+                return False
+            return True
+        except Exception as e:
+            print("[X] Failed to login: {error}".format(error=e))
+
+        return False
+
+    def setup(self):
+
+        # Send initial request
+        self.session.get('https://www.virustotal.com/intelligence/')
+
+        # Set corresponding Headers
+        self.session.headers.update({'x-csrftoken': 'null'})
+        self.session.headers.update({'referer': 'https://www.virustotal.com/en/signin?next=/intelligence/'})
+
+        if not self.doLogin():
+            return False
+
+        self.session.get('https://www.virustotal.com/intelligence/hunting/')
+        self.updateCSRFToken()
+
+        if self.csrf_token_cache == b"":
+            return False
+        return True
+
+    ## Functions of object
+    def listRules(self, retRules=False, retRaw=False):
+        return_cache = []
+
+        hunting_page_req = self.session.get('https://www.virustotal.com/intelligence/hunting/')
+        self.updateCSRFToken()
+
+        matches = re.findall(b'\s+<option value="([0-9]{5,})">\n\s*(.*?)\n', hunting_page_req.content, re.MULTILINE)
+        for rule in matches:
+            if retRules:
+                return_cache.append([rule[1], rule[0]])
+            else:
+                print("Name: %s (ID: %s)" % (rule[1], rule[0]))
+
+        if retRules and retRaw:
+            return return_cache, hunting_page_req
+        if retRules:
+            return return_cache
+
+    def retroHunt(self, rName):
+        yRule = ""
+        if rName is None:
+            return "[X] Must pass Rule file"
+
+        # Read Yara Rule contents
+        with open(rName, 'r') as f:
+            yRule = f.read()
+
+        create = {
+            'csrfmiddlewaretoken': self.csrf_token_cache,
+            'rules': yRule
+        }
+
+        createReq = self.session.post('https://www.virustotal.com/intelligence/hunting/retrohunt/', data=create)
+        jcreateReq = createReq.json()
+        if "html" in jcreateReq.keys():
+            if "Queued" in jcreateReq['html']:
+                print("Started sucessfully")
+                return True
+
+        print("Problem:")
+        print(createReq.text)
+
+    def shareRule(self, rule_id):
+        if not self.optional_share_user:
+            print("Cannot share rule, because not user was specified")
+            return False
+
+        shareResponse = self.session.post(
+            "https://www.virustotal.com/intelligence/hunting/share-ruleset/",
+            data={
+                "user": self.optional_share_user,
+                "id": rule_id,
+                "csrfmiddlewaretoken": self.csrf_token_cache,
+            }
+        )
+        jsonResponse = shareResponse.json()
+        if "html" in jsonResponse.keys() and self.optional_share_user in jsonResponse["html"]:
+            print("Successfully shared rule with %s" % self.optional_share_user)
+        else:
+            print("Error while sharing with %s" % self.optional_share_user)
+            return False
+        return True
+
+    def createRule(self, rName=None, do_share=False):
+        rules = self.listRules(True)
+        self.updateCSRFToken()
+        rule_id = ''
+        yRule = ""
+        if rName is None:
+            return "[X] Must pass Rule file"
+
+        ruleName = os.path.basename(rName[:rName.rindex('.')])
+        for r in rules:
+            if ruleName == r[0]:
+                print("Rule %s is already present in VTi, updating it..." % ruleName)
+                rule_id = r[1]
+                break
+
+        # Read Yara Rule contents
+        with open(rName, 'r') as f:
+            yRule = f.read()
+
+        create = {
+            'notify': self.optional_notify,
+            'daily_limit' : self.optional_daily_limit,
+            'id': '',
+            'name': ruleName,
+            'enabled': 'true',
+            'csrfmiddlewaretoken': self.csrf_token_cache,
+            'rules': yRule
+        }
+
+        createReq = self.session.post('https://www.virustotal.com/intelligence/hunting/save-ruleset/', data=create)
+        if b'CSRF verification failed.' in createReq.content:
+            print("CSRF verification failed.")
+            return False
+        jcreateReq = createReq.json()
+        if 'is_owner' in jcreateReq.keys() and 'id' in jcreateReq.keys():
+            if jcreateReq['is_owner'] == "true":
+                print("Created {yara_name}".format(yara_name=jcreateReq['name']))
+                if do_share:
+                    return self.shareRule(jcreateReq["id"])
+                return True
+        elif 'syntax_error' in jcreateReq.keys():
+            h = HTMLParser.HTMLParser()
+            print("Error:\n%s" % h.unescape(jcreateReq['syntax_error']))
+            print("Fix the yara rule and try again!")
+            return False
+        else:
+            print("Failed to create rule")
+            print("Output:")
+            print(createReq.content)
+        return False
+
+    def updateRule(self, rSet=None, rName=None):
+        h = HTMLParser.HTMLParser()
+        rules, hunting_page_req = self.listRules(True, True)
+        self.updateCSRFToken()
+        rule_id = ''
+        yRule = ""
+        if rName is None or rSet is None:
+            return "[X] Must pass Rule file"
+
+        for r in rules:
+            if rSet.encode() == r[0]:
+                rule_id = r[1]
+                break
+
+        # Read Yara Rule contents
+        with open(rName, 'r') as f:
+            yRule = f.read()
+
+        # Get Rule Contents
+        rPage = hunting_page_req.content.decode("windows-1252").encode('ascii', 'ignore')
+        rExtend = ""
+        rBulk = None
+        if rule_id in rPage:
+            rPage = rPage[ rPage.index(rule_id): ]
+            rPage = rPage[ rPage.index('rule '): ]
+
+            rExtend = rPage[ :rPage.index('>')]
+            rExtend = rExtend[ rPage.index('"'):]
+
+        rPage = rPage[ :rPage.index('"')]
+        rBulk = h.unescape(rPage)
+
+        mNotify = re.search('ruleset-notify=\"(.*)\"', rExtend)
+        mLimit = re.search('ruleset-daily-limit=\"([0-9]+)\"', rExtend)
+
+        enabled = "true"
+        if b"ruleset-enabled=\"false\"" in rExtend:
+            enabled = "false"
+        if mNotify:
+            self.optional_notify = mNotify.group(1)
+            print(self.optional_notify)
+        else:
+            print("Couldn't Find required Field: Notify")
+            return False
+        if mLimit:
+            self.optional_daily_limit = mLimit.group(1)
+        else:
+            print("Couldn't Find a required Field: Limit")
+            return False
+        if rBulk is None:
+            return "Failed to setup"
+
+        yRule = yRule + "\n\n" + rBulk
+        if rule_id:
+            create = {
+                'notify': self.optional_notify,
+                'daily_limit' : self.optional_daily_limit,
+                'id': rule_id,
+                'name':rSet,
+                'enabled': enabled,
+                'csrfmiddlewaretoken': self.csrf_token_cache,
+                'rules': yRule
+            }
+
+        createReq = self.session.post('https://www.virustotal.com/intelligence/hunting/save-ruleset/', data=create)
+        jcreateReq = createReq.json()
+
+        if 'is_owner' in jcreateReq.keys() and 'id' in jcreateReq.keys():
+            if jcreateReq['is_owner'] == "true":
+                print("Updated {yara_name}".format(yara_name=jcreateReq['name']))
+                return True
+        elif 'syntax_error' in jcreateReq.keys():
+            print("Error:\n%s" % h.unescape(jcreateReq['syntax_error']))
+            print("Fix the yara rule and try again!")
+            return False
+        else:
+            print("Failed to create rule")
+            print("Output:")
+            print(createReq.content)
+        return False
+
+    def deleteRule(self, rName):
+        rules = self.listRules(True)
+        self.updateCSRFToken()
+
+        rule_id = None
+
+        for r in rules:
+            if rName.encode() == r[0]:
+                rule_id = r[1]
+                break
+
+        if rule_id:
+            delete = {
+                'id': rule_id,
+                'csrfmiddlewaretoken': self.csrf_token_cache
+            }
+            self.session.post('https://www.virustotal.com/intelligence/hunting/delete-ruleset/', data=delete)
+            return True
+        else:
+            print("[X] Could not find rule")
+
+        return False
+
+    def disableRule(self, rName):
+        rules = self.listRules(True)
+        self.updateCSRFToken()
+
+        rule_id = None
+
+        for r in rules:
+            if rName.encode() == r[0]:
+                rule_id = r[1]
+                break
+
+        if rule_id:
+            disable = {
+                'notify': self.optional_notify,
+                'daily_limit': self.optional_daily_limit,
+                'id': rule_id,
+                'name': rName,
+                'csrfmiddlewaretoken': self.csrf_token_cache,
+                'enabled': 'false'
+            }
+            self.session.post('https://www.virustotal.com/intelligence/hunting/save-ruleset/', data=disable)
+            print("Rule %s disabled!" % rName)
+            return True
+        else:
+            print("[X] Could not find rule")
+
+        return False
+
+    def enableRule(self, rName):
+        rules = self.listRules(True)
+        self.updateCSRFToken()
+
+        rule_id = None
+
+        for r in rules:
+            if rName.encode() == r[0]:
+                rule_id = r[1]
+                break
+
+        if rule_id:
+            enable = {
+                'notify': self.optional_notify,
+                'daily_limit' : self.optional_daily_limit,
+                'id': rule_id,
+                'name': rName,
+                'csrfmiddlewaretoken': self.csrf_token_cache,
+                'enabled': 'true'
+            }
+            self.session.post('https://www.virustotal.com/intelligence/hunting/save-ruleset/', data=enable)
+            print("Rule %s enabled!" % rName)
+            return True
+        else:
+            print("[X] Could not find rule")
+
+        return False
+
 
 class PRINTER(object):
 
@@ -2919,6 +3279,13 @@ def create_config_file(paths):
 apikey={}
 type={}
 intelligence={}
+engines=malwarebytes,kaspersky,drweb,eset_nod32
+timeout=60
+user={}
+passwd={}
+notify={}
+# It should be set to: 10/50/100/500/1000/5000/10000
+daily_limit=100
     """
 
     while True:
@@ -2938,9 +3305,41 @@ intelligence={}
         apikey = raw_input("[+] Provide your apikey:")
         type_key = raw_input("[+] Your apikey is pubic/private:")
         intelligence = raw_input("[+] You have access to VT intelligence True/False:")
+
+        if "VT_USERNAME" in os.environ:
+            self.username = os.environ["VT_USERNAME"]
+        else:
+            user = raw_input("[optional] Your username for weblogin, only for rule menagment")
+
+        if "VT_PASSWORD" in os.environ:
+            password = os.environ["VT_PASSWORD"]
+        else:
+            password = raw_input("[optional] Your password for weblogin, only for rule menagment")
+
+        # email
+        if "VT_NOTIFY" in os.environ:
+            notify = os.environ["VT_NOTIFY"]
+        else:
+            notify = raw_input("[optional] Rule match notification email")
+
+        if "VT_SHARE_USER" in os.environ:
+            self.optional_share_user = os.environ["VT_SHARE_USER"]
+        else:
+            share_user = raw_input("[optional] Share rules with user")
+
         try:
             tmp = open(path, "wb")
-            tmp.write(conf_template.format(apikey.strip(), type_key.strip(), intelligence.strip()))
+            tmp.write(
+                conf_template.format(
+                    apikey.strip(),
+                    type_key.strip(),
+                    intelligence.strip(),
+                    user.stip(),
+                    password.strip(),
+                    notify.strip(),
+                    share_user.strip(),
+                )
+            )
             tmp.close()
             print("[+] Config created at: {}".format(path))
             break
@@ -2964,6 +3363,12 @@ def read_conf(config_file = False):
                          apikey=your-apikey-here
                          type=public #private if you have private api
                          intelligence=False # True if you have access
+                         engines=malwarebytes,kaspersky,drweb,eset_nod32
+                         timeout=60
+                         user=web interface username
+                         password=web interface password
+                         notify=email
+                         share_user=username
                      For more information check:
                          https://github.com/doomedraven/VirusTotalApi
                      '''
@@ -3013,6 +3418,7 @@ def read_conf(config_file = False):
 
 def main():
 
+    rule_manager = False
     vt_config = read_conf()
 
     if vt_config.get('timeout'):
@@ -3147,6 +3553,23 @@ def main():
         dist.add_argument('--limit', action='store', help='File/Url option. Retrieve limit file items at most (default: 1000).')
         dist.add_argument('--allinfo', action='store_true', help='will include the results for each particular URL scan (in exactly the same format as the URL scan retrieving API). If the parameter is not specified, each item returned will onlycontain the scanned URL and its detection ratio.')
 
+    if vt_config.get('username', False) and vt_config.get('password', False):
+        rules = opt.add_argument_group('Rules managment options')
+        rules.add_argument("--rules", help="Manage VTI hunting rules, REQUIRED for rules managment", action="store_true", default=False)
+        rules.add_argument("--list", help="List names/ids of Yara rules stored on VT", action="store_true")
+        rules.add_argument("--create", help="Add a Yara rule to VT (File Name used as RuleName",
+                            metavar="FILE", type=lambda x: is_valid_file(x))
+        rules.add_argument("--update", help="Update a Yara rule on VT (File Name used as RuleName and must include RuleName",
+                            metavar="FILE", type=lambda x: is_valid_file(x))
+        rules.add_argument("--retro", help="Submit Yara rule to VT RetroHunt (File Name used as RuleName and must include RuleName",
+                            metavar="FILE", type=lambda x: is_valid_file(x))
+        rules.add_argument("--delete_rule", help="Delete a Yara rule from VT (By Name)", type=str)
+        rules.add_argument("--share", help="Shares rule with user", action="store_true")
+        rules.add_argument("--update_ruleset", help="Ruleset name to update", type=str)
+        rules.add_argument("--disable", help="Disable a Yara rule from VT (By Name)", type=str)
+        rules.add_argument("--enable", help="Enable a Yara rule from VT (By Name)", type=str)
+        rule_manager = VT_Rule_Handler(vt_config)
+
     options = opt.parse_args()
 
     if options.version:
@@ -3159,6 +3582,28 @@ def main():
     vt = vtAPI(vt_config.get('apikey'))
 
     options.update(vt_config)
+    if options.get("rules", False) and rule_manager.setup():
+        if options.get("list", False):
+            print("Listing Rules")
+            rule_manager.listRules()
+        elif options.get("create", False):
+            print("Creating {arg}".format(arg=options.get("create", False)))
+            rule_manager.createRule(options["create"], options["share"])
+        elif options.get("delete_rule", False):
+            print("Deleting {arg}".format(arg=options.get("delete_rule", False)))
+            rule_manager.deleteRule(options["delete_rule"])
+        elif options.get("update", False) and options.get("update_ruleset", False):
+            print("Adding {rule} to {rset} ".format(rule=options["update"], rset=options["update_ruleset"]))
+            rule_manager.updateRule(options["update_ruleset"], options["update"])
+        elif options.get("retro", False):
+            print("Starting Retrohunt for {rule}".format(rule=options["retro"]))
+            rule_manager.retroHunt(options["retro"])
+        elif options.get("disable", False):
+            print("Disabling {arg}".format(arg=options["disable"]))
+            rule_manager.disableRule(options["disable"])
+        elif options.get("enable", False):
+            print("Enabling {arg}".format(arg=options["enable"]))
+            rule_manager.enableRule(options["enable"])
 
     if options.get('date', ""):
         options['date'] = options['date'].replace( '-', '').replace(':', '').replace(' ', '')

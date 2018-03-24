@@ -1,3 +1,8 @@
+**24.03.2018**
+
+* Integrated VTI hunting yara managment, thanks to @silascutler for his permission to use his [code](https://github.com/silascutler/VirusTotalTools/blob/master/VT_RuleMGR.py)
+
+
 **25.02.2018**
 
 * Python3 friendly, still may have some bugs, so feel free to report
@@ -26,7 +31,7 @@
 * Deb and IPA files info
     * -dbc, --debcheck-info
 * Recursive file scan, not only wildcard as in -f
-    * -fr, --file-scan-recursive 
+    * -fr, --file-scan-recursive
 
 **21.02.2016**
 
@@ -35,7 +40,7 @@
     * -rbgi, --rombios-generator-info
     * -rbi, --rombioscheck-info
 * AndroidGuard info
-    * -agi, --androidguard-info 
+    * -agi, --androidguard-info
 
 **14.02.2016**
 
@@ -62,7 +67,7 @@
 * Config parser updated, will return dictionary and add all data to global kwargs, less apikey
     * Before - apikey, api_type, intelligence, engines = vt.read_conf()
     * Now - vt_config = vt.read_conf()
-* Behaviour-v1 data will not be printed without -v 
+* Behaviour-v1 data will not be printed without -v
 
 **21.12.2015**
 * MacOsX files behaviour added, it can be found in __-rai__ (report all info)
@@ -80,7 +85,7 @@
 **01.10.2015**
 * download bug fix, in some PCs consume too much CPU
 * now you can specify in config which AV engines you prefer
-	* engines = AVG, etc, for correct engine name look on VT page or -V will show all engines result with correct av names 
+	* engines = AVG, etc, for correct engine name look on VT page or -V will show all engines result with correct av names
 
 **23.09.2015**
 
@@ -105,7 +110,7 @@
 **03.09.2015**
 
 * Intelligence search support with -si or --search-intelligence
-* Get comments(-gc) now support url as parameter 
+* Get comments(-gc) now support url as parameter
 
 **01.08.2015**
 
@@ -113,11 +118,11 @@
 * new --as-owner option
 * Team cymru asn data removed, as vt provide it now
 * Can be used as library, value must be as list:
-	* return_raw parameter will return original raw response json 
+	* return_raw parameter will return original raw response json
 	* Example:
 		* vt.getIP(**{'value': ['8.8.8.8'],'return_raw':True})
 	* return_json will return only data what you specify, as for example passive_dns, asn, etc
-	* Example: 
+	* Example:
 		* vt.getDomain(**{'return_json':True, 'asn':True, 'passive_dns':True, 'value':['google.com']})
 
 **25.07.2015**
@@ -154,7 +159,7 @@
 	* Example: `vt --download https://www.virustotal.com/en/file/<hash_here>/analysis/`
 
 **02.04.2015:**
-* Download from VT intelligence 
+* Download from VT intelligence
 
 **24.03.2015:**
 * -dds, --detected-downloaded-samples now works correctly
@@ -164,7 +169,7 @@
 
 **15.12.2014:**
 * Now doesn't matter if you put -d or -i for domain/ip, it will catch it correctly :)
-  * Example: -d 127.0.0.1 it will be passed to ip not to domain, and vice versa 
+  * Example: -d 127.0.0.1 it will be passed to ip not to domain, and vice versa
 
 **11.10.2014:**
 
