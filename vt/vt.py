@@ -12,7 +12,7 @@ from __future__ import print_function
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '3.1.2'
+__version__ = '3.1.3'
 __license__ = 'For fun :)'
 
 import os
@@ -36,7 +36,7 @@ from operator import methodcaller
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
-from six.moves.urllib.parse import urlparse, urljoin
+from six.moves.urllib.parse import urlparse
 
 # print mysql style tables
 import texttable as tt
@@ -56,9 +56,6 @@ except ImportError:
 try:
     import urllib3
     urllib3.disable_warnings()
-    #from requests.packages.urllib3.exceptions import InsecureRequestWarning, InsecurePlatformWarning
-    #requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-    #requests.packages.urllib3.disable_warnings(InsecurePlatformWarning)
 except (AttributeError, ImportError):
     pass
 
@@ -78,12 +75,14 @@ except ImportError:
 req_timeout = 60
 re_compile_orig = re.compile
 
+
 def is_valid_file(path):
     if os.path.exists(path) and path.endswith(('.yara', '.yar')):
         return path
     else:
         print("The file {fname} does not exist!".format(fname=path))
     return False
+
 
 class VT_Rule_Handler(object):
     '''
@@ -715,6 +714,7 @@ def dump_csv(filename, scans):
 
     print('\n\tCSV file dumped as: VTDL{0}.csv'.format(filename))
 
+
 def parse_report(jdata, **kwargs):
     filename = ''
 
@@ -791,11 +791,8 @@ def parse_report(jdata, **kwargs):
 # Static variable decorator for function
 def static_var(varname, value):
     def decorate(func):
-
         setattr(func, varname, value)
-
         return func
-
     return decorate
 
 # Track how many times we issue a request
@@ -2727,13 +2724,13 @@ class vtAPI(PRINTER):
 
             if len(email_id) >=64:
                 # in case if you pass full email instead of hash
-                email_id = hashlib.sha256(email_id.encode('utf-8')).hexdigest()
+                email_id = hashlib.sha256(email_id).hexdigest()
 
             print('\n[+] Details of email: {0}'.format(email_id))
             plist = [[]]
 
             if 'Attachments' in email_dict:
-                for i, part in  enumerate(email_dict['Attachments']):
+                for i, part in enumerate(email_dict['Attachments']):
                     path_where_save = kwargs.get('save_attachment')
                     if path_where_save:
                         if not os.path.exists(path_where_save):
@@ -2784,11 +2781,11 @@ class vtAPI(PRINTER):
     def __download_email(self, email_id, *args, **kwargs):
         original_email = ''
         original_email = self.download(**{
-              'value':[email_id],
-              'api_type':kwargs.get('api_type'),
-              'download':'file',
-              'intelligence':kwargs.get('intelligence'),
-              'return_raw':True,
+              'value': [email_id],
+              'api_type': kwargs.get('api_type'),
+              'download': 'file',
+              'intelligence': kwargs.get('intelligence'),
+              'return_raw': True,
         })
 
         return original_email
@@ -2807,8 +2804,8 @@ class vtAPI(PRINTER):
         msg = ''
         email_dict = dict()
 
-        def re_compile_our(pattern):
-            return re_compile_orig(pattern.replace("?P<end>--", "?P<end>--+"))
+        def re_compile_our(*pattern):
+            return re_compile_orig(pattern[0].replace("?P<end>--", "?P<end>--+"))
 
         if kwargs.get('value'):
             result, name = is_file(kwargs.get('value'))
@@ -2827,12 +2824,12 @@ class vtAPI(PRINTER):
                     else:
                         print('[-] Hash not found in url')
 
-            if len(email_id) in (32, 40, 64): # md5, sha1, sha256
+            if len(email_id) in (32, 40, 64):  # md5, sha1, sha256
                 email_id = self.__download_email(email_id, *args, **kwargs)
-            if isinstance(email_id, six.string_types):
-                email_id = {"email":email_id}
-            if isinstance(email_id, bytes):
-                email_id = {"email":email_id.decode('utf-8')}
+            elif isinstance(email_id, str):
+                email_id = {"email": email_id}
+            elif isinstance(email_id, bytes):
+                email_id = {"email": email_id.decode('utf-8')}
             try:
                 for email__id in email_id:
                     email__id = email_id[email__id]
@@ -2842,18 +2839,17 @@ class vtAPI(PRINTER):
                         if kwargs.get('name'):
                             self.__name_auxiliar(*args, **kwargs)
                         else:
-                            name = hashlib.sha256(email__id).hexdigest() + '.eml'
+                            name = hashlib.sha256(
+                                email__id.encode('utf-8')
+                            ).hexdigest() + '.eml'
 
-                        #save email
+                        # save email
                         save_email = open(name, 'wb')
                         save_email.write(email__id)
                         save_email.close()
 
                     re.compile = re_compile_our
-                    if six.PY3:
-                        e = email.message_from_bytes(email__id)
-                    else:
-                        e = email.message_from_string(email__id)
+                    msg = email.message_from_string(email__id)
                     re.compile = re_compile_orig
 
             except Exception as e:
@@ -2865,7 +2861,7 @@ class vtAPI(PRINTER):
                 email_dict.setdefault("email_id", hashlib.sha256(email__id.encode('utf-8')).hexdigest())
                 email_dict['Attachments'] = list()
                 for k, v in msg.items():
-                   email_dict[k] = v
+                    email_dict[k] = v
 
                 for part in msg.walk():
                     attachment, name, size, content_type, sha256_hash, sha1_hash, md5_hash = self.__email_parse_attachment(part)
@@ -2886,7 +2882,12 @@ class vtAPI(PRINTER):
                         email_dict['Body_html'] = part.get_payload(decode=True)
 
                 if not kwargs.get('return_json'):
-                    self.__email_print(email_dict, hashlib.sha256(email__id.encode('utf-8')).hexdigest(), *args, **kwargs)
+                    self.__email_print(
+                        email_dict,
+                        hashlib.sha256(email__id.encode('utf-8')).hexdigest(),
+                        *args,
+                        **kwargs
+                    )
 
         return email_dict
 
@@ -2895,7 +2896,7 @@ class vtAPI(PRINTER):
         if OUTLOOK_prsr:
             email_dict = dict()
             for email_id in kwargs.get('value'):
-                if len(email_id) in (32, 40, 64): # md5, sha1, sha256
+                if len(email_id) in (32, 40, 64):  # md5, sha1, sha256
                     email_id = self.__download_email(email_id, *args, **kwargs)
                 else:
                     email_id = dict()
@@ -2908,9 +2909,9 @@ class vtAPI(PRINTER):
                             if kwargs.get('name'):
                                 self.__name_auxiliar(args, kwargs)
                             else:
-                                name = hashlib.sha256(email_id).hexdigest() + '.eml'
+                                name = hashlib.sha256(email_id.encode('utf-8')).hexdigest() + '.eml'
 
-                            #save email
+                            # save email
                             save_email = open(name, 'wb')
                             save_email.write(email_id[email_hash])
                             save_email.close()
@@ -2919,15 +2920,20 @@ class vtAPI(PRINTER):
                         email_dict.update(msg.parse_outlook_email())
 
                         if not kwargs.get('return_json'):
-                            self.__email_print(email_dict, email_id[email_hash], *args, **kwargs)
+                            self.__email_print(
+                                email_dict,
+                                email_id[email_hash],
+                                *args,
+                                **kwargs
+                            )
 
                 except IOError:
-                    return {'status':'Not OLE file'}
+                    return {'status': 'Not OLE file'}
 
-            if  kwargs.get('return_json'):
+            if kwargs.get('return_json'):
                 return email_dict
 
-        return {'status':'missed library'}
+        return {'status': 'missed library'}
 
     def distribution(self, *args,  **kwargs):
         """

@@ -6,5 +6,5 @@ dist/*
 vt.egg-info/PKG-INFO
 
 vt/keys
-
+tests
 .idea/misc.xml

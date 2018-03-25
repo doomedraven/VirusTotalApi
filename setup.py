@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='vt',
-    version='3.1.2',
+    version='3.1.3',
     description='VirusTotal Full API',
     license='For fun :)',
     packages=find_packages(),
@@ -20,5 +20,6 @@ setup(
         "olefile >= 0.42",
         "texttable",
         "HTMLParser",
+        "six",
     ],
 )
