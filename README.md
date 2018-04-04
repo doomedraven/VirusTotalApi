@@ -12,7 +12,7 @@ https://www.virustotal.com/en/documentation/public-api/
 Before using the tool you must set your api key in one of this file or you can start without creating it and you will be promted to provide the data:
 * Home Directory:
     * __~.vtapi__, __~vtapi.conf__
-* or current directory where vt script placed 
+* or current directory where vt script placed
     * __.vtapi__, __vtapi.conf__
 
 * ~.vtapi file content:
@@ -24,6 +24,9 @@ intelligence=False
 #coma separated engine list, can be empty
 engines=
 timeout=60
+# as for weblogin, this only required for rule managment
+username=
+password=
 ```
 * your type of api access, if private: type=private, if public, you can leave it empty, it will be automatically reconized as public
 * if you have access to VT Intelligence, you need set intelligence=True
@@ -57,18 +60,24 @@ http://www.doomedraven.com/2013/11/script-virustotal-public-and-private.html
 * ___BEAR IN MIND THIS IS AN OLD EXAMPLE, use -h for current help___
 ```
 vt -h
-usage: value [-h] [-fi] [-udb USERDB] [-fs] [-f] [-u] [-ur] [-d] [-i] [-w]
-             [-s] [-si] [-et] [-rai] [-itu] [-cw] [-dep] [-sn] [-ac] [-gc]
+usage: value [-h] [-fi] [-udb USERDB] [-fs] [-f] [-fr] [-u] [-ur] [-d] [-i]
+             [-w] [-s] [-si] [-et] [-rai] [-itu] [-cw] [-dep] [-eo] [-snr]
+             [-srct] [-tir] [-wir] [-rbgi] [-rbi] [-agi] [-dbc] [-ac] [-gc]
              [--get-comments-before DATE] [-v] [-j] [--csv] [-rr] [-rj] [-V]
              [-r] [--delete] [--date DATE] [--period PERIOD] [--repeat REPEAT]
              [--notify-url NOTIFY_URL] [--notify-changes-only] [-wh] [-wht]
-             [-pdn] [--asn] [-aso] [--country] [--subdomains]
+             [-pdns] [--asn] [-aso] [--country] [--subdomains]
              [--domain-siblings] [-cat] [-alc] [-alk] [-opi] [--drweb-cat]
              [-adi] [-wdi] [-tm] [-wt] [-bd] [-wd] [-du] [--pcaps] [--samples]
-             [-dds] [-uds] [-dc] [-uc] [-drs] [-urs] [--behaviour] [-bn] [-bp]
-             [-bs] [-dl] [-nm NAME] [--pcap] [--clusters]
+             [-dds] [-uds] [-dc] [-uc] [-drs] [-urs] [-pe]
+             [-esa SAVE_ATTACHMENT] [-peo] [-bh] [-bn] [-bp] [-bs] [-dl]
+             [-nm NAME] [-dt DOWNLOAD_THREADS] [--pcap] [--clusters]
              [--distribution-files] [--distribution-urls] [--before BEFORE]
-             [--after AFTER] [--reports] [--limit LIMIT] [--allinfo]
+             [--after AFTER] [--reports] [--limit LIMIT] [--allinfo] [--rules]
+             [--list] [--create FILE] [--update FILE] [--retro FILE]
+             [--delete_rule DELETE_RULE] [--share]
+             [--update_ruleset UPDATE_RULESET] [--disable DISABLE]
+             [--enable ENABLE]
              [value [value ...]]
 
 Scan/Search/ReScan/JSON parse
@@ -93,12 +102,15 @@ optional arguments:
                         /home/user/*malware*, if file was scanned, you will
                         see scan info, for full scan report use verbose mode,
                         and dump if you want save already scanned samples
+  -fr, --file-scan-recursive
+                        Recursive dir walk, use this insted of --file-scan if
+                        you want recursive
   -u, --url-scan        Url scan, support space separated list, Max 4 urls (or
                         25 if you have private api), but you can provide more
                         urls, for example with public api, 5 url - this will
                         do 2 requests first with 4 url and other one with only
-                        1, or you can specify file filename must be
-                        urls_for_scan.txt, and one url per line
+                        1, or you can specify file filename with one url per
+                        line
   -ur, --url-report     Url(s) report, support space separated list, Max 4 (or
                         25 if you have private api) urls, you can use --url-
                         report --url-scan options for analysing url(s) if they
@@ -167,8 +179,22 @@ All information related:
   -dep, --detailed-email-parents
                         Contains information about emails, as Subject, sender,
                         receiver(s), full email, and email hash to download it
-  -sn, --submission_names
-                        Get all submission name
+  -eo, --email-original
+                        Will retreive original email and process it
+  -snr, --snort         Get Snort results
+  -srct, --suricata     Get Suricata results
+  -tir, --traffic-inspection
+                        Get Traffic inspection info
+  -wir, --wireshark-info
+                        Get Wireshark info
+  -rbgi, --rombios-generator-info
+                        Get RomBios generator info
+  -rbi, --rombioscheck-info
+                        Get RomBiosCheck info
+  -agi, --androidguard-info
+                        Get AndroidGuard info
+  -dbc, --debcheck-info
+                        Get DebCheck info, also include ios IPA
 
 Rescan options:
   -r, --rescan          Allows you to rescan files in VirusTotal's file store
@@ -205,7 +231,7 @@ Domain/IP shared verbose mode options, by default just show resolved IPs/Passive
   -wh, --whois          Whois data
   -wht, --whois-timestamp
                         Whois timestamp
-  -pdn, --passive-dns   Passive DNS resolves
+  -pdns, --resolutions  Passive DNS resolves
   --asn                 ASN number
   -aso, --as-owner      AS details
   --country             Country
@@ -247,8 +273,15 @@ Domain/IP shared verbose mode options, by default just show resolved IPs/Passive
   -urs, --undetected-referrer-samples
                         Undetected referrer samples
 
+Process emails:
+  -pe, --parse-email    Parse email, can be string or file
+  -esa SAVE_ATTACHMENT, --save-attachment SAVE_ATTACHMENT
+                        Save email attachment, path where to store
+  -peo, --parse-email-outlook
+                        Parse outlook .msg, can be string or file
+
 Behaviour options:
-  --behaviour           The md5/sha1/sha256 hash of the file whose dynamic
+  -bh, --behaviour      The md5/sha1/sha256 hash of the file whose dynamic
                         behavioural report you want to retrieve. VirusTotal
                         runs a distributed setup of Cuckoo sandbox machines
                         that execute the files we receive. Execution is
@@ -263,7 +296,7 @@ Behaviour options:
                         POST parameter allinfo=1. The summary will appear
                         under the behaviour-v1 property of the additional_info
                         field in the JSON report.This API allows you to
-                        retrieve the full JSON report of the file's execution
+                        retrieve the full JSON report of the files execution
                         as outputted by the Cuckoo JSON report encoder.
   -bn, --behavior-network
                         Show network activity
@@ -274,16 +307,19 @@ Behaviour options:
 
 Download options:
   -dl, --download       The md5/sha1/sha256 hash of the file you want to
-                        download or txt file with hashes, or hash and type,
-                        one by line, for example: hash,pcap or only hash. Will
-                        save with hash as name
+                        download or txt file with .txt extension, with hashes,
+                        or hash and type, one by line, for example: hash,pcap
+                        or only hash. Will save with hash as name, can be
+                        space separated list of hashes to download
   -nm NAME, --name NAME
                         Name with which file will saved when download it
+  -dt DOWNLOAD_THREADS, --download-threads DOWNLOAD_THREADS
+                        Number of simultaneous downloaders
 
 Additional options:
   --pcap                The md5/sha1/sha256 hash of the file whose network
                         traffic dump you want to retrieve. Will save as
-                        VTDL_hash.pcap
+                        hash.pcap
   --clusters            A specific day for which we want to access the
                         clustering details, example: 2013-09-10
   --distribution-files  Timestamps are just integer numbers where higher
@@ -312,6 +348,22 @@ Distribution options:
                         API). If the parameter is not specified, each item
                         returned will onlycontain the scanned URL and its
                         detection ratio.
+
+Rules managment options:
+  --rules               Manage VTI hunting rules, REQUIRED for rules managment
+  --list                List names/ids of Yara rules stored on VT
+  --create FILE         Add a Yara rule to VT (File Name used as RuleName
+  --update FILE         Update a Yara rule on VT (File Name used as RuleName
+                        and must include RuleName
+  --retro FILE          Submit Yara rule to VT RetroHunt (File Name used as
+                        RuleName and must include RuleName
+  --delete_rule DELETE_RULE
+                        Delete a Yara rule from VT (By Name)
+  --share               Shares rule with user
+  --update_ruleset UPDATE_RULESET
+                        Ruleset name to update
+  --disable DISABLE     Disable a Yara rule from VT (By Name)
+  --enable ENABLE       Enable a Yara rule from VT (By Name)
 ```
 
 

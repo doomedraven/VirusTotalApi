@@ -12,7 +12,7 @@ from __future__ import print_function
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '3.1.3'
+__version__ = '3.1.3.2'
 __license__ = 'For fun :)'
 
 import os
@@ -2724,7 +2724,7 @@ class vtAPI(PRINTER):
 
             if len(email_id) >=64:
                 # in case if you pass full email instead of hash
-                email_id = hashlib.sha256(email_id).hexdigest()
+                email_id = hashlib.sha256(email_id.encode("utf-8")).hexdigest()
 
             print('\n[+] Details of email: {0}'.format(email_id))
             plist = [[]]
@@ -3276,6 +3276,7 @@ class vtAPI(PRINTER):
         if kwargs.get('return_json'):
             return return_json
 
+
 def create_config_file(paths):
     path = False
     conf_template = """
@@ -3297,7 +3298,7 @@ daily_limit=100
         print("[+] Config setup start")
         for key, value in paths.items():
             print("\t[{}] {}".format(key, value))
-        path = six.imput("[+] Select option, where you want to create config, or type custom path:")
+        path = six.input("[+] Select option, where you want to create config, or type custom path:")
         path = path.strip()
         if path.isdigit():
             path = int(path)
@@ -3306,30 +3307,30 @@ daily_limit=100
         else:
             print("[-] Incorrect config path")
             continue
-        apikey = six.imput("[+] Provide your apikey:")
-        type_key = six.imput("[+] Your apikey is pubic/private:")
-        intelligence = six.imput("[+] You have access to VT intelligence True/False:")
+        apikey = six.input("[+] Provide your apikey:")
+        type_key = six.input("[+] Your apikey is pubic/private:")
+        intelligence = six.input("[+] You have access to VT intelligence True/False:")
 
         if "VT_USERNAME" in os.environ:
-            self.username = os.environ["VT_USERNAME"]
+            user = os.environ["VT_USERNAME"]
         else:
-            user = six.imput("[optional] Your username for weblogin, only for rule menagment")
+            user = six.input("[optional] Your username for weblogin, only for rule menagment")
 
         if "VT_PASSWORD" in os.environ:
             password = os.environ["VT_PASSWORD"]
         else:
-            password = six.imput("[optional] Your password for weblogin, only for rule menagment")
+            password = six.input("[optional] Your password for weblogin, only for rule menagment")
 
         # email
         if "VT_NOTIFY" in os.environ:
             notify = os.environ["VT_NOTIFY"]
         else:
-            notify = six.imput("[optional] Rule match notification email")
+            notify = six.input("[optional] Rule match notification email")
 
         if "VT_SHARE_USER" in os.environ:
-            self.optional_share_user = os.environ["VT_SHARE_USER"]
+            share_user = os.environ["VT_SHARE_USER"]
         else:
-            share_user = six.imput("[optional] Share rules with user")
+            share_user = six.input("[optional] Share rules with user")
 
         try:
             tmp = open(path, "wb")
@@ -3369,7 +3370,7 @@ def read_conf(config_file = False):
                          intelligence=False # True if you have access
                          engines=malwarebytes,kaspersky,drweb,eset_nod32
                          timeout=60
-                         user=web interface username
+                         username=web interface username
                          password=web interface password
                          notify=email
                          share_user=username
