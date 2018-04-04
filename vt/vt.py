@@ -12,7 +12,7 @@ from __future__ import print_function
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '3.1.3.2'
+__version__ = '3.1.3.3'
 __license__ = 'For fun :)'
 
 import os
@@ -3298,7 +3298,7 @@ daily_limit=100
         print("[+] Config setup start")
         for key, value in paths.items():
             print("\t[{}] {}".format(key, value))
-        path = six.input("[+] Select option, where you want to create config, or type custom path:")
+        path = six.moves.input("[+] Select option, where you want to create config, or type custom path:")
         path = path.strip()
         if path.isdigit():
             path = int(path)
@@ -3307,30 +3307,30 @@ daily_limit=100
         else:
             print("[-] Incorrect config path")
             continue
-        apikey = six.input("[+] Provide your apikey:")
-        type_key = six.input("[+] Your apikey is pubic/private:")
-        intelligence = six.input("[+] You have access to VT intelligence True/False:")
+        apikey = six.moves.input("[+] Provide your apikey:")
+        type_key = six.moves.input("[+] Your apikey is pubic/private:")
+        intelligence = six.moves.input("[+] You have access to VT intelligence True/False:")
 
         if "VT_USERNAME" in os.environ:
             user = os.environ["VT_USERNAME"]
         else:
-            user = six.input("[optional] Your username for weblogin, only for rule menagment")
+            user = six.moves.input("[optional] Your username for weblogin, only for rule menagment")
 
         if "VT_PASSWORD" in os.environ:
             password = os.environ["VT_PASSWORD"]
         else:
-            password = six.input("[optional] Your password for weblogin, only for rule menagment")
+            password = six.moves.input("[optional] Your password for weblogin, only for rule menagment")
 
         # email
         if "VT_NOTIFY" in os.environ:
             notify = os.environ["VT_NOTIFY"]
         else:
-            notify = six.input("[optional] Rule match notification email")
+            notify = six.moves.input("[optional] Rule match notification email")
 
         if "VT_SHARE_USER" in os.environ:
             share_user = os.environ["VT_SHARE_USER"]
         else:
-            share_user = six.input("[optional] Share rules with user")
+            share_user = six.moves.input("[optional] Share rules with user")
 
         try:
             tmp = open(path, "wb")
