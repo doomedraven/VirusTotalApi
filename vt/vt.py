@@ -3339,7 +3339,7 @@ daily_limit=100
                     apikey.strip(),
                     type_key.strip(),
                     intelligence.strip(),
-                    user.stip(),
+                    user.strip(),
                     password.strip(),
                     notify.strip(),
                     share_user.strip(),
