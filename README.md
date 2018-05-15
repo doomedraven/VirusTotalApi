@@ -369,3 +369,4 @@ Rules managment options:
 
 ### Mention of tool:
  * by @seifreed - [Hunting .NET malware](https://medium.com/@seifreed/hunting-net-malware-40235e11dc05#.tzavobki0)
+ * [Security Automation with Ansible 2: Leverage Ansible 2 to automate complex](https://www.amazon.com/Security-Automation-Ansible-Leverage-application/dp/1788394518)
