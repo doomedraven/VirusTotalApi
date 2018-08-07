@@ -12,7 +12,7 @@ from __future__ import print_function
 # https://www.virustotal.com/intelligence/help/
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '3.1.3.3'
+__version__ = '3.1.3.7'
 __license__ = 'For fun :)'
 
 import os
@@ -74,7 +74,13 @@ except ImportError:
 
 req_timeout = 60
 re_compile_orig = re.compile
-
+proxies = {}
+if os.getenv("PROXY"):
+    proxies = {
+        "http": os.getenv("PROXY"), 
+        "https": os.getenv("PROXY")
+    }
+    
 
 def is_valid_file(path):
     if os.path.exists(path) and path.endswith(('.yara', '.yar')):
@@ -82,7 +88,6 @@ def is_valid_file(path):
     else:
         print("The file {fname} does not exist!".format(fname=path))
     return False
-
 
 class VT_Rule_Handler(object):
     '''
@@ -1919,16 +1924,16 @@ class vtAPI(PRINTER):
                             perm = str(mem_perm[hex(section.Characteristics)[:3]])
                         else:
                             perm = hex(section.Characteristics)[:3]
-                            plist.append([section.Name.decode("utf-8").rstrip("\0"), section.SizeOfRawData, hex(section.VirtualAddress), hex(section.Misc_VirtualSize), hex(section.Characteristics), perm])
+                        plist.append([section.Name.decode("utf-8").rstrip("\0"), section.SizeOfRawData, hex(section.VirtualAddress), hex(section.Misc_VirtualSize), hex(section.Characteristics), perm])
                     pretty_print_special(plist, ['Name', 'SizeOfRawData', "VA", "Virtual Size", "Characteristics", "R|W|X"], [10, 15, 10, 10, 15, 5], ['c', 'c', 'c', 'c', 'c', 'c'], True)
                     del plist
 
                 if hasattr(pe, "DIRECTORY_ENTRY_IMPORT") and pe.DIRECTORY_ENTRY_IMPORT:
                     print("\n[+] Imports")
                     for entry in pe.DIRECTORY_ENTRY_IMPORT:
-                      print('   {}'.format(entry.dll))
+                      print('   {}'.format(entry.dll.decode()))
                       for imp in entry.imports:
-                        print('\t{} {}'.format(hex(imp.address), imp.name))
+                        print('\t{} {}'.format(hex(imp.address), imp.name.decode() if imp.name is not None else ""))
 
                 try:
                     if pe.IMAGE_DIRECTORY_ENTRY_EXPORT.symbols:
@@ -3374,6 +3379,8 @@ def read_conf(config_file = False):
                          password=web interface password
                          notify=email
                          share_user=username
+                         # ex: http://localhost:8118
+                         proxy=
                      For more information check:
                          https://github.com/doomedraven/VirusTotalApi
                      '''
@@ -3404,6 +3411,11 @@ def read_conf(config_file = False):
     except Exception:
         sys.exit(help)
 
+    if "proxy" in vt_config and vt_config["proxy"]:
+        proxies = {
+            "http": vt_config["proxy"], 
+            "https": vt_config["proxy"]
+        }
     for key in vt_config:
         #backward compartibility
         if key == 'type':
@@ -3419,6 +3431,7 @@ def read_conf(config_file = False):
         if vt_config[key] in ('False', 'True'):
             vt_config[key] = ast.literal_eval(vt_config[key])
 
+        
     return vt_config
 
 def main():
