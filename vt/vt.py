@@ -1,6 +1,6 @@
-from __future__ import print_function
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 
 # Full VT APIv2 functions added by Andriy Brukhovetskyy
 # doomedraven -  Twitter : @d00m3dr4v3n
@@ -77,10 +77,10 @@ re_compile_orig = re.compile
 proxies = {}
 if os.getenv("PROXY"):
     proxies = {
-        "http": os.getenv("PROXY"), 
+        "http": os.getenv("PROXY"),
         "https": os.getenv("PROXY")
     }
-    
+
 
 def is_valid_file(path):
     if os.path.exists(path) and path.endswith(('.yara', '.yar')):
@@ -866,6 +866,35 @@ class vtAPI(PRINTER):
         self.params = {'apikey': apikey}
         self.base = 'https://www.virustotal.com/vtapi/v2/{0}'
 
+    def __aux_search(self, url, offset, page_limit):
+        """
+            Aux function to grab more than 300 hashes
+        """
+        hashes = list()
+        count = 1
+        while True:
+            try:
+                print("[+] Getting page {} result".format(count) )
+                if page_limit >= count:
+                    self.params["offset"] = offset
+                    jdata, response = get_response(url, params=self.params)
+                    count += 1
+                    if jdata and "hashes" in jdata:
+                        hashes += jdata["hashes"]
+                    if "offset" in jdata and jdata["offset"] != offset:
+                        offset = jdata["offset"]
+                    else:
+                        break
+                else:
+                    break
+            except Exception as e:
+                print(e)
+                count += 1
+                if page_limit >= count:
+                    break
+
+        return hashes
+
     def getReport(self, *args, **kwargs):
         """
         A md5/sha1/sha256 hash will retrieve the most recent report on a given sample. You may also specify a scan_id (sha256-timestamp as returned by the file upload API)
@@ -908,8 +937,12 @@ class vtAPI(PRINTER):
 
                 if kwargs.get('allinfo'):
                     self.params['allinfo'] = kwargs.get('allinfo')
-
+                print(self.params, kwargs.get("search_intelligence_limit", 1))
                 jdata, response = get_response(url, params=self.params)
+                if "offset" in jdata and kwargs.get("search_intelligence_limit", 1) > 1:
+                    hashes = self.__aux_search(url, jdata["offset"], kwargs["search_intelligence_limit"])
+                    jdata["hashes"] = hashes
+
                 if kwargs.get('return_raw'):
                     return jdata
 
@@ -2196,7 +2229,7 @@ class vtAPI(PRINTER):
             elif isinstance(kwargs.get('value'), six.string_types):
                 kwargs['value'] = [kwargs.get('value')]
 
-            kwargs['value'] = [urlparse(ip).netloc if ip.startswith(('http://', 'https://')) else ip for ip in kwargs.get('value')]
+            kwargs['value'] = [urlparse(ip).netloc if ip.startswith((b'http://', b'https://')) else ip for ip in kwargs.get('value')]
 
             url = self.base.format('ip-address/report')
 
@@ -2647,6 +2680,7 @@ class vtAPI(PRINTER):
                                 url = self.base.format('file/download')
                         elif kwargs.get('intelligence'):
                             url = 'https://www.virustotal.com/intelligence/download/'
+                            #url = "https://www.virustotal.com/intelligence/files/{}/download_url"
                         else:
                             print('[-] You don\'t have permission for download')
                             return
@@ -2798,7 +2832,7 @@ class vtAPI(PRINTER):
     def email_remove_bad_char(self, email):
         ''' I saw few emails which start with ">" and they not parsed correctly'''
         try:
-            if email.startswith('>'):
+            if email.startswith(b'>'):
                 email = email[1:]
         except Exception as e:
             print(e)
@@ -2822,7 +2856,7 @@ class vtAPI(PRINTER):
             if os.path.exists(email_id):
                 email_id = open(email_id, 'rb').read()
             else:
-                if email_id.startswith('http'):
+                if email_id.startswith(b'http'):
                     email_id = re.findall('[\w\d]{64}', email_id, re.I)
                     if email_id:
                         email_id = email_id[0]
@@ -2834,7 +2868,7 @@ class vtAPI(PRINTER):
             elif isinstance(email_id, str):
                 email_id = {"email": email_id}
             elif isinstance(email_id, bytes):
-                email_id = {"email": email_id.decode('utf-8')}
+                email_id = {"email": email_id} #.decode('utf-8')
             try:
                 for email__id in email_id:
                     email__id = email_id[email__id]
@@ -2854,7 +2888,7 @@ class vtAPI(PRINTER):
                         save_email.close()
 
                     re.compile = re_compile_our
-                    msg = email.message_from_string(email__id)
+                    msg = email.message_from_string(email__id.decode("latin-1"))
                     re.compile = re_compile_orig
 
             except Exception as e:
@@ -2863,7 +2897,8 @@ class vtAPI(PRINTER):
 
             if msg:
                 email_dict = dict()
-                email_dict.setdefault("email_id", hashlib.sha256(email__id.encode('utf-8')).hexdigest())
+                # .encode('utf-8')
+                email_dict.setdefault("email_id", hashlib.sha256(email__id).hexdigest())
                 email_dict['Attachments'] = list()
                 for k, v in msg.items():
                     email_dict[k] = v
@@ -2889,7 +2924,7 @@ class vtAPI(PRINTER):
                 if not kwargs.get('return_json'):
                     self.__email_print(
                         email_dict,
-                        hashlib.sha256(email__id.encode('utf-8')).hexdigest(),
+                        hashlib.sha256(email__id).hexdigest(), #.encode('utf-8')
                         *args,
                         **kwargs
                     )
@@ -3413,7 +3448,7 @@ def read_conf(config_file = False):
 
     if "proxy" in vt_config and vt_config["proxy"]:
         proxies = {
-            "http": vt_config["proxy"], 
+            "http": vt_config["proxy"],
             "https": vt_config["proxy"]
         }
     for key in vt_config:
@@ -3431,7 +3466,7 @@ def read_conf(config_file = False):
         if vt_config[key] in ('False', 'True'):
             vt_config[key] = ast.literal_eval(vt_config[key])
 
-        
+
     return vt_config
 
 def main():
@@ -3457,6 +3492,7 @@ def main():
     opt.add_argument('-w', '--walk', action='store_true', default=False, help='Work with domain-info, will walk throuth all detected ips and get information, can be provided ip parameters to get only specific information')
     opt.add_argument('-s', '--search', action='store_true',  help='A md5/sha1/sha256 hash for which you want to retrieve the most recent report. You may also specify a scan_id (sha256-timestamp as returned by the scan API) to access a specific report. You can also specify a space separated list made up of a combination of hashes and scan_ids Public API up to 4 items/Private API up to 25 items, this allows you to perform a batch request with one single call.')
     opt.add_argument('-si', '--search-intelligence', action='store_true', help='Search query, help can be found here - https://www.virustotal.com/intelligence/help/')
+    opt.add_argument('-sil', '--search-intelligence-limit', action='store', default=1, type=int, help='limit search intelligence paging, 300 hashes per page, default 1 page')
     opt.add_argument('-et', '--email-template', action='store_true', help='Table format template for email')
 
     if vt_config.get('api_type'):
@@ -3667,7 +3703,7 @@ def main():
 
     elif options.get('domain') or options.get('ip'):
 
-        if options['value'][0].startswith('http'):
+        if options['value'][0].startswith(b'http'):
             options['value'][0] = urlparse(options['value'][0]).netloc
 
         if match('\w{1,3}\.\w{1,3}\.\w{1,3}\.\w{1,3}', options['value'][0]):

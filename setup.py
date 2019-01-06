@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='vt',
-    version='3.1.3.3',
+    version='3.1.3.7',
     description='VirusTotal Full API',
     license='For fun :)',
     packages=find_packages(),
@@ -30,7 +30,7 @@ setup(
         "virustotal vt automated malware analysis threat "
         "intelligence cert soc"
     ),
-    long_description=open("README.md", "rb").read(),
+    #long_description=open("README.md", "rb").read(),
     install_requires=[
         "requests >= 2.5.0",
         "python-dateutil >= 1.5",
