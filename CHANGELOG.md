@@ -1,3 +1,7 @@
+**06.01.2019**
+* Improved `-si` to get many result pages and not only 300 latest hashes
+	* New option `-sil` - search intelligence limit, if not specified will get only 1 page = 300 hashes if available
+
 **24.03.2018**
 
 * Integrated VTI hunting yara managment, thanks to @silascutler for his permission to use his [code](https://github.com/silascutler/VirusTotalTools/blob/master/VT_RuleMGR.py)
