@@ -670,8 +670,8 @@ def get_detections(scans, **kwargs):
     engines = kwargs.get('engines')
     if engines == []:
       return
-    elif isinstance(engines, six.string_types) and engines.find(',') != -1:
-        engines = engines.split(',')
+    elif isinstance(engines, six.string_types) and engines.find(b',') != -1:
+        engines = engines.split(b',')
     elif isinstance(engines, six.string_types):
         engines = [engines]
     else:
@@ -1751,7 +1751,7 @@ class vtAPI(PRINTER):
                                         if email.get('message'):
                                             print('\nMessage:')
                                             if email['message'] is not None:
-                                              for line in email['message'].split('\n'):
+                                              for line in email['message'].split(b'\n'):
                                                   print(line.strip())
 
                     if jdata.get('total') and kwargs.get('verbose'):
@@ -1911,7 +1911,7 @@ class vtAPI(PRINTER):
                     print('[-] Not PE file')
                     return
 
-                print("\nName: {0}".format(file.split("/")[-1]))
+                print("\nName: {0}".format(file.split(b"/")[-1]))
 
                 print("\n[+] Hashes")
                 print("MD5: {0}".format(pe.sections[0].get_hash_md5()))
@@ -2136,7 +2136,7 @@ class vtAPI(PRINTER):
             to_show = url_upload
             if isinstance(url_upload, list):
                 if "\n" in url_upload[0]:
-                    to_show = "\n\t".join(url_upload[0].split("\n"))
+                    to_show = "\n\t".join(url_upload[0].split(b"\n"))
                 else:
                     to_show = "\n\t".join(url_upload)
 
@@ -2656,9 +2656,9 @@ class vtAPI(PRINTER):
                     f_hash = f_hash.strip()
                     if f_hash != '':
 
-                        if f_hash.find(',') != -1:
-                            file_type = f_hash.split(',')[-1]
-                            f_hash = f_hash.split(',')[0]
+                        if f_hash.find(b',') != -1:
+                            file_type = f_hash.split(b',')[-1]
+                            f_hash = f_hash.split(b',')[0]
                         else:
                             file_type = super_file_type
 
@@ -2779,7 +2779,7 @@ class vtAPI(PRINTER):
                         # ToDo improve this
                         """
                         if email_dict['Attachments'][i]['attachment'].startswith("filename="):
-                            attach_parts = email_dict['Attachments'][i]['attachment'].split("\r\n\r\n")
+                            attach_parts = email_dict['Attachments'][i]['attachment'].split(b"\r\n\r\n")
                             if len(attach_parts) >= 2:
                                 email_dict['Attachments'][i]['attachment'] = base64.b64decode(attach_parts[1])
                         """
