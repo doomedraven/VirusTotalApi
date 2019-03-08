@@ -1,18 +1,23 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# Copyright (C) 2011-2019 DoomedRaven.
+# This file is part of VirusTotalApi - https://github.com/doomedraven/VirusTotalApi
+# See the file 'LICENSE.md' for copying permission.
+
 from __future__ import print_function
 
-# Full VT APIv2 functions added by Andriy Brukhovetskyy
+# Full VT APIv3 functions added by Andriy Brukhovetskyy
 # doomedraven -  Twitter : @d00m3dr4v3n
-# No Licence or warranty expressed or implied, use however you wish!
 # For more information look at:
 #
 # https://www.virustotal.com/en/documentation/public-api
 # https://www.virustotal.com/en/documentation/private-api
 # https://www.virustotal.com/intelligence/help/
+# https://developers.virustotal.com/v3.0/reference#overview
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '3.1.3.8'
+__version__ = '4.0.0.0a1'
 __license__ = 'For fun :)'
 
 import os
@@ -72,6 +77,7 @@ try:
 except ImportError:
     MAGIC = False
 
+apikey = ""
 req_timeout = 60
 re_compile_orig = re.compile
 proxies = {}
@@ -372,7 +378,6 @@ def dump_csv(filename, scans):
 
     print('\n\tCSV file dumped as: VTDL{0}.csv'.format(filename))
 
-
 def parse_report(jdata, **kwargs):
     filename = ''
 
@@ -469,7 +474,7 @@ def get_response(url, method="get", **kwargs):
     jdata = ''
     response = ''
     kwargs['timeout'] = req_timeout
-
+    kwargs["headers"] = {"x-apikey": apikey}
     while True:
         try:
             response = getattr(requests, method)(url, **kwargs)
@@ -512,12 +517,11 @@ def get_response(url, method="get", **kwargs):
 
 class vtAPI(PRINTER):
 
-    def __init__(self, apikey):
+    def __init__(self):
 
         super(PRINTER, self).__init__()
-
-        self.params = {'apikey': apikey}
-        self.base = 'https://www.virustotal.com/vtapi/v2/{0}'
+        self.params = dict()
+        self.base = 'https://www.virustotal.com/api/v3/{0}'
 
     def __aux_search(self, url, offset, page_limit):
         """
@@ -1793,16 +1797,16 @@ class vtAPI(PRINTER):
                 else:
                     to_show = "\n\t".join(url_upload)
 
+            url = self.base.format('urls')
             if kwargs.get('key') == 'scan':
                 print('Submitting url(s) for analysis: \n\t{url}'.format(url=to_show))
                 self.params['url'] = url_upload
-                url = self.base.format('url/scan')
 
             elif kwargs.get('key') == 'report':
                 print('\nSearching for url(s) report: \n\t{url}'.format(url=to_show))
-                self.params['resource'] = url_upload
+                self.params['resource'] = base64.urlsafe_b64encode(url_upload.encode("utf-8")).strip(b"=")
                 self.params['scan'] = kwargs.get('action')
-                url = self.base.format('url/report')
+                url = self.base.format('urls/report')
 
             jdata, response = get_response(url, params=self.params, method="post")
 
@@ -1833,14 +1837,14 @@ class vtAPI(PRINTER):
                                 print('\tPermanent link : {permalink}'.format(permalink=jdata_part['permalink']))
 
             else:
+                print(jdata)
                 if jdata is None:
                     print('[-] Nothing found')
-                elif  'response_code' in jdata and jdata['response_code'] == 0 or jdata['response_code'] == -1:
-                    if jdata.get('verbose_msg'):
-                        print('\n[!] Status : {verb_msg}\n'.format(verb_msg=jdata['verbose_msg']))
+                elif jdata.get('error'):
+                    print('\n[!] Status : {verb_msg}\n'.format(verb_msg=jdata['verbose_msg']))
                 else:
                     if kwargs.get('dump'):
-                        md5_hash = hashlib.md5(jdata['url']).hexdigest()
+                        md5_hash = hashlib.md5(jdata['data']['id'].encode("utf-8")).hexdigest()
                         jsondump(json, md5_hash)
 
                     if kwargs.get('key') == 'report':
@@ -1857,9 +1861,11 @@ class vtAPI(PRINTER):
                 time.sleep(60)
 
     def getIP(self,  *args, **kwargs):
+
         """
         A valid IPv4 address in dotted quad notation, for the time being only IPv4 addresses are supported.
         """
+
         jdatas = list()
         return_json = dict()
 
@@ -1884,41 +1890,97 @@ class vtAPI(PRINTER):
 
             kwargs['value'] = [urlparse(ip).netloc if ip.startswith(('http://', 'https://')) else ip for ip in kwargs.get('value')]
 
-            url = self.base.format('ip-address/report')
+            url = self.base.format('ip_addresses/')
 
             for ip in kwargs.get('value'):
-                self.params['ip'] = ip
+                url += ip
+                if kwargs.get('ip_post_comments'):
+                    url += '/comments'
+                    method = 'post'
+                elif kwargs.get('ip_get_comments'):
+                    url += '/comments'
+                    method = 'get'
 
+                elif kwargs.get('ip_get_relationships', False):
+                    url += '/' + kwargs['ip_get_relationships']
+                    method = 'get'
                 jdata, response = get_response(url, params=self.params)
+                #print(jdata)
                 jdatas.append((ip, jdata))
-
-                self.params.pop('ip')
-
             if kwargs.get('return_raw'):
                 return jdatas
 
         for ip, jdata in jdatas:
-            if jdata.get('response_code', "") == 0 or jdata.get('response_code', -1) == -1:
-                if jdata.get('verbose_msg'):
-                    print('\n[-] Status {ip}: {verb_msg}\n'.format(verb_msg=jdata['verbose_msg'], ip=ip))
+            #if jdata.get('error', "") == 0 or jdata.get('error', -1) == -1:
+            #    print('\n[-] Status {ip}: {verb_msg}\n'.format(verb_msg=jdata['verbose_msg'], ip=ip))
 
-            elif jdata['response_code'] == 1:
-                if jdata.get('verbose_msg') and not (kwargs.get('return_json') or kwargs.get('return_raw')) and kwargs.get('verbose'):
+            if jdata.get('data', False) is not False:
+                if not (kwargs.get('return_json') or kwargs.get('return_raw')) and kwargs.get('verbose'):
                     print('\n[+] IP:', ip)
 
-                simple_list = (
-                    'asn',
-                    'as_owner',
-                    'country',
-                )
+                if kwargs.get("ip", False) is True:
+                    simple_list = (
+                        'asn',
+                        'as_owner',
+                        'country',
+                        'continent',
+                        'network',
+                        'regional_internet_registry',
+                        'reputation',
+                        'total_votes', #: {'harmless': 3, 'malicious': 0}},
+                    )
+                    for key in simple_list:
+                        if jdata['data']['attributes'].get(key) and ((kwargs.get(key) or key in args) or kwargs.get('verbose')):
+                            if kwargs.get('return_json'):
+                                return_json.update({key:jdata['data']['attributes'][key]})
+                            else:
+                                self.print_key(key, indent='\n', separator='[+]')
+                                print('\t', jdata['data']['attributes'].get(key))
 
-                for key in simple_list:
-                    if jdata.get(key) and ((kwargs.get(key) or key in args) or kwargs.get('verbose')):
-                        if kwargs.get('return_json'):
-                            return_json.update({key:jdata[key]})
-                        else:
-                            self.print_key(key, indent='\n', separator='[+]')
-                            print('\t', jdata.get(key))
+                elif kwargs.get("ip_get_comments", False) is True:
+                    simple_list = (
+                        "date",
+                        "tags",
+                        "text",
+                        "votes",
+                        "links"
+                    )
+                    for block in jdata['data']:
+                        print("[+] Comment ID: {}".format(block["id"]))
+                        for key in simple_list:
+                            if block["attributes"].get(key) and ((kwargs.get(key) or key in args) or kwargs.get('verbose')):
+                                if kwargs.get('return_json'):
+                                    return_json.update({key:block["attributes"][key]})
+                                else:
+                                    self.print_key(key, indent='', separator='\t[+]')
+                                    if key == "date":
+                                        print('\t', datetime.fromtimestamp(block["attributes"].get(key)).strftime('%Y-%m-%d %H:%M:%S'))
+                                    else:
+                                        print('\t', block["attributes"].get(key))
+                #elif kwargs.get("ip_post_comments", False) is True:
+                elif kwargs.get('ip_get_relationships', False):
+                    #print(jdata["data"].keys())
+                    simple_list = (
+                        "url",
+                        "last_final_url",
+                        "tags",
+                        "total_votes",
+                        "last_analysis_date",
+                        "last_analysis_stats",
+                    )
+                    for block in jdata['data']:
+                        for key in simple_list:
+                            if block["attributes"].get(key) and ((kwargs.get(key) or key in args) or kwargs.get('verbose')):
+                                if kwargs.get('return_json'):
+                                    return_json.update({key:block["attributes"][key]})
+                                else:
+                                    self.print_key(key, indent='', separator='\t[+]')
+                                    if key == "last_analysis_date":
+                                        print('\t', datetime.fromtimestamp(block["attributes"].get(key)).strftime('%Y-%m-%d %H:%M:%S'))
+                                    else:
+                                        print('\t', block["attributes"].get(key))
+                        #[{u'attributes': {u'total_votes': {u'harmless': 0, u'malicious': 0}, u'last_final_url': u'https://msg3.club/', u'tags': [], u'url': u'https://msg3.club/', u'last_analysis_date': 1551639858, u'last_analysis_stats': {u'harmless': 57, u'malicious': 1, u'suspicious': 0, u'undetected': 8, u'timeout': 0}, u'first_submission_date': 1551639858,
+                        self.last_analysis_results(block['attributes'], args, kwargs)
 
                 if kwargs.get('return_json'):
                     return_json.update(self.detected_samples(jdata, *args, **kwargs))
@@ -2249,8 +2311,6 @@ class vtAPI(PRINTER):
 
           The md5/sha1/sha256 hash of the file whose network traffic dump you want to retrieve.
         """
-        super_file_type = kwargs.get("download")
-
         if isinstance(kwargs.get("value"), list) and len(kwargs.get("value")) == 1:
             if os.path.exists(kwargs.get("value")[0]) and kwargs.get("value")[0].endswith(".txt"):
                 kwargs["value"] = [dl_hash.strip() for dl_hash in open(kwargs.get("value")[0], "rb").readlines()]
@@ -2308,8 +2368,7 @@ class vtAPI(PRINTER):
                     f_hash = kwargs['value'].pop()
                     f_hash = f_hash.strip()
                     if f_hash != '':
-
-                        if f_hash.find(b',') != -1:
+                        if f_hash.find(',') != -1:
                             file_type = f_hash.split(b',')[-1]
                             f_hash = f_hash.split(b',')[0]
                         else:
@@ -2323,24 +2382,8 @@ class vtAPI(PRINTER):
                                 else:
                                     print('[-] Hash not found in url')
 
-                        if kwargs.get('api_type'):
-                            if file_type not in ('file', 'pcap'):
-                                print('\n[!] File_type must be pcap or file\n')
-                                return
-                            if file_type == 'pcap':
-                                url = self.base.format('file/network-traffic')
-                            elif file_type == 'file':
-                                url = self.base.format('file/download')
-                        elif kwargs.get('intelligence'):
-                            url = 'https://www.virustotal.com/intelligence/download/'
-                            #url = "https://www.virustotal.com/intelligence/files/{}/download_url"
-                        else:
-                            print('[-] You don\'t have permission for download')
-                            return
-                        params = dict()
-                        params["apikey"] = self.params["apikey"]
-                        params["hash"] = f_hash
-                        response = requests.get(url, params=params, verify=False)
+                        url = "https://www.virustotal.com/api/v3/files/{id}/download".format(id = f_hash)
+                        jdata, response = get_response(url)
                         if response:
                             if response.status_code == 404:
                                     print('\n[!] File not found - {0}\n'.format(f_hash))
@@ -2352,20 +2395,7 @@ class vtAPI(PRINTER):
                                     name = '{hash}'.format(hash=f_hash)
                                 if file_type == "pcap":
                                     name += ".pcap"
-                                """
-                                if "VirusTotal - Free Online Virus, Malware and URL Scanner" in response.content.decode() and \
-                                   '{"response_code": 0, "hash":' not in response.content.decode(): # filter out keep-alive new chunks
-                                    try:
-                                        json_data = response.json()
-                                        print('\n\t{0}: {1}'.format(json_data['verbose_msg'], f_hash))
-                                    except Exception as e:
-                                        print(e)
-                                        print('\tFile can\'t be downloaded: {0}'.format(f_hash))
-                                elif "failed" == response.content:
-                                    print('\tFile not exists on VT?: {0}'.format(f_hash))
-                                    self.downloaded_to_return.setdefault(f_hash, 'failed')
-                                    continue
-                                """
+
                                 #Sanity checks
                                 downloaded_hash = ''
                                 if len(f_hash) == 32:
@@ -2922,6 +2952,13 @@ class vtAPI(PRINTER):
         if kwargs.get('return_json'):
             return return_json
 
+    def last_analysis_results(self, jdata, *args,  **kwargs):
+        sorted_data = sorted(jdata["last_analysis_results"])
+        for engine in sorted_data:
+            self.print_key(engine, indent='\n', separator='[+]')
+            pretty_print(jdata["last_analysis_results"][engine], [
+                            'category', 'engine_update', 'engine_version', 'method', 'result'], [15, 15, 20, 20, 10], ['c', 'c', 'c', 'c', 'c'], kwargs.get('email_template'))
+
     def detected_samples(self, jdata, *args,  **kwargs):
 
         if kwargs.get('samples') or 'samples' in args:
@@ -3129,7 +3166,7 @@ def read_conf(config_file = False):
     return vt_config
 
 def main():
-
+    global apikey
     rule_manager = False
     vt_config = read_conf()
 
@@ -3148,6 +3185,10 @@ def main():
     opt.add_argument('-ur', '--url-report', action='store_true', help='Url(s) report, support space separated list, Max 4 (or 25 if you have private api) urls, you can use --url-report --url-scan options for analysing url(s) if they are not in VT data base, read previev description about more then max limits or file with urls')
     opt.add_argument('-d', '--domain-info',   action='store_true', dest='domain', help='Retrieves a report on a given domain (PRIVATE API ONLY! including the information recorded by VirusTotal\'s Passive DNS infrastructure)')
     opt.add_argument('-i', '--ip-info', action='store_true', dest='ip', help='A valid IPv4 address in dotted quad notation, for the time being only IPv4 addresses are supported.')
+    opt.add_argument('-ipc', '--ip-post-comments', action='store', help='Add comment(s) for an IP address')
+    opt.add_argument('-igc', '--ip-get-comments', action='store_true', help='Get comment(s) for an IP address')
+    opt.add_argument('-igr', '--ip-get-relationships', action='store', choices=['communicating_files', 'downloaded_files', 'graphs', 'referrer_files', 'urls'], help='Get relationships for an IP address')
+
     opt.add_argument('-w', '--walk', action='store_true', default=False, help='Work with domain-info, will walk throuth all detected ips and get information, can be provided ip parameters to get only specific information')
     opt.add_argument('-s', '--search', action='store_true',  help='A md5/sha1/sha256 hash for which you want to retrieve the most recent report. You may also specify a scan_id (sha256-timestamp as returned by the scan API) to access a specific report. You can also specify a space separated list made up of a combination of hashes and scan_ids Public API up to 4 items/Private API up to 25 items, this allows you to perform a batch request with one single call.')
     opt.add_argument('-si', '--search-intelligence', action='store_true', help='Search query, help can be found here - https://www.virustotal.com/intelligence/help/')
@@ -3274,8 +3315,8 @@ def main():
         sys.exit()
 
     options = vars(options)
-
-    vt = vtAPI(vt_config.get('apikey'))
+    apikey = vt_config.get('apikey')
+    vt = vtAPI()
 
     options.update(vt_config)
 
@@ -3321,7 +3362,7 @@ def main():
 
         vt.rescan(**options)
 
-    elif options.get('domain') or options.get('ip'):
+    elif options.get('domain') or any([options.get(opt) for opt in ('ip', 'ip_post_comments', 'ip_get_comments', 'ip_get_relationships')]):
 
         if 'http' in options['value'][0]:
             options['value'][0] = urlparse(options['value'][0]).netloc
