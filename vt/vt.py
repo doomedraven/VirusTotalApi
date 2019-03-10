@@ -103,11 +103,13 @@ def get_sizes(dictionary):
     key_s = 20
     value_s = 20
 
-    key_s = max([len(key) for key in list(dictionary.keys())])
-    value_s = max([len(value) for value in list(dictionary.values())])
+    key_s = max([len(str(key)) for key in list(dictionary.keys())])
+    value_s = max([len(str(value)) for value in list(dictionary.values())])
 
     if value_s > 80:
         value_s = 80
+    elif value_s < 5:
+        value_s = 5
 
     return key_s, value_s
 
@@ -125,7 +127,7 @@ def get_adequate_table_sizes(scans, short=False, short_list=False):
              )
             result = max([len(scans[engine]['result']) if 'result' in scans[engine] and scans[engine]['result'] is not None and engine in short_list else 0 for engine in scans]
              )
-            version = max([len(scans[engine]['version']) if 'version' in scans[engine] and scans[engine]['version'] is not None and engine in short_list else 0 for engine in scans]
+            version = max([len(scans[engine]['engine_version']) if 'engine_version' in scans[engine] and scans[engine]['engine_version'] is not None and engine in short_list else 0 for engine in scans]
              )
 
         else:
@@ -133,8 +135,8 @@ def get_adequate_table_sizes(scans, short=False, short_list=False):
             result = max([len(scans[engine]['result']) if 'result' in scans[
                 engine] and scans[engine]['result'] is not None else 0 for engine in scans]
             )
-            version = max([len(scans[engine]['version']) if 'version' in scans[
-                engine] and scans[engine]['version'] is not None else 0 for engine in scans]
+            version = max([len(scans[engine]['engine_version']) if 'engine_version' in scans[
+                engine] and scans[engine]['engine_version'] is not None else 0 for engine in scans]
             )
 
         if result > result_f:
@@ -263,36 +265,32 @@ def load_file(file_path):
         except TypeError:
             print('\n[!] Check your json dump file\n')
 
-def get_detections(scans, **kwargs):
+def get_detections(scans, manual_engines = False, **kwargs):
 
     plist = [[]]
-
-    engines = kwargs.get('engines')
-    if engines == []:
+    if  manual_engines:
+        engines = manual_engines
+    if engines == list():
       return
-    elif isinstance(engines, six.string_types) and engines.find(b',') != -1:
-        engines = engines.split(b',')
+    elif isinstance(engines, six.string_types) and engines.find(',') != -1:
+        engines = engines.split(',')
     elif isinstance(engines, six.string_types):
         engines = [engines]
-    else:
-        return
 
-    # lower case for easier comparation
+    # lower case for easier comparison
     engines = [eng.lower().strip() for eng in engines]
     short_list = list()
     for engine in list(scans.keys()):
         engine = engine.strip()
-        if engine.lower() in engines and scans[engine].get('result'):
+        if engine.lower() in engines and scans[engine]:
             short_list.append(engine)
             plist.append([engine,
                           scans[engine]['result'],
-                          scans[engine]['version'] if 'version' in scans[engine] and scans[engine]['version'] else ' -- ',
-                          scans[engine]['update'] if 'update' in scans[engine] and scans[engine]['update'] else ' -- '
+                          scans[engine]['engine_version'] if 'engine_version' in scans[engine] and scans[engine]['engine_version'] else ' -- ',
+                          scans[engine]['engine_update'] if 'engine_update' in scans[engine] and scans[engine]['engine_update'] else ' -- '
                           ])
-
     if plist != [[]]:
-        av_size, result_size, version = get_adequate_table_sizes(
-            scans, True, short_list)
+        av_size, result_size, version = get_adequate_table_sizes(scans, True, short_list)
         pretty_print_special(plist,
                 ['Vendor name',  'Result', 'Version', 'Last Update'],
                 [av_size, result_size, version, 11],
@@ -360,8 +358,8 @@ def parse_report(jdata, **kwargs):
                 plist.append([x,
                           'True',
                           jdata['scans'][x]['result'] if jdata['scans'][x]['result'] else ' -- ',
-                          jdata['scans'][x]['version'] if  'version' in jdata['scans'][x] and jdata['scans'][x]['version'] else ' -- ',
-                          jdata['scans'][x]['update'] if 'update' in jdata['scans'][x] and jdata['scans'][x]['update'] else ' -- '
+                          jdata['scans'][x]['engine_version'] if  'engine_version' in jdata['scans'][x] and jdata['scans'][x]['engine_version'] else ' -- ',
+                          jdata['scans'][x]['engine_update'] if 'engine_update' in jdata['scans'][x] and jdata['scans'][x]['engine_update'] else ' -- '
                           ])
         av_size, result_size, version = get_adequate_table_sizes(
             jdata['scans'])
@@ -454,7 +452,7 @@ def get_response(url, method="get", **kwargs):
 
     return jdata, response
 
-def _check_error(self, jdata):
+def _check_error(jdata):
     error = False
     if 'error' in jdata:
         print('[!] Code: {} - Description: {}'.format(jdata['error']['code'], jdata['error']['description']))
@@ -474,7 +472,7 @@ class PRINTER(object):
     def simple_print(self, block, keys):
         for key in keys:
             if block.get(key) and block[key]:
-                self.print_key(key)
+                self.print_key(key, indent=' ')
                 if isinstance(block.get(key), list):
                     print('\t', '\n\t'.join(block.get(key)))
                 else:
@@ -495,7 +493,8 @@ class PRINTER(object):
                 plist.append([jdata_part, jdata[key][jdata_part]])
             elif isinstance(jdata_part, dict):
                 plist.append(jdata_part.values())
-        pretty_print_special(plist, ['Name', 'Value'], [25, 20], ['c', 'c'], kwargs.get('email_template'))
+        key_s, key_v = get_sizes(jdata[key])
+        pretty_print_special(plist, ['Name', 'Value'], [key_s, key_v], ['r', 'l'], kwargs.get('email_template'))
         del plist
 
     # key:{subkey:[]}
@@ -528,9 +527,9 @@ class PRINTER(object):
                 self.print_key(key)
                 for sub_key, value in list(block[key].items()):
                     if isinstance(value, list):
-                        print('\n', sub_key, '\n\t' ,'\n\t'.join(value))
+                        print('\n', sub_key, '\n\t', '\n\t'.join(value))
                     else:
-                        print('\n', sub_key, '\n\t' ,value)
+                        print('\n', sub_key, '\n\t', value)
 
 
 class vtAPI(PRINTER):
@@ -570,6 +569,34 @@ class vtAPI(PRINTER):
 
         return hashes
 
+    def _parse_aux(self, block, **kwargs):
+
+        basic_file_info_list = (
+            'md5', 'sha1', 'sha256', 'ssdeep', 'authentihash', 'vhash', 'magic', 'type_description',\
+            'type_tag', 'creation_date', 'times_submitted', 'size', 'total_votes', 'unique_sources',\
+            'meaningful_name', 'reputation',
+        )
+
+        basic_info = dict()
+        to_time = ('first_submission_date', 'last_submission_date', 'last_analysis_date', 'last_modification_date')
+        [basic_info.update({key:datetime.fromtimestamp(block[key]).strftime('%Y-%m-%d %H:%M:%S')}) for key in to_time if key in block]
+        [basic_info.update({key:block[key]}) for key in basic_file_info_list if key in block]
+
+        self._print_complex_dict({'basic':basic_info}, 'basic', **{'email_template':True})
+        for key in ('names', 'tags'):
+            if block.get(key):
+                self.list_print(block, [key])
+        """
+        behaviour
+        trid
+        """
+        for key in ('signature_info', 'exiftool', 'last_analysis_stats'):
+            if block.get(key):
+                self._print_complex_dict(block, key, **{'email_template':True})
+
+        get_detections(block['last_analysis_results'], manual_engines=block['last_analysis_results'].keys(), **kwargs)
+
+
     def getReport(self, *args, **kwargs):
         """
         A md5/sha1/sha256 hash will retrieve the most recent report on a given sample. You may also specify a scan_id (sha256-timestamp as returned by the file upload API)
@@ -602,18 +629,19 @@ class vtAPI(PRINTER):
                     print('\nCalculating hash for:', hashes_report)
                     hashes_report = hashlib.sha256(open(hashes_report, 'rb').read()).hexdigest()
 
+                #ToDo all options
+                # https://developers.virustotal.com/v3.0/reference#intelligence-search
                 if (kwargs.get('search_intelligence') or 'search_intelligence' in args):
                     self.params['query'] = [hashes_report]
-                    url = self.base.format('file/search')
+                    url = self.base.format('intelligence/search')
                 else:
                     self.params['resource'] = hashes_report
                     url = self.base.format('analyses/{}'.format(hashes_report))
 
-
-                jdata, response = get_response(url)
-                if "offset" in jdata and kwargs.get("search_intelligence_limit", 1) > 1:
-                    hashes = self.__aux_search(url, jdata["offset"], kwargs["search_intelligence_limit"])
-                    jdata["hashes"] = hashes
+                jdata, response = get_response(url, params=self.params)
+                #if "offset" in jdata and kwargs.get("search_intelligence_limit", 1) > 1:
+                #    hashes = self.__aux_search(url, jdata["offset"], kwargs["search_intelligence_limit"])
+                #    jdata["hashes"] = hashes
 
                 if kwargs.get('return_raw'):
                     return jdata
@@ -632,34 +660,42 @@ class vtAPI(PRINTER):
 
         for jdata in jdatas:
             if isinstance(jdata, dict):
+                if _check_error(jdata):
+                    continue
+
                 if jdata.get('data'):
-                    if jdata.get('error', False):
-                        #ToDo error handling
-                        pass
-
-                    if kwargs.get('not_exit'):
-                        return False
-
-                if True: # kwargs.get('search_intelligence') or 'search_intelligence' in args:
-
-                    if kwargs.get('return_json') and (kwargs.get('hashes') or 'hashes' in args):
-                        return_json['hashes'] = jdata.get('hashes')
-                    else:
-                        if 'hashes' in jdata and jdata['hashes']:
-                            print('[+] Matched hash(es):')
-                            for file_hash in jdata['hashes']:
-                                print('\t{0}'.format(file_hash))
-                            if kwargs.get('download'):
-                                kwargs.update({'value': jdata['hashes'], 'download':'file'})
-                                self.download(**kwargs)
-
-                if kwargs.get('allinfo') == 1:
 
                     if kwargs.get('dump'):
                         jsondump(jdata, name)
 
-                    if kwargs.get('verbose'):
+                    if kwargs.get('not_exit'):
+                        return False
 
+                if kwargs.get('search_intelligence') or 'search_intelligence' in args:
+
+                    if kwargs.get('return_json') and (kwargs.get('hashes') or 'hashes' in args):
+                        return_json['hashes'] = [block['attributes']['sha256'] for block in jdata['data']]
+                    else:
+                            print('[+] Matched hash(es):')
+                            for block in jdata['data']:
+                                print('{} - FS:{} - LS:{}'.format(block['attributes']['sha256'], \
+                                    datetime.fromtimestamp(block['attributes']['first_submission_date']).strftime('%Y-%m-%d %H:%M:%S'), \
+                                    datetime.fromtimestamp(block['attributes']['last_analysis_date']).strftime('%Y-%m-%d %H:%M:%S'))
+                                )
+                                if kwargs.get('verbose') or kwargs.get('allinfo'):
+                                    self._parse_aux(block['attributes'], **kwargs)
+                                    print("\n\n")
+
+                            if kwargs.get('download'):
+                                kwargs.update({'value': block['attributes']['sha256'], 'download':'file'})
+                                self.download(**kwargs)
+
+                if kwargs.get('allinfo'):
+                    pass
+                    #ToDo remove
+                    """
+                    if kwargs.get('verbose'):
+                        #print(jdata)
                         basic_file_info_list = (
                           'md5',
                           'sha1',
@@ -693,7 +729,6 @@ class vtAPI(PRINTER):
                         )
                         self.simple_print(jdata, file_info_list)
 
-                    if jdata.get('additional_info'):
                         simple_list = (
                             'magic',
                             'first_seen_itw',
@@ -864,13 +899,6 @@ class vtAPI(PRINTER):
 
                                 if jdata['additional_info']['rombios_generator'].get('diff') and kwargs.get('verbose'):
                                     pass
-                                    """
-                                    ToDo
-                                     #u'additional_info.rombios_generator.diff.contained',
-                                     #u'additional_info.rombios_generator.diff.missing_children',
-                                     #u'additional_info.rombios_generator.diff.missing_nvar',
-                                    """
-
 
 
                         if jdata['additional_info'].get('debcheck') and ((kwargs.get('debcheck_info') or 'debcheck_info' in args) or kwargs.get('verbose')):
@@ -987,13 +1015,6 @@ class vtAPI(PRINTER):
                                             for ssub_key in jdata['additional_info']['androguard']['intent-filters'][key].get(sub_key):
                                                 print('\n\t\t\t', ssub_key)
                                                 print('\n\t\t\t\t',  '\n\t\t\t\t'.join(jdata['additional_info']['androguard']['intent-filters'][key][sub_key].get(ssub_key)))
-
-                                """
-                                ToDo
-                                 u'additional_info.androguard.Providers',
-                                 u'additional_info.androguard.Receivers',
-                                 u'additional_info.androguard.Services',
-                                 """
 
                         if jdata.get('email_parents') and kwargs.get('verbose'):
                             print('\n[+] Email parents:')
@@ -1152,19 +1173,6 @@ class vtAPI(PRINTER):
                                     'filesystem'
                                 )
                                 self.dict_list_print(jdata['additional_info']['behaviour-v1'], dict_keys)
-                                """ToDo
-                                u'additional_info.behaviour-v1.extra',
-                                 u'additional_info.behaviour-v1.hosts_file',
-                                 u'additional_info.behaviour-v1.registry.deleted',
-                                 u'additional_info.behaviour-v1.registry.set',
-                                 u'additional_info.behaviour-v1.service.controlled',
-                                 u'additional_info.behaviour-v1.service.created',
-                                 u'additional_info.behaviour-v1.service.deleted',
-                                 u'additional_info.behaviour-v1.service.opened',
-                                 u'additional_info.behaviour-v1.service.opened-managers',
-                                 u'additional_info.behaviour-v1.service.started',
-
-                                """
 
                             if kwargs.get('verbose'):
                                 simple_list = (
@@ -1466,7 +1474,7 @@ class vtAPI(PRINTER):
 
                     if jdata.get('permalink') and kwargs.get('verbose'):
                         print('\nPermanent link : {permalink}\n'.format(permalink=jdata['permalink']))
-
+                    """
                 else:
                     kwargs.update({'url_report':False})
                     result = parse_report(jdata, **kwargs)
@@ -1799,7 +1807,6 @@ class vtAPI(PRINTER):
                     else:
                         print('\t', block['id'])
 
-    #get all relationships
     def getIP(self,  *args, **kwargs):
 
         """
@@ -2145,6 +2152,7 @@ class vtAPI(PRINTER):
             if kwargs.get('return_json'):
                 return return_json
 
+    # ToDo remove?
     def clusters(self,  *args, **kwargs):
 
         """
@@ -2632,6 +2640,7 @@ class vtAPI(PRINTER):
 
         return {'status': 'missed library'}
 
+    # ToDo dist remove
     def distribution(self, *args,  **kwargs):
         """
         Note that scan items are not kept forever in the distribution queue, they are automatically removed after 6 hours counting from the time
@@ -2747,6 +2756,7 @@ class vtAPI(PRINTER):
                     date=time.strftime("%Y-%m-%d"))
                 )
 
+    # ToDo in search intel?
     def behaviour(self, *args,  **kwargs):
         # ToDo
         """
@@ -3145,7 +3155,7 @@ def main():
 
     if vt_config.get('api_type'):
         allinfo_opt = opt.add_argument_group('All information related')
-        #ToDo remove allinfo_opt.add_argument('-rai', '--report-all-info', action='store_true', help='If specified and set to one, the call will return additional info, other than the antivirus results, on the file being queried. This additional info includes the output of several tools acting on the file (PDFiD, ExifTool, sigcheck, TrID, etc.), metadata regarding VirusTotal submissions (number of unique sources that have sent the file in the past, first seen date, last seen date, etc.), and the output of in-house technologies such as a behavioural sandbox.')
+        allinfo_opt.add_argument('-rai', '--report-all-info', action='store_true', help='If specified and set to one, the call will return additional info, other than the antivirus results, on the file being queried. This additional info includes the output of several tools acting on the file (PDFiD, ExifTool, sigcheck, TrID, etc.), metadata regarding VirusTotal submissions (number of unique sources that have sent the file in the past, first seen date, last seen date, etc.), and the output of in-house technologies such as a behavioural sandbox.')
         allinfo_opt.add_argument('-itu', '--ITW-urls', action='store_true', help='In the wild urls')
         allinfo_opt.add_argument('-cw', '--compressedview', action='store_true', help='Contains information about extensions, file_types, tags, lowest and highest datetime, num children detected, type, uncompressed_size, vhash, childrens')
         allinfo_opt.add_argument('-dep', '--detailed-email-parents', action='store_true', help='Contains information about emails, as Subject, sender, receiver(s), full email, and email hash to download it')
