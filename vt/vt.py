@@ -635,11 +635,11 @@ class vtAPI(PRINTER):
                     url = self.base.format('intelligence/search')
                 else:
                     self.params['resource'] = hashes_report
-                    url = self.base.format('analyses/{}'.format(hashes_report))
+                    url = self.base.format('files/{}'.format(hashes_report))
 
                 jdata, response = get_response(url, params=self.params)
-                if 'next' in jdata['data'] and kwargs.get('search_intelligence_limit', 1) > 1:
-                    info = self.__aux_search(jdata['data']['next'], kwargs['search_intelligence_limit'])
+                if 'next' in jdata.get('data', dict).get('links', dict()) and kwargs.get('search_intelligence_limit', 1) > 1:
+                    info = self.__aux_search(jdata['data']['links']['next'], kwargs['search_intelligence_limit'])
                     jdata['data'] += info
 
                 if kwargs.get('return_raw'):
@@ -688,7 +688,8 @@ class vtAPI(PRINTER):
                             if kwargs.get('download'):
                                 kwargs.update({'value': block['attributes']['sha256'], 'download':'file'})
                                 self.download(**kwargs)
-
+                else:
+                    self._parse_aux(jdata['data']['attributes'], **kwargs)
                 if kwargs.get('allinfo'):
                     pass
                     #ToDo remove
@@ -1673,7 +1674,7 @@ class vtAPI(PRINTER):
             kwargs.update({'value':submit_file})
             # Check all list of files, not only one
             result = self.getReport(**kwargs)
-            if not result and kwargs.get('scan') == True:
+            if not result and kwargs.get('scan') is True:
                 if os.path.isfile(submit_file):
                     file_name = os.path.split(submit_file)[-1]
                     files = {"file": (file_name, open(submit_file, 'rb'))}
