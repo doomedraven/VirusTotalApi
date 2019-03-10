@@ -540,23 +540,22 @@ class vtAPI(PRINTER):
         self.params = dict()
         self.base = 'https://www.virustotal.com/api/v3/{0}'
 
-    def __aux_search(self, url, offset, page_limit):
+    def __aux_search(self, url, page_limit):
         """
             Aux function to grab more than 300 hashes
         """
-        hashes = list()
+        info = list()
         count = 1
         while True:
             try:
-                print("[+] Getting page {} result".format(count) )
+                print("[+] Getting page {} result".format(count))
                 if page_limit >= count:
-                    self.params["offset"] = offset
                     jdata, response = get_response(url, params=self.params)
                     count += 1
-                    if jdata and "hashes" in jdata:
-                        hashes += jdata["hashes"]
-                    if "offset" in jdata and jdata["offset"] != offset:
-                        offset = jdata["offset"]
+                    if jdata and 'data' in jdata:
+                        info += jdata['data']
+                    if jdata['links']['next'] != response.url:
+                        url = jdata['links']['next']
                     else:
                         break
                 else:
@@ -567,7 +566,7 @@ class vtAPI(PRINTER):
                 if page_limit >= count:
                     break
 
-        return hashes
+        return info
 
     def _parse_aux(self, block, **kwargs):
 
@@ -639,9 +638,9 @@ class vtAPI(PRINTER):
                     url = self.base.format('analyses/{}'.format(hashes_report))
 
                 jdata, response = get_response(url, params=self.params)
-                #if "offset" in jdata and kwargs.get("search_intelligence_limit", 1) > 1:
-                #    hashes = self.__aux_search(url, jdata["offset"], kwargs["search_intelligence_limit"])
-                #    jdata["hashes"] = hashes
+                if 'next' in jdata['data'] and kwargs.get('search_intelligence_limit', 1) > 1:
+                    info = self.__aux_search(jdata['data']['next'], kwargs['search_intelligence_limit'])
+                    jdata['data'] += info
 
                 if kwargs.get('return_raw'):
                     return jdata
