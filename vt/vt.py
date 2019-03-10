@@ -17,7 +17,7 @@ from __future__ import print_function
 # https://developers.virustotal.com/v3.0/reference#overview
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '4.0.0.0a1'
+__version__ = '4.0.0.0a2'
 __license__ = 'For fun :)'
 
 import os
@@ -94,65 +94,6 @@ def is_valid_file(path):
     else:
         print("The file {fname} does not exist!".format(fname=path))
     return False
-
-class PRINTER(object):
-
-    def print_key(self,  key, indent='\n', separator='[+]'):
-        try:
-            print('{0}{1} {2}'.format(indent, separator, key.capitalize().replace('_', ' ').replace('-', ' ')))
-        except Exception as e:
-            print(e)
-
-    # key:value
-    def simple_print(self, block, keys):
-        for key in keys:
-            if block.get(key) and block[key]:
-                self.print_key(key)
-                if isinstance(block.get(key), list):
-                    print('\t', '\n\t'.join(block.get(key)))
-                else:
-                    print('\t', block.get(key))
-
-    # key:[]
-    def list_print(self, block, keys):
-        for key in keys:
-            if block.get(key) and block[key]:
-                self.print_key(key)
-                print('\t', '\n\t'.join(block.get(key)))
-
-    # key:{subkey:[]}
-    def dict_list_print(self, block, keys):
-        for key in keys:
-            if block.get(key) and block[key]:
-                self.print_key(key)
-                if isinstance(block.get(key), list):
-                    for sub_list in block.get(key):
-                            if isinstance(sub_list, list):
-                                print('\n\t', '\n\t'.join([str(part) for part in sub_list]))
-                            elif isinstance(sub_list, dict):
-                                for sub_key, sub_value in list(sub_list.items()):
-                                    print('\t', sub_key, sub_value)
-                                print('\n')
-
-            elif isinstance(block.get(key), dict):
-                for sub_key in block.get(key, []):
-                    if block[key].get(sub_key, {}):
-                        self.print_key(sub_key)
-                        for ssub_dict in block[key].get(sub_key, {}):
-                            print('\n')
-                            for ssub_key, ssub_value in list(ssub_dict.items()):
-                                print('\t', ssub_key, ssub_value)
-
-    # key:{subkey:{}}
-    def dict_print(self, block, keys):
-        for key in keys:
-            if block.get(key, []):
-                self.print_key(key)
-                for sub_key, value in list(block[key].items()):
-                    if isinstance(value, list):
-                        print('\n', sub_key, '\n\t' ,'\n\t'.join(value))
-                    else:
-                        print('\n', sub_key, '\n\t' ,value)
 
 def private_api_access_error():
     print('\n[!] You don\'t have permission for this operation, Looks like you trying to access to PRIVATE API functions\n')
@@ -381,13 +322,13 @@ def dump_csv(filename, scans):
 def parse_report(jdata, **kwargs):
     filename = ''
 
-    if jdata.get('response_code') != 1:
+    if _check_error(jdata) is False:
 
         if not kwargs.get('not_exit'):
             return False
 
         else:
-            print('\n[-] Status : {info}\n'.format(info=jdata.get('verbose_msg')))
+            _check_error(jdata)
             return
 
     if jdata.get('scan_date'):
@@ -478,7 +419,6 @@ def get_response(url, method="get", **kwargs):
     while True:
         try:
             response = getattr(requests, method)(url, **kwargs)
-
         except requests.exceptions.ConnectionError:
             print('\n[!] Some network connection happend, check your internet conection, or it can be VT API server side issue\n')
             return {}, ''
@@ -513,6 +453,84 @@ def get_response(url, method="get", **kwargs):
         get_response.start_time = 0
 
     return jdata, response
+
+def _check_error(self, jdata):
+    error = False
+    if 'error' in jdata:
+        print('[!] Code: {} - Description: {}'.format(jdata['error']['code'], jdata['error']['description']))
+        error = True
+
+    return error
+
+class PRINTER(object):
+
+    def print_key(self,  key, indent='\n', separator='[+]'):
+        try:
+            print('{0}{1} {2}'.format(indent, separator, key.capitalize().replace('_', ' ').replace('-', ' ')))
+        except Exception as e:
+            print(e)
+
+    # key:value
+    def simple_print(self, block, keys):
+        for key in keys:
+            if block.get(key) and block[key]:
+                self.print_key(key)
+                if isinstance(block.get(key), list):
+                    print('\t', '\n\t'.join(block.get(key)))
+                else:
+                    print('\t', block.get(key))
+
+    # key:[]
+    def list_print(self, block, keys):
+        for key in keys:
+            if block.get(key) and block[key]:
+                self.print_key(key)
+                print('\t', '\n\t'.join(block.get(key)))
+
+    def _print_complex_dict(self, jdata, key, **kwargs):
+        self.print_key(key)
+        plist = [[]]
+        for jdata_part in jdata[key]:
+            if isinstance(jdata_part, six.string_types):
+                plist.append([jdata_part, jdata[key][jdata_part]])
+            elif isinstance(jdata_part, dict):
+                plist.append(jdata_part.values())
+        pretty_print_special(plist, ['Name', 'Value'], [25, 20], ['c', 'c'], kwargs.get('email_template'))
+        del plist
+
+    # key:{subkey:[]}
+    def dict_list_print(self, block, keys):
+        for key in keys:
+            if block.get(key) and block[key]:
+                self.print_key(key)
+                if isinstance(block.get(key), list):
+                    for sub_list in block.get(key):
+                            if isinstance(sub_list, list):
+                                print('\n\t', '\n\t'.join([str(part) for part in sub_list]))
+                            elif isinstance(sub_list, dict):
+                                for sub_key, sub_value in list(sub_list.items()):
+                                    print('\t', sub_key, sub_value)
+                                print('\n')
+
+            elif isinstance(block.get(key), dict):
+                for sub_key in block.get(key, []):
+                    if block[key].get(sub_key, {}):
+                        self.print_key(sub_key)
+                        for ssub_dict in block[key].get(sub_key, {}):
+                            print('\n')
+                            for ssub_key, ssub_value in list(ssub_dict.items()):
+                                print('\t', ssub_key, ssub_value)
+
+    # key:{subkey:{}}
+    def dict_print(self, block, keys):
+        for key in keys:
+            if block.get(key, []):
+                self.print_key(key)
+                for sub_key, value in list(block[key].items()):
+                    if isinstance(value, list):
+                        print('\n', sub_key, '\n\t' ,'\n\t'.join(value))
+                    else:
+                        print('\n', sub_key, '\n\t' ,value)
 
 
 class vtAPI(PRINTER):
@@ -579,23 +597,20 @@ class vtAPI(PRINTER):
             elif isinstance(kwargs.get('value'), six.string_types):
                 kwargs['value'] = [kwargs.get('value')]
 
-            #ToDo support for private api and up to 25 hashes
-
             for hashes_report in kwargs.get('value'):
                 if os.path.isfile(hashes_report):
                     print('\nCalculating hash for:', hashes_report)
                     hashes_report = hashlib.sha256(open(hashes_report, 'rb').read()).hexdigest()
+
                 if (kwargs.get('search_intelligence') or 'search_intelligence' in args):
                     self.params['query'] = [hashes_report]
                     url = self.base.format('file/search')
                 else:
                     self.params['resource'] = hashes_report
-                    url = self.base.format('file/report')
+                    url = self.base.format('analyses/{}'.format(hashes_report))
 
-                if kwargs.get('allinfo'):
-                    self.params['allinfo'] = kwargs.get('allinfo')
-                print(self.params, kwargs.get("search_intelligence_limit", 1))
-                jdata, response = get_response(url, params=self.params)
+
+                jdata, response = get_response(url)
                 if "offset" in jdata and kwargs.get("search_intelligence_limit", 1) > 1:
                     hashes = self.__aux_search(url, jdata["offset"], kwargs["search_intelligence_limit"])
                     jdata["hashes"] = hashes
@@ -617,11 +632,15 @@ class vtAPI(PRINTER):
 
         for jdata in jdatas:
             if isinstance(jdata, dict):
-                if jdata.get('response_code') == 0 or jdata.get('response_code') == -1:
+                if jdata.get('data'):
+                    if jdata.get('error', False):
+                        #ToDo error handling
+                        pass
+
                     if kwargs.get('not_exit'):
                         return False
 
-                if kwargs.get('search_intelligence') or 'search_intelligence' in args:
+                if True: # kwargs.get('search_intelligence') or 'search_intelligence' in args:
 
                     if kwargs.get('return_json') and (kwargs.get('hashes') or 'hashes' in args):
                         return_json['hashes'] = jdata.get('hashes')
@@ -1470,58 +1489,15 @@ class vtAPI(PRINTER):
             kwargs['value'] = [kwargs.get('value')]
 
         elif len(kwargs.get('value')) > 1 and not isinstance(kwargs.get('value'), six.string_types):
-
-                start = -25
-                increment = 25
-                end = 0
-                hash_rescans = list()
-
-                while True:
-
-                    start += increment
-
-                    if len(kwargs.get('value')) > end + increment:
-                        end += increment
-                    elif len(kwargs.get('value')) <= end + increment:
-                        end = len(kwargs.get('value'))
-
-                    hash_rescans.append(
-                        [', '.join(map(lambda hrescan: hrescan, kwargs.get('value')[start:end]))]
-                    )
-
-                    if end == len(kwargs.get('value')):
-                        break
-
-        url = self.base.format('file/rescan')
+            pass
 
         for hash_part in kwargs.get('value'):
 
             if os.path.exists(hash_part):
-                hash_part = [
-                    hashlib.md5(open(hash_part, 'rb').read()).hexdigest()]
+                hash_part = hashlib.md5(open(hash_part, 'rb').read()).hexdigest()
 
-            self.params['resource'] = hash_part
-
-            if kwargs.get('delete'):
-                url = url.format('/delete')
-
-            else:
-                if kwargs.get('date'):
-                    self.params['date'] = kwargs.get('date')
-
-                if kwargs.get('period'):
-                    self.params['period'] = kwargs.get('period')
-
-                    if kwargs.get('repeat'):
-                        self.params['repeat'] = kwargs.get('repeat')
-
-                if kwargs.get('notify_url'):
-                    self.params['notify_url'] = kwargs.get('notify_url')
-
-                    if kwargs.get('notify_changes_only'):
-                        self.params['notify_changes_only'] = kwargs.get('notify_changes_only')
-
-            jdatas, response = get_response(url, params=self.params, method='post')
+            url = self.base.format('files/{id}/analyse'.foramt(id = hash_part))
+            jdatas, response = get_response(url, method='post')
 
             if isinstance(jdatas, list) and not filter(None, jdatas):
                 print('Nothing found')
@@ -1534,16 +1510,11 @@ class vtAPI(PRINTER):
                 return jdatas
 
             for jdata in jdatas:
-
-                if jdata.get('response_code', 0) == 0 or jdata.get('response_code', -1) == -1:
-                    if jdata.get('verbose_msg'):
-                        print('\n[!] Status : {verb_msg}\n'.format(verb_msg=jdata['verbose_msg']))
-
+                if _check_error(jdata):
+                    continue
                 else:
-                    if jdata.get('sha256'):
-                        print('[+] Check rescan result with sha256 in few minutes : \n\tSHA256 : {sha256}'.format(sha256=jdata['sha256']))
-                    if jdata.get('permalink'):
-                        print('\tPermanent link : {permalink}\n'.format(permalink=jdata['permalink']))
+                    if jdata["data"].get('id'):
+                        print('[+] Check rescan result with id in few minutes : \n\tID : {id}'.format(id=jdata["data"]['id']))
 
     def fileInfo(self, *args,  **kwargs):
         mem_perm = {
@@ -1655,6 +1626,7 @@ class vtAPI(PRINTER):
                             print("\n[+] Packer")
                             print("\t[+] Based on the sections entropy check! file is possibly packed")
 
+    # ToDo verify if works
     def fileScan(self, *args,  **kwargs):
         """
         Allows to send a file to be analysed by VirusTotal.
@@ -1678,13 +1650,7 @@ class vtAPI(PRINTER):
                           all_files.append(os.path.join(path, file))
                     kwargs['value'] = all_files
 
-        if kwargs.get('notify_url'):
-            self.params['notify_url'] = kwargs.get('notify_url')
-
-            if kwargs.get('notify_changes_only'):
-                self.params['notify_changes_only'] = kwargs.get('notify_changes_only')
-
-        url = self.base.format('file/scan')
+        url = self.base.format('files')
 
         if not kwargs.get('scan'):
             for index, c_file in enumerate(kwargs.get('value')):
@@ -1708,22 +1674,14 @@ class vtAPI(PRINTER):
                         jdata, response = get_response(
                             url,
                             files=files,
-                            params=self.params,
+                            #params=self.params,
                             method="post"
                         )
 
                         if kwargs.get('return_raw'):
                             return jdata
 
-                        simple_list = (
-                            'md5',
-                            'sha1',
-                            'sha256',
-                            'verbose_msg',
-                            'permalink'
-                        )
-
-                        self.simple_print(jdata, simple_list)
+                        print("[+] Scan ID: {}".format(jdata["data"]["id"]))
 
                     except UnicodeDecodeError:
                         print('\n[!] Sorry filaname is not utf-8 format, other format not suported at the moment')
@@ -1732,6 +1690,7 @@ class vtAPI(PRINTER):
             elif not result and kwargs.get('scan') == False:
                 print('\nReport for file/hash : {0} not found'.format(submit_file))
 
+    # ToDo finish
     def url_scan_and_report(self, *args,  **kwargs):
         """
         Url scan:
@@ -1747,7 +1706,6 @@ class vtAPI(PRINTER):
         url_uploads = list()
         result = False
         md5_hash = ''
-        urls = list()
         if kwargs.get('value')[0].endswith('.json'):
             result, name = is_file(kwargs.get('value'))
 
@@ -1763,30 +1721,8 @@ class vtAPI(PRINTER):
             elif isinstance(kwargs.get('value'), six.string_types):
                 url_uploads = [kwargs.get('value')]
             elif len(kwargs.get('value')) > 1 and not isinstance(kwargs.get('value'), six.string_types):
-                if kwargs.get('api_type'):
-                    start = -25
-                    increment = 25
-                else:
-                    start = -4
-                    increment = 4
-                end = 0
+                pass
 
-                while True:
-
-                    start += increment
-
-                    if len(kwargs.get('value')) > end + increment:
-                        end += increment
-                    elif len(kwargs.get('value')) <= end + increment:
-                        end = len(kwargs.get('value'))
-
-                    if kwargs.get('key') == 'scan':
-                        url_uploads.append(['\n'.join([url.replace(',', '').strip() for url in kwargs.get('value')[start:end]])])
-                    elif kwargs.get('key') == 'report':
-                        url_uploads.append(['\n'.join([url.replace(',', '').strip() for url in kwargs.get('value')[start:end]])])
-
-                    if end == len(kwargs.get('value')):
-                        break
         cont = 0
         for url_upload in url_uploads:
             cont += 1
@@ -1818,10 +1754,6 @@ class vtAPI(PRINTER):
                 for jdata_part in jdata:
                     if jdata_part is None:
                         print('[-] Nothing found')
-
-                    elif 'response_code' in jdata_part and jdata_part['response_code'] == 0 or jdata_part['response_code'] == -1:
-                        if jdata_part.get('verbose_msg'):
-                            print('\n[!] Status : {verb_msg}\n'.format(verb_msg=jdata_part['verbose_msg']))
                     else:
                         if kwargs.get('dump'):
                             md5_hash = hashlib.md5(jdata_part['url']).hexdigest()
@@ -1831,17 +1763,16 @@ class vtAPI(PRINTER):
                             parse_report(jdata_part, **kwargs)
 
                         elif kwargs.get('key') == 'scan':
-                            if jdata_part.get('verbose_msg'):
-                                print('\n\tStatus : {verb_msg}\t{url}'.format(verb_msg=jdata_part['verbose_msg'], url=jdata_part['url']))
-                            if jdata_part.get('permalink'):
-                                print('\tPermanent link : {permalink}'.format(permalink=jdata_part['permalink']))
+                            if jdata_part["data"].get('id'):
+                                print('\n\ID : {id}\t{url}'.format(id=jdata_part['data']['id'], url=jdata_part['url']))
 
             else:
-                print(jdata)
+                #print(jdata)
                 if jdata is None:
                     print('[-] Nothing found')
-                elif jdata.get('error'):
-                    print('\n[!] Status : {verb_msg}\n'.format(verb_msg=jdata['verbose_msg']))
+                elif _check_error(jdata):
+                    pass
+                    # ToDo rid of this
                 else:
                     if kwargs.get('dump'):
                         md5_hash = hashlib.md5(jdata['data']['id'].encode("utf-8")).hexdigest()
@@ -1851,15 +1782,24 @@ class vtAPI(PRINTER):
                         kwargs.update({'url_report': True})
                         parse_report(jdata, **kwargs)
                     elif kwargs.get('key') == 'scan':
-                        if jdata.get('verbose_msg'):
-                            print('\n\tStatus : {verb_msg}\t{url}'.format(verb_msg=jdata['verbose_msg'], url=jdata['url']))
-                        if jdata.get('permalink'):
-                            print('\tPermanent link : {permalink}'.format(permalink=jdata['permalink']))
+                        _check_error(jdata)
 
             if cont % 4 == 0:
                 print('[+] Sleep 60 seconds between the requests')
                 time.sleep(60)
 
+    def __parse_relationships(self, jdata, value):
+        keys = ('communicating_files', 'downloaded_files', 'graphs', 'referrer_files', 'resolutions', 'siblings', 'subdomains', 'urls')
+        for key in keys:
+            if key in jdata and jdata[key].get("data", []):
+                self.print_key(key, indent='\n', separator='[+]')
+                for block in jdata[key].get("data", []):
+                    if key == "resolutions":
+                        print('\t', block['id'].replace(value, ''))
+                    else:
+                        print('\t', block['id'])
+
+    #get all relationships
     def getIP(self,  *args, **kwargs):
 
         """
@@ -1900,20 +1840,18 @@ class vtAPI(PRINTER):
                 elif kwargs.get('ip_get_comments'):
                     url += '/comments'
                     method = 'get'
+                else:
+                    #url += '/' + kwargs['ip_get_relationships']
+                    self.params["relationships"] = 'communicating_files,downloaded_files,graphs,referrer_files,urls'
+                    method = "get"
 
-                elif kwargs.get('ip_get_relationships', False):
-                    url += '/' + kwargs['ip_get_relationships']
-                    method = 'get'
-                jdata, response = get_response(url, params=self.params)
+                jdata, response = get_response(url, method=method, params=self.params)
                 #print(jdata)
                 jdatas.append((ip, jdata))
             if kwargs.get('return_raw'):
                 return jdatas
 
         for ip, jdata in jdatas:
-            #if jdata.get('error', "") == 0 or jdata.get('error', -1) == -1:
-            #    print('\n[-] Status {ip}: {verb_msg}\n'.format(verb_msg=jdata['verbose_msg'], ip=ip))
-
             if jdata.get('data', False) is not False:
                 if not (kwargs.get('return_json') or kwargs.get('return_raw')) and kwargs.get('verbose'):
                     print('\n[+] IP:', ip)
@@ -1930,12 +1868,14 @@ class vtAPI(PRINTER):
                         'total_votes', #: {'harmless': 3, 'malicious': 0}},
                     )
                     for key in simple_list:
-                        if jdata['data']['attributes'].get(key) and ((kwargs.get(key) or key in args) or kwargs.get('verbose')):
+                        if jdata['data']['attributes'].get(key, "") and ((kwargs.get(key) or key in args) or kwargs.get('verbose')):
                             if kwargs.get('return_json'):
                                 return_json.update({key:jdata['data']['attributes'][key]})
                             else:
                                 self.print_key(key, indent='\n', separator='[+]')
                                 print('\t', jdata['data']['attributes'].get(key))
+
+                    self.__parse_relationships(jdata['data']['relationships'], ip)
 
                 elif kwargs.get("ip_get_comments", False) is True:
                     simple_list = (
@@ -1958,8 +1898,9 @@ class vtAPI(PRINTER):
                                     else:
                                         print('\t', block["attributes"].get(key))
                 #elif kwargs.get("ip_post_comments", False) is True:
-                elif kwargs.get('ip_get_relationships', False):
-                    #print(jdata["data"].keys())
+                else:
+                    #self._print_complex_dict(jdata['data'], 'categories')
+                    self.__parse_relationships(jdata['data']['relationships'], ip)
                     simple_list = (
                         "url",
                         "last_final_url",
@@ -1968,7 +1909,9 @@ class vtAPI(PRINTER):
                         "last_analysis_date",
                         "last_analysis_stats",
                     )
-                    for block in jdata['data']:
+                    """
+                    for block in jdata['data']['attributes']:
+                        print(block)
                         for key in simple_list:
                             if block["attributes"].get(key) and ((kwargs.get(key) or key in args) or kwargs.get('verbose')):
                                 if kwargs.get('return_json'):
@@ -1981,11 +1924,11 @@ class vtAPI(PRINTER):
                                         print('\t', block["attributes"].get(key))
                         #[{u'attributes': {u'total_votes': {u'harmless': 0, u'malicious': 0}, u'last_final_url': u'https://msg3.club/', u'tags': [], u'url': u'https://msg3.club/', u'last_analysis_date': 1551639858, u'last_analysis_stats': {u'harmless': 57, u'malicious': 1, u'suspicious': 0, u'undetected': 8, u'timeout': 0}, u'first_submission_date': 1551639858,
                         self.last_analysis_results(block['attributes'], args, kwargs)
-
+                    """
                 if kwargs.get('return_json'):
-                    return_json.update(self.detected_samples(jdata, *args, **kwargs))
+                    return_json.update(self.__detected_samples(jdata, *args, **kwargs))
                 else:
-                    return_json = self.detected_samples(jdata, *args, **kwargs)
+                    return_json = self.__detected_samples(jdata, *args, **kwargs)
 
                 if jdata.get('resolutions') and ((kwargs.get('resolutions') or 'resolutions' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
@@ -2031,27 +1974,35 @@ class vtAPI(PRINTER):
 
             kwargs['value'] = [urlparse(domain).netloc.lower() if domain.startswith(('http://', 'https://')) else domain for domain in kwargs.get('value')]
 
-            url = self.base.format("domain/report")
+            url = self.base.format('domains/')
 
             for domain in kwargs.get('value'):
-                self.params['domain'] = domain
-                jdata, response = get_response(url, params=self.params)
+                url = self.base.format('domains/{}'.format(domain))
+                if kwargs.get('domain_post_comments'):
+                    url += '/comments'
+                    method = 'post'
+                    data = '{"data": {"type": "comment", "attributes": {"text": "Lorem ipsum dolor sit ..."}}}'
+                elif kwargs.get('domain_get_comments'):
+                    url += '/comments'
+                    method = 'get'
+                else:
+                    #url += '/' + kwargs['domain_get_relationships']
+                    self.params["relationships"] = 'communicating_files,downloaded_files,graphs,referrer_files,resolutions,siblings,subdomains,urls'
+                    method = "get"
+                jdata, response = get_response(url, method=method, params=self.params)
                 jdatas.append((domain, jdata))
 
             if kwargs.get('return_raw'):
                 return jdatas
 
         for domain, jdata in jdatas:
-            if jdata.get('response_code', 0) == 0 or jdata.get('response_code') == -1:
-                if jdata.get('verbose_msg'):
-                    print('\n[!] Status : {verb_msg} : {domain}\n'.format(verb_msg=jdata['verbose_msg'], domain=domain))
+            if jdata.get('data'):
+                jdata = jdata['data']
 
-            if jdata.get('response_code') and jdata['response_code'] == 1:
-                if jdata.get('verbose_msg') and not (kwargs.get('return_json') or kwargs.get('return_raw')) and kwargs.get('verbose'):
+                if not (kwargs.get('return_json') or kwargs.get('return_raw')) and kwargs.get('verbose'):
                     print('\n[+] Domain:', domain)
 
                 single_dict = (
-                    'categories',
                     'TrendMicro category',
                     'Dr.Web category',
                     'BitDefender category',
@@ -2061,13 +2012,12 @@ class vtAPI(PRINTER):
                     'Alexa rank',
                     'Opera domain info',
                     'subdomains',
-                    'domain_siblings',
+                    'siblings',
                 )
 
                 complicated_dict = (
-                     'WOT domain info',
-                     'Webutation domain info',
-                     #'resolutions'
+                    'WOT domain info',
+                    'Webutation domain info',
                 )
 
                 for key in single_dict:
@@ -2078,8 +2028,6 @@ class vtAPI(PRINTER):
                             self.print_key(key)
                             if isinstance(jdata[key], list):
                                 print('\t', '\n\t'.join(jdata[key]))
-                            elif key == 'whois_timestamp':
-                                print('\t{0}'.format(datetime.fromtimestamp(float(jdata[key])).strftime('%Y-%m-%d %H:%M:%S')))
                             else:
                                 print('\t{0}'.format(jdata[key]))
 
@@ -2088,33 +2036,79 @@ class vtAPI(PRINTER):
                         if kwargs.get('return_json'):
                             return_json.update({key: jdata[key]})
                         else:
-                            self.print_key(key)
-                            plist = [[]]
-                            for jdata_part in jdata[key]:
-                                if isinstance(jdata_part, six.string_types):
-                                    plist.append([jdata_part, jdata[key][jdata_part]])
-                                elif isinstance(jdata_part, dict):
-                                    plist.append(jdata_part.values())
-                            pretty_print_special(plist, ['Name', 'Value'], [25, 20], ['c', 'c'], kwargs.get('email_template'))
-                            del plist
+                            self.__print_complex_dict(jdata, key, kwargs)
 
-                if jdata.get('whois') and ((kwargs.get('whois') or 'whois' in args) or kwargs.get('verbose')):
+                if jdata['attributes'].get('whois') and ((kwargs.get('whois') or 'whois' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
-                        return_json.update({'whois': jdata['whois']})
+                        return_json.update({'whois': jdata['attributes']['whois']})
                     else:
                         print('\n[+] Whois data:\n')
                         try:
-                            print('\t', jdata['whois'].replace('\n', '\n\t'))
+                            print('\t', jdata['attributes']['whois'].replace('\n', '\n\t'))
                         except:
                             try:
-                                print('\t', jdata['whois'].encode('utf-8', 'replace').replace('\n', '\n\t'))
+                                print('\t', jdata['attributes']['whois'].encode('utf-8', 'replace').replace('\n', '\n\t'))
                             except:
                                 print('Old version of python has some problems with converting chars to ansii')
 
+                self._print_complex_dict(jdata['attributes'], 'categories')
+                self.__parse_relationships(jdata['relationships'], domain)
+                if kwargs.get("domain_get_comments", False) is True:
+                    simple_list = (
+                        "date",
+                        "tags",
+                        "text",
+                        "votes",
+                        "links"
+                    )
+                    for block in jdata:
+                        print("[+] Comment ID: {}".format(block["id"]))
+                        for key in simple_list:
+                            if block.get(key) and ((kwargs.get(key) or key in args) or kwargs.get('verbose')):
+                                if kwargs.get('return_json'):
+                                    return_json.update({key: block["attributes"][key]})
+                                else:
+                                    self.print_key(key, indent='', separator='\t[+]')
+                                    if key == "date":
+                                        print('\t', datetime.fromtimestamp(block.get(key)).strftime('%Y-%m-%d %H:%M:%S'))
+                                    else:
+                                        print('\t', block.get(key))
+
+                # ToDo
+                #elif kwargs.get("post_post_comments", False) is True:
+
+                elif kwargs.get('domain_get_relationships', False):
+                    self._print_complex_dict(jdata['attributes'], 'categories')
+                    self.__parse_relationships(jdata['relationships'], domain)
+                    """
+                    simple_list = (
+                        "url",
+                        "last_final_url",
+                        "tags",
+                        "total_votes",
+                        "last_analysis_date",
+                        "last_analysis_stats",
+                    )
+                    for block in jdata['attributes']:
+                        print(block)
+                        for key in simple_list:
+                            if block.get(key, "") and ((kwargs.get(key) or key in args) or kwargs.get('verbose')):
+                                if kwargs.get('return_json'):
+                                    return_json.update({key:block[key]})
+                                else:
+                                    self.print_key(key, indent='', separator='\t[+]')
+                                    if key == "last_analysis_date":
+                                        print('\t', datetime.fromtimestamp(block.get(key)).strftime('%Y-%m-%d %H:%M:%S'))
+                                    else:
+                                        print('\t', block.get(key))
+                        #[{u'attributes': {u'total_votes': {u'harmless': 0, u'malicious': 0}, u'last_final_url': u'https://msg3.club/', u'tags': [], u'url': u'https://msg3.club/', u'last_analysis_date': 1551639858, u'last_analysis_stats': {u'harmless': 57, u'malicious': 1, u'suspicious': 0, u'undetected': 8, u'timeout': 0}, u'first_submission_date': 1551639858,
+                        self.last_analysis_results(block, args, kwargs)
+                    """
+
                 if kwargs.get('return_json'):
-                    return_json.update(self.detected_samples(jdata, *args, **kwargs))
+                    return_json.update(self.__detected_samples(jdata, *args, **kwargs))
                 else:
-                    return_json = self.detected_samples(jdata, *args, **kwargs)
+                    return_json = self.__detected_samples(jdata, *args, **kwargs)
 
                 if jdata.get('pcaps') and ((kwargs.get('pcaps') or 'pcaps' in args) or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
@@ -2125,27 +2119,27 @@ class vtAPI(PRINTER):
 
                 if jdata.get('resolutions') and ((kwargs.get('resolutions') or 'resolutions' in args)  or kwargs.get('verbose')):
                     if kwargs.get('return_json'):
-                        return_json.update({'passive_dns': jdata['resolutions']})
+                        return_json.update({'passive_dns': jdata['resolutions']['data']})
                     else:
                         print('\n[+] Passive DNS replication\n')
-                        pretty_print(sorted(jdata['resolutions'], key=methodcaller(
-                            'get', 'last_resolved'), reverse=True),
-                            ['last_resolved', 'ip_address'],
+                        pretty_print(jdata['resolutions']['data'],
+                            ['ip_address', 'type'],
                             [25, 20],
                             ['c', 'c'],
                             kwargs.get('email_template')
                             )
 
-                if kwargs.get('walk') and jdata.get('resolutions'):
+                if kwargs.get('walk') and jdata.get('resolutions', {}).get("data", []):
                     filter_ip = list()
-                    for ip in sorted(jdata['resolutions'], key=methodcaller('get', 'last_resolved'), reverse=True):
-                        if ip['ip_address'] not in filter_ip:
-                            print('\n\n[+] Checking data for ip: {0}'.format(ip['ip_address']))
-                            kwargs['value'] = ip['ip_address']
+                    for ip in jdata['resolutions']['data']:
+                        ip = ip['id'].replace(domain, '')
+                        if ip not in filter_ip:
+                            print('\n\n[+] Checking data for ip: {0}'.format(ip))
+                            kwargs['value'] = ip
                             self.getIP(**kwargs)
 
                 if kwargs.get('dump') is True:
-                    md5_hash = hashlib.md5(name).hexdigest()
+                    md5_hash = hashlib.md5(name.encode("utf-8")).hexdigest()
                     jsondump(jdata, md5_hash)
 
             if kwargs.get('return_json'):
@@ -2188,12 +2182,8 @@ class vtAPI(PRINTER):
             if kwargs.get('return_raw'):
                 return jdata
 
-        if jdata.get('response_code', 0) == 0 or jdata.get('response_code', -1) == -1:
-            if jdata.get('verbose_msg'):
-                print('\n[!] Status : {verb_msg}\n'.format(verb_msg=jdata['verbose_msg']))
+        if _check_error(jdata):
             return
-        if jdata.get('verbose_msg'):
-            print('\nStatus : {verb_msg}'.format(verb_msg=jdata['verbose_msg']))
 
         simple_list = (
             'size_top200',
@@ -2223,6 +2213,7 @@ class vtAPI(PRINTER):
         if dump:
             jsondump(jdata, 'clusters_{0}'.format(name))
 
+    # ToDo verify add comment
     def comment(self, *args,  **kwargs):
         """
         Add comment:
@@ -2248,63 +2239,45 @@ class vtAPI(PRINTER):
                         print('[-] Hash not found in url')
                         return
 
-            self.params['resource'] = value
+            url = self.base.format('files/{id}/comments'.format(id = value[0]))
             if kwargs.get('action') == 'add':
-                url = self.base.format('comments/put')
                 self.params['comment'] = value[1]
                 jdata, response = get_response(url, params=self.params, method="post")
 
             elif kwargs.get('action') == 'get':
-                url = self.base.format('comments/get')
-                if value[0]:
-                    self.params['before'] = kwargs.get('date')
-                jdata, response = get_response(url, params=self.params)
+                #if value[0]:
+                #    self.params['before'] = kwargs.get('date')
+                jdata, response = get_response(url) #params=self.params
 
             else:
                 print('\n[!] Support only get/add comments action \n')
                 return
-
+        #import code
+        #code.interact(local=dict(globals(), **locals()))
         if kwargs.get('return_raw'):
             return jdata
 
-        if jdata.get('response_code', 0) == 0 or jdata.get('response_code',-1) == -1:
-            if jdata.get('verbose_msg'):
-                print('\n[!] Status : {verb_msg}\n'.format(verb_msg=jdata['verbose_msg']))
-            return
-            #sys.exit()
         if kwargs.get('action') == 'add':
-            if jdata.get('verbose_msg'):
-                print('\nStatus : {0}\n'.format(jdata['verbose_msg']))
+            _check_error(jdata)
         else:
-            if jdata['response_code'] == 0:
+            if "data" not in jdata:
                 print('\n[!] This analysis doen\'t have any comment\n')
+                return
             else:
-                if jdata.get('comments'):
-                    for comment in jdata['comments']:
-
-                        date_format = time.strptime(
-                            comment['date'], '%Y%m%d%H%M%S')
-                        date_formated = '{year}:{month}:{day} {hour}:{minutes}:{seconds}'.format(
-                            year=date_format.tm_year,
-                            month=date_format.tm_mon,
-                            day=date_format.tm_mday,
-                            hour=date_format.tm_hour,
-                            minutes=date_format.tm_min,
-                            seconds=date_format.tm_sec
-                        )
-                        if comment.get('date'):
+                if jdata.get('data'):
+                    for comment in jdata['data']:
+                        date_formated = datetime.fromtimestamp(comment["attributes"]['date']).strftime('%Y-%m-%d %H:%M:%S')
+                        if comment['attributes'].get('date'):
                             print('Date    : {0}'.format(date_formated))
-                        if comment.get('comment'):
-                            print('Comment : {0}\n'.format(comment['comment']))
+                        if comment['attributes'].get('tags'):
+                            print('Tags    : {0}'.format(", ".join(comment['attributes']['tags'])))
+                        if comment['attributes'].get('text'):
+                            print('Comment : {0}\n'.format(comment['attributes']['text']))
+                        if comment.get('id'):
+                            print('Comment ID : {0}\n'.format(comment['id']))
 
     def download(self, *args,  **kwargs):
         """
-            About pcaps
-            VirusTotal runs a distributed setup of Cuckoo sandbox machines that execute the files we receive.
-            Execution is attempted only once, upon first submission to VirusTotal, and only Portable Executables
-            under 10MB in size are ran. The execution of files is a best effort process, hence, there are no guarantees
-            about a report being generated for a given file in our dataset.
-
             Files that are successfully executed may communicate with certain network resources, all this communication
             is recorded in a network traffic dump (pcap file). This API allows you to retrieve the network traffic dump
             generated during the file's execution.
@@ -2716,10 +2689,8 @@ class vtAPI(PRINTER):
         )
 
         for vt_file in jdata:
-            if vt_file.get('response_code') and (vt_file['response_code'] == 0 or vt_file['response_code'] == -1):
-                if jdata.get('verbose_msg'):
-                    print('\n[!] Status : {verb_msg}\n'.format(verb_msg=vt_file['verbose_msg']))
-                    return
+            if _check_error(jdata):
+                return
 
             if kwargs.get('action') == 'file':
                 self.simple_print(vt_file, simple_list)
@@ -2804,9 +2775,7 @@ class vtAPI(PRINTER):
             if kwargs.get('return_raw'):
                 return jdata
 
-        if 'response_code' in jdata and (jdata['response_code'] == 0 or jdata['response_code'] == -1):
-            if jdata.get('verbose_msg'):
-                print('\n[!] Status : {verb_msg}\n'.format(verb_msg=jdata['verbose_msg']))
+        if _check_error(jdata):
             return
 
         if jdata.get('info') and (kwargs.get('info') or 'info' in args):
@@ -2959,7 +2928,7 @@ class vtAPI(PRINTER):
             pretty_print(jdata["last_analysis_results"][engine], [
                             'category', 'engine_update', 'engine_version', 'method', 'result'], [15, 15, 20, 20, 10], ['c', 'c', 'c', 'c', 'c'], kwargs.get('email_template'))
 
-    def detected_samples(self, jdata, *args,  **kwargs):
+    def __detected_samples(self, jdata, *args,  **kwargs):
 
         if kwargs.get('samples') or 'samples' in args:
               kwargs['detected_downloaded_samples'] = \
@@ -3042,29 +3011,7 @@ daily_limit=100
         apikey = six.moves.input("[+] Provide your apikey: ")
         type_key = six.moves.input("[+] Your apikey is pubic/private: ")
         intelligence = six.moves.input("[+] You have access to VT intelligence True/False: ")
-        print(apikey, type_key, intelligence)
-        """
-        if "VT_USERNAME" in os.environ:
-            user = os.environ["VT_USERNAME"]
-        else:
-            user = six.moves.input("[optional] Your username for weblogin, only for rule menagment: ")
 
-        if "VT_PASSWORD" in os.environ:
-            password = os.environ["VT_PASSWORD"]
-        else:
-            password = six.moves.input("[optional] Your password for weblogin, only for rule menagment: ")
-
-        # email
-        if "VT_NOTIFY" in os.environ:
-            notify = os.environ["VT_NOTIFY"]
-        else:
-            notify = six.moves.input("[optional] Rule match notification email: ")
-
-        if "VT_SHARE_USER" in os.environ:
-            share_user = os.environ["VT_SHARE_USER"]
-        else:
-            share_user = six.moves.input("[optional] Share rules with user: ")
-        """
         #import code; code.interact(local=dict(globals(), **locals()))
         conf_template = conf_template % (apikey.encode(), type_key.encode(), intelligence.encode())
         print(conf_template)
@@ -3167,7 +3114,6 @@ def read_conf(config_file = False):
 
 def main():
     global apikey
-    rule_manager = False
     vt_config = read_conf()
 
     if vt_config.get('timeout'):
@@ -3183,11 +3129,13 @@ def main():
     opt.add_argument('-fr',  '--file-scan-recursive', action='store_true', dest='files',  help='Recursive dir walk, use this insted of --file-scan if you want recursive')
     opt.add_argument('-u',  '--url-scan', action='store_true', help='Url scan, support space separated list, Max 4 urls (or 25 if you have private api), but you can provide more urls, for example with public api,  5 url - this will do 2 requests first with 4 url and other one with only 1, or you can specify file filename with one url per line')
     opt.add_argument('-ur', '--url-report', action='store_true', help='Url(s) report, support space separated list, Max 4 (or 25 if you have private api) urls, you can use --url-report --url-scan options for analysing url(s) if they are not in VT data base, read previev description about more then max limits or file with urls')
-    opt.add_argument('-d', '--domain-info',   action='store_true', dest='domain', help='Retrieves a report on a given domain (PRIVATE API ONLY! including the information recorded by VirusTotal\'s Passive DNS infrastructure)')
-    opt.add_argument('-i', '--ip-info', action='store_true', dest='ip', help='A valid IPv4 address in dotted quad notation, for the time being only IPv4 addresses are supported.')
+    opt.add_argument('-d', '--domain-info',   action='store_true', dest='domain', help='Retrieves a report on a given domain. It will retrieve all relationships data')
+    opt.add_argument('-dpc', '--domain-post-comments', action='store', help='Add comment(s) for an domain name')
+    opt.add_argument('-dgc', '--domain-get-comments', action='store_true', help='Get comment(s) for an domain name')
+
+    opt.add_argument('-i', '--ip-info', action='store_true', dest='ip', help='A valid IPv4 address in dotted quad notation, for the time being only IPv4 addresses are supported., It will retrieve all relationships data')
     opt.add_argument('-ipc', '--ip-post-comments', action='store', help='Add comment(s) for an IP address')
     opt.add_argument('-igc', '--ip-get-comments', action='store_true', help='Get comment(s) for an IP address')
-    opt.add_argument('-igr', '--ip-get-relationships', action='store', choices=['communicating_files', 'downloaded_files', 'graphs', 'referrer_files', 'urls'], help='Get relationships for an IP address')
 
     opt.add_argument('-w', '--walk', action='store_true', default=False, help='Work with domain-info, will walk throuth all detected ips and get information, can be provided ip parameters to get only specific information')
     opt.add_argument('-s', '--search', action='store_true',  help='A md5/sha1/sha256 hash for which you want to retrieve the most recent report. You may also specify a scan_id (sha256-timestamp as returned by the scan API) to access a specific report. You can also specify a space separated list made up of a combination of hashes and scan_ids Public API up to 4 items/Private API up to 25 items, this allows you to perform a batch request with one single call.')
@@ -3197,7 +3145,7 @@ def main():
 
     if vt_config.get('api_type'):
         allinfo_opt = opt.add_argument_group('All information related')
-        allinfo_opt.add_argument('-rai', '--report-all-info', action='store_true', help='If specified and set to one, the call will return additional info, other than the antivirus results, on the file being queried. This additional info includes the output of several tools acting on the file (PDFiD, ExifTool, sigcheck, TrID, etc.), metadata regarding VirusTotal submissions (number of unique sources that have sent the file in the past, first seen date, last seen date, etc.), and the output of in-house technologies such as a behavioural sandbox.')
+        #ToDo remove allinfo_opt.add_argument('-rai', '--report-all-info', action='store_true', help='If specified and set to one, the call will return additional info, other than the antivirus results, on the file being queried. This additional info includes the output of several tools acting on the file (PDFiD, ExifTool, sigcheck, TrID, etc.), metadata regarding VirusTotal submissions (number of unique sources that have sent the file in the past, first seen date, last seen date, etc.), and the output of in-house technologies such as a behavioural sandbox.')
         allinfo_opt.add_argument('-itu', '--ITW-urls', action='store_true', help='In the wild urls')
         allinfo_opt.add_argument('-cw', '--compressedview', action='store_true', help='Contains information about extensions, file_types, tags, lowest and highest datetime, num children detected, type, uncompressed_size, vhash, childrens')
         allinfo_opt.add_argument('-dep', '--detailed-email-parents', action='store_true', help='Contains information about emails, as Subject, sender, receiver(s), full email, and email hash to download it')
@@ -3362,14 +3310,13 @@ def main():
 
         vt.rescan(**options)
 
-    elif options.get('domain') or any([options.get(opt) for opt in ('ip', 'ip_post_comments', 'ip_get_comments', 'ip_get_relationships')]):
+    elif options.get('domain') or options.get('ip'):
 
         if 'http' in options['value'][0]:
             options['value'][0] = urlparse(options['value'][0]).netloc
 
         if match('\w{1,3}\.\w{1,3}\.\w{1,3}\.\w{1,3}', options['value'][0]):
             vt.getIP(**options)
-
         else:
             vt.getDomain(**options)
 
