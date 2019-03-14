@@ -2348,10 +2348,12 @@ class vtAPI(PRINTER):
                 try:
                     f_hash = kwargs['value'].pop()
                     f_hash = f_hash.strip()
+                    if isinstance(f_hash, bytes):
+                        f_hash = f_hash.decode("utf-8")
                     if f_hash != '':
                         if f_hash.find(',') != -1:
-                            file_type = f_hash.split(b',')[-1]
-                            f_hash = f_hash.split(b',')[0]
+                            file_type = f_hash.split(',')[-1]
+                            f_hash = f_hash.split(',')[0]
                         else:
                             file_type = super_file_type
 
