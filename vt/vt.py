@@ -2995,11 +2995,23 @@ class vtAPI(PRINTER):
 
 def create_config_file(paths):
     path = False
+    '''
     conf_template = b"""
+    [vt]
+    apikey=%b
+    type=%b
+    intelligence=%b
+    engines=malwarebytes,kaspersky,drweb,eset_nod32
+    timeout=60
+    # It should be set to: 10/50/100/500/1000/5000/10000
+    daily_limit=100
+    '''
+
+    conf_template = """
 [vt]
-apikey=%b
-type=%b
-intelligence=%b
+apikey={}
+type={}
+intelligence={}
 engines=malwarebytes,kaspersky,drweb,eset_nod32
 timeout=60
 # It should be set to: 10/50/100/500/1000/5000/10000
@@ -3025,31 +3037,26 @@ daily_limit=100
         intelligence = six.moves.input("[+] You have access to VT intelligence True/False: ")
 
         #import code; code.interact(local=dict(globals(), **locals()))
-        conf_template = conf_template % (apikey.encode(), type_key.encode(), intelligence.encode())
-        print(conf_template)
-        tmp = open(path, "wb")
-        tmp.write(conf_template)
-        tmp.close()
-        """
-        if True:# try:
+        # (apikey.encode(), type_key.encode(), intelligence.encode())
+        #conf_template = conf_template % (apikey, type_key, intelligence)
+        #print(conf_template)
+        #tmp = open(path, "wb")
+        #tmp.write(conf_template)
+        #tmp.close()
+        try:
             tmp = open(path, "wb")
             tmp.write(
                 conf_template.format(
-                    apikey.encode(),#.strip(),
-                    type_key.encode(),#.strip(),
-                    intelligence.encode(),#.strip(),
-                    #user.strip(),
-                    #password.strip(),
-                    #notify.strip(),
-                    #share_user.encode(),
+                    apikey.strip(),
+                    type_key.strip(),
+                    intelligence.strip(),
                 )
             )
             tmp.close()
             print("[+] Config created at: {}".format(path))
             break
-        #except Exception as e:
-        #    print(e)
-        """
+        except Exception as e:
+            print(e)
     return path
 
 def read_conf(config_file = False):
