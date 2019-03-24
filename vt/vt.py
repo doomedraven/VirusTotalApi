@@ -629,7 +629,7 @@ class vtAPI(PRINTER):
                     hashes_report = hashlib.sha256(open(hashes_report, 'rb').read()).hexdigest()
 
                 #ToDo all options
-                # https://developers.virustotal.com/v3.0/reference#intelligence-search
+                # https://developers.virustotal.com/v3.0/reference#intelligence-search
                 if (kwargs.get('search_intelligence') or 'search_intelligence' in args):
                     self.params['query'] = [hashes_report]
                     url = self.base.format('intelligence/search')
@@ -2564,7 +2564,7 @@ class vtAPI(PRINTER):
 
             if msg:
                 email_dict = dict()
-                # .encode('utf-8')
+                # .encode('utf-8')
                 email_dict.setdefault("email_id", hashlib.sha256(email__id).hexdigest())
                 email_dict['Attachments'] = list()
                 for k, v in msg.items():
@@ -2995,18 +2995,6 @@ class vtAPI(PRINTER):
 
 def create_config_file(paths):
     path = False
-    '''
-    conf_template = b"""
-    [vt]
-    apikey=%b
-    type=%b
-    intelligence=%b
-    engines=malwarebytes,kaspersky,drweb,eset_nod32
-    timeout=60
-    # It should be set to: 10/50/100/500/1000/5000/10000
-    daily_limit=100
-    '''
-
     conf_template = """
 [vt]
 apikey={}
@@ -3032,26 +3020,16 @@ daily_limit=100
         else:
             print("[-] Incorrect config path")
             continue
-        apikey = six.moves.input("[+] Provide your apikey: ")
-        type_key = six.moves.input("[+] Your apikey is pubic/private: ")
-        intelligence = six.moves.input("[+] You have access to VT intelligence True/False: ")
-
-        #import code; code.interact(local=dict(globals(), **locals()))
-        # (apikey.encode(), type_key.encode(), intelligence.encode())
-        #conf_template = conf_template % (apikey, type_key, intelligence)
-        #print(conf_template)
-        #tmp = open(path, "wb")
-        #tmp.write(conf_template)
-        #tmp.close()
+        apikey = six.moves.input("[+] Provide your apikey: ").encode('ascii')
+        type_key = six.moves.input("[+] Your apikey is pubic/private: ").encode('ascii')
+        intelligence = six.moves.input("[+] You have access to VT intelligence True/False: ").encode('ascii')
+        if sys.version_info.major == 3:
+            apikey = apikey.decode("utf-8")
+            type_key = type_key.decode("utf-8")
+            intelligence = intelligence.decode("utf-8")
         try:
-            tmp = open(path, "wb")
-            tmp.write(
-                conf_template.format(
-                    apikey.strip(),
-                    type_key.strip(),
-                    intelligence.strip(),
-                )
-            )
+            tmp = open(path, "w")
+            tmp.write(conf_template.format(apikey, type_key, intelligence))
             tmp.close()
             print("[+] Config created at: {}".format(path))
             break
@@ -3060,6 +3038,7 @@ daily_limit=100
     return path
 
 def read_conf(config_file = False):
+    global proxies
     vt_config = {'intelligence': False, 'apikey': '', 'type': False}
     paths = {
         0:'.vtapi',
