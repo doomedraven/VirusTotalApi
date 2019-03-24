@@ -2564,7 +2564,6 @@ class vtAPI(PRINTER):
 
             if msg:
                 email_dict = dict()
-                # .encode('utf-8')
                 email_dict.setdefault("email_id", hashlib.sha256(email__id).hexdigest())
                 email_dict['Attachments'] = list()
                 for k, v in msg.items():
