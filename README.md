@@ -1,7 +1,8 @@
 ## Support on Beerpay
 Hey dude! Help me out for a couple of :beers:!
 
-[![Beerpay](https://beerpay.io/doomedraven/VirusTotalApi/badge.svg?style=beer-square)](https://beerpay.io/doomedraven/VirusTotalApi)  [![Beerpay](https://beerpay.io/doomedraven/VirusTotalApi/make-wish.svg?style=flat-square)](https://beerpay.io/doomedraven/VirusTotalApi?focus=wish)
+[![Beerpay](https://beerpay.io/doomedraven/VirusTotalApi/badge.svg?style=beer-square)](https://beerpay.io/doomedraven/VirusTotalApi) [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdoomedraven%2FVirusTotalApi.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdoomedraven%2FVirusTotalApi?ref=badge_shield)
+ [![Beerpay](https://beerpay.io/doomedraven/VirusTotalApi/make-wish.svg?style=flat-square)](https://beerpay.io/doomedraven/VirusTotalApi?focus=wish)
 
 VirusTotal public and private APIv2 Full support
 ===================
@@ -370,3 +371,7 @@ Rules managment options:
 ### Mention of tool:
  * by @seifreed - [Hunting .NET malware](https://medium.com/@seifreed/hunting-net-malware-40235e11dc05#.tzavobki0)
  * [Security Automation with Ansible 2: Leverage Ansible 2 to automate complex](https://www.amazon.com/Security-Automation-Ansible-Leverage-application/dp/1788394518)
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdoomedraven%2FVirusTotalApi.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdoomedraven%2FVirusTotalApi?ref=badge_large)
