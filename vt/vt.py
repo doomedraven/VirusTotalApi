@@ -17,7 +17,7 @@ from __future__ import print_function
 # https://developers.virustotal.com/v3.0/reference#overview
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '4.0.0.0a2'
+__version__ = '4.0.0.0a3'
 __license__ = 'For fun :)'
 
 import os
@@ -51,12 +51,14 @@ try:
     OUTLOOK_prsr = True
 except ImportError:
     OUTLOOK_prsr = False
+
+"""
 try:
     import HTMLParser
     HAVE_HTMLPARSER = True
 except ImportError:
     HAVE_HTMLPARSER = False
-
+"""
 
 try:
     import urllib3
@@ -87,6 +89,8 @@ if os.getenv("PROXY"):
         "https": os.getenv("PROXY")
     }
 
+def datetime_from_timestamp(stamp):
+    return datetime.fromtimestamp(stamp).strftime('%Y-%m-%d %H:%M:%S')
 
 def is_valid_file(path):
     if os.path.exists(path) and path.endswith(('.yara', '.yar')):
@@ -426,10 +430,8 @@ def get_response(url, method="get", **kwargs):
                 private_api_access_error()
 
             if response.status_code != 204 and hasattr(response, 'json'):
-
                 try:
                     jdata = response.json()
-
                 except Exception as e:
                     jdata = response.json
 
@@ -578,7 +580,7 @@ class vtAPI(PRINTER):
 
         basic_info = dict()
         to_time = ('first_submission_date', 'last_submission_date', 'last_analysis_date', 'last_modification_date')
-        [basic_info.update({key:datetime.fromtimestamp(block[key]).strftime('%Y-%m-%d %H:%M:%S')}) for key in to_time if key in block]
+        [basic_info.update({key:datetime_from_timestamp(block[key])}) for key in to_time if key in block]
         [basic_info.update({key:block[key]}) for key in basic_file_info_list if key in block]
 
         self._print_complex_dict({'basic':basic_info}, 'basic', **{'email_template':True})
@@ -678,8 +680,8 @@ class vtAPI(PRINTER):
                             print('[+] Matched hash(es):')
                             for block in jdata['data']:
                                 print('{} - FS:{} - LS:{}'.format(block['attributes']['sha256'], \
-                                    datetime.fromtimestamp(block['attributes']['first_submission_date']).strftime('%Y-%m-%d %H:%M:%S'), \
-                                    datetime.fromtimestamp(block['attributes']['last_analysis_date']).strftime('%Y-%m-%d %H:%M:%S'))
+                                    datetime_from_timestamp(block['attributes']['first_submission_date']), \
+                                    datetime_from_timestamp(block['attributes']['last_analysis_date']))
                                 )
                                 if kwargs.get('verbose') or kwargs.get('allinfo'):
                                     self._parse_aux(block['attributes'], **kwargs)
@@ -1901,7 +1903,7 @@ class vtAPI(PRINTER):
                                 else:
                                     self.print_key(key, indent='', separator='\t[+]')
                                     if key == "date":
-                                        print('\t', datetime.fromtimestamp(block["attributes"].get(key)).strftime('%Y-%m-%d %H:%M:%S'))
+                                        print('\t', datetime_from_timestamp(block["attributes"].get(key)))
                                     else:
                                         print('\t', block["attributes"].get(key))
                 #elif kwargs.get("ip_post_comments", False) is True:
@@ -1926,7 +1928,7 @@ class vtAPI(PRINTER):
                                 else:
                                     self.print_key(key, indent='', separator='\t[+]')
                                     if key == "last_analysis_date":
-                                        print('\t', datetime.fromtimestamp(block["attributes"].get(key)).strftime('%Y-%m-%d %H:%M:%S'))
+                                        print('\t', datetime_from_timestamp(block["attributes"].get(key)))
                                     else:
                                         print('\t', block["attributes"].get(key))
                         #[{u'attributes': {u'total_votes': {u'harmless': 0, u'malicious': 0}, u'last_final_url': u'https://msg3.club/', u'tags': [], u'url': u'https://msg3.club/', u'last_analysis_date': 1551639858, u'last_analysis_stats': {u'harmless': 57, u'malicious': 1, u'suspicious': 0, u'undetected': 8, u'timeout': 0}, u'first_submission_date': 1551639858,
@@ -2077,7 +2079,7 @@ class vtAPI(PRINTER):
                                 else:
                                     self.print_key(key, indent='', separator='\t[+]')
                                     if key == "date":
-                                        print('\t', datetime.fromtimestamp(block.get(key)).strftime('%Y-%m-%d %H:%M:%S'))
+                                        print('\t', datetime_from_timestamp(block.get(key)))
                                     else:
                                         print('\t', block.get(key))
 
@@ -2105,7 +2107,7 @@ class vtAPI(PRINTER):
                                 else:
                                     self.print_key(key, indent='', separator='\t[+]')
                                     if key == "last_analysis_date":
-                                        print('\t', datetime.fromtimestamp(block.get(key)).strftime('%Y-%m-%d %H:%M:%S'))
+                                        print('\t', datetime_from_timestamp(block.get(key)))
                                     else:
                                         print('\t', block.get(key))
                         #[{u'attributes': {u'total_votes': {u'harmless': 0, u'malicious': 0}, u'last_final_url': u'https://msg3.club/', u'tags': [], u'url': u'https://msg3.club/', u'last_analysis_date': 1551639858, u'last_analysis_stats': {u'harmless': 57, u'malicious': 1, u'suspicious': 0, u'undetected': 8, u'timeout': 0}, u'first_submission_date': 1551639858,
@@ -2274,7 +2276,7 @@ class vtAPI(PRINTER):
             else:
                 if jdata.get('data'):
                     for comment in jdata['data']:
-                        date_formated = datetime.fromtimestamp(comment["attributes"]['date']).strftime('%Y-%m-%d %H:%M:%S')
+                        date_formated = datetime_from_timestamp(comment["attributes"]['date'])
                         if comment['attributes'].get('date'):
                             print('Date    : {0}'.format(date_formated))
                         if comment['attributes'].get('tags'):
@@ -2932,6 +2934,82 @@ class vtAPI(PRINTER):
         if kwargs.get('return_json'):
             return return_json
 
+    # hunting things
+    # add save rules
+
+    def hunting_rules(self, *args, **kwargs):
+
+        method = "get"
+        url = self.base.format('intelligence/hunting_rulesets')
+        if kwargs.get('hunting_get_rule'):
+            url += '/' + kwargs.get("hunting_rule_id")
+        elif kwargs.get('hunting_delete_rule'):
+            url += '/' + kwargs.get("hunting_rule_id")
+            method = 'delete'
+        elif kwargs.get('hunting_add_rule') or kwargs.get('hunting_update_rule'):
+
+            rules = kwargs.get('hunting_rule', False)
+            name = kwargs.get('hunting_rule_name', False)
+            emails = kwargs.get('hunting_notification_emails', [])
+            if emails:
+                emails = emails.split(',')
+
+            if rules and os.path.exists(rules):
+                if name is False:
+                    name = os.path.basename(rules).split('.')[0]
+                with open(rules, "r") as f:
+                    rules = f.read()
+            elif name is False:
+                name = hashlib.sha256(rules).hexdigest()
+
+
+            data = {
+                "data": {
+                    "type": "hunting_ruleset",
+                    "attributes": dict(),
+                },
+            }
+            # allows to modify single attribute
+            if name:
+                data['data']['attributes']['name'] = name
+            if rules:
+                data['data']['attributes']['rules'] = rules
+            if emails:
+                data['data']['attributes']['email'] = emails
+            if rules:
+                data['data']['attributes']['enabled'] = kwargs.get("hunting_enable_disable", False)
+
+            data = json.dumps(data)
+            if kwargs.get('hunting_update_rule'):
+                url += '/' + kwargs.get("hunting_rule_id")
+                method = 'patch'
+            else:
+                method = 'post'
+
+        jdata, response = get_response(url, method=method, data=data)
+
+        if kwargs.get('return_raw'):
+            return jdata
+
+        if "error" in jdata:
+            print(jdata["error"]["message"])
+            return False
+
+        if jdata and "data" in jdata:
+            if not isinstance(jdata["data"], list):
+                jdata["data"] = [jdata["data"]]
+            for data in jdata["data"]:
+                created = datetime_from_timestamp(data["attributes"]["creation_date"])
+                id = data["id"]
+                self.print_key(data["attributes"]["name"], indent='\n', separator='[+]')
+                print("\tCreation date:" + created + " ID: " + id)
+                print("\tN of rules : ", data["attributes"]["number_of_rules"])
+                print("\tNotification emails: ", data["attributes"]["notification_emails"])
+                print("="*40 + "Rules" + "="*35)
+                print(data["attributes"]["rules"])
+                print("="*40 + "Rules end" + "="*31)
+
+
     def last_analysis_results(self, jdata, *args,  **kwargs):
         sorted_data = sorted(jdata["last_analysis_results"])
         for engine in sorted_data:
@@ -3252,6 +3330,18 @@ def main():
         dist.add_argument('--limit', action='store', help='File/Url option. Retrieve limit file items at most (default: 1000).')
         dist.add_argument('--allinfo', action='store_true', help='will include the results for each particular URL scan (in exactly the same format as the URL scan retrieving API). If the parameter is not specified, each item returned will onlycontain the scanned URL and its detection ratio.')
 
+    hunting_opt = opt.add_argument_group('Hunting options')
+    hunting_opt.add_argument('-hra', '--hunting-rulesets', action='store_true', default=False, help='Get all hunting rules from your profile')
+    hunting_opt.add_argument('-hr', '--hunting-rule', action='store', default=False, help='Hunting yara path to file or string')
+    hunting_opt.add_argument('-hri', '--hunting-rule-id', action='store', default=False, help='Hunting yara ID for delete/update options')
+    hunting_opt.add_argument('-hgr', '--hunting-get-rule', action='store_true', default=False, help='Get yara rule from hunting')
+    hunting_opt.add_argument('-har', '--hunting-add-rule', action='store_true', default=False, help='Add new yara rule to hunting, path to yara or yara as string')
+    hunting_opt.add_argument('-hdr', '--hunting-delete-rule', action='store_true', default=False, help='Delete yara rule by id')
+    hunting_opt.add_argument('-hur', '--hunting-update-rule', action='store_true', default=False, help='Update yara rule by id')
+    hunting_opt.add_argument('-hrn', '--hunting-rule-name', action='store', default=False, help='Name of yara in hunting')
+    hunting_opt.add_argument('-hne', '--hunting-notification-emails', action='store', default=list(), help='Comma separated list of emails')
+    hunting_opt.add_argument('-hed', '--hunting-enable-disable', action='store_true', default=False, help='Enable or disable an rule, to be used with create or update')
+
     options = opt.parse_args()
 
     if options.version:
@@ -3357,6 +3447,9 @@ def main():
 
     elif options.get('clusters'):
         vt.clusters(**options)
+
+    elif options.get('hunting_rulesets') or options.get('hunting_get_rule') or options.get('hunting_add_rule') or options.get('hunting_delete_rule') or options.get('hunting_update_rule'):
+        vt.hunting_rules(**options)
 
     # elif options.search_by_cluster_id:
     #    vt.clusters(options.value, options.dump, True)
