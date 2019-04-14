@@ -4,7 +4,7 @@ Hey dude! Help me out for a couple of :beers:!
 [![Beerpay](https://beerpay.io/doomedraven/VirusTotalApi/badge.svg?style=beer-square)](https://beerpay.io/doomedraven/VirusTotalApi) [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdoomedraven%2FVirusTotalApi.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdoomedraven%2FVirusTotalApi?ref=badge_shield)
  [![Beerpay](https://beerpay.io/doomedraven/VirusTotalApi/make-wish.svg?style=flat-square)](https://beerpay.io/doomedraven/VirusTotalApi?focus=wish)
 
-VirusTotal public and private APIv2 Full support
+VirusTotal public and private APIv2 Full support - VT APIv3 on the way :)
 ===================
 
 This script was made public into the official VT API documentation page.
@@ -51,8 +51,6 @@ pip install -r requirements.txt
 
 Few public API functions getted from Chris Clark script<br />
 And finally has been added full public and private API support by Andriy Brukhovetskyy (doomedraven)<br />
-
-License: Do whatever you want with it :)<br />
 
 
 Small manual with examples
