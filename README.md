@@ -373,3 +373,5 @@ Rules managment options:
 
 ## License
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdoomedraven%2FVirusTotalApi.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdoomedraven%2FVirusTotalApi?ref=badge_large)
+
+### Huge thanks to [jetbrains](https://www.jetbrains.com/) for opensource license!
