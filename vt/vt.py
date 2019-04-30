@@ -574,12 +574,12 @@ class vtAPI(PRINTER):
 
         basic_file_info_list = (
             'md5', 'sha1', 'sha256', 'ssdeep', 'authentihash', 'vhash', 'magic', 'type_description',\
-            'type_tag', 'creation_date', 'times_submitted', 'size', 'total_votes', 'unique_sources',\
+            'type_tag', 'times_submitted', 'size', 'total_votes', 'unique_sources',\
             'meaningful_name', 'reputation',
         )
 
         basic_info = dict()
-        to_time = ('first_submission_date', 'last_submission_date', 'last_analysis_date', 'last_modification_date')
+        to_time = ('first_submission_date', 'last_submission_date', 'last_analysis_date', 'last_modification_date', 'creation_date')
         [basic_info.update({key:datetime_from_timestamp(block[key])}) for key in to_time if key in block]
         [basic_info.update({key:block[key]}) for key in basic_file_info_list if key in block]
 
