@@ -640,8 +640,8 @@ class vtAPI(PRINTER):
                     url = self.base.format('files/{}'.format(hashes_report))
 
                 jdata, response = get_response(url, params=self.params)
-                if 'next' in jdata.get('data', dict).get('links', dict()) and kwargs.get('search_intelligence_limit', 1) > 1:
-                    info = self.__aux_search(jdata['data']['links']['next'], kwargs['search_intelligence_limit'])
+                if 'next' in jdata.get('data', list())[0].get('links', dict()) and kwargs.get('search_intelligence_limit', 1) > 1:
+                    info = self.__aux_search(jdata['data'][0]['links']['next'], kwargs['search_intelligence_limit'])
                     jdata['data'] += info
 
                 if kwargs.get('return_raw'):
@@ -2962,7 +2962,6 @@ class vtAPI(PRINTER):
             elif name is False:
                 name = hashlib.sha256(rules).hexdigest()
 
-
             data = {
                 "data": {
                     "type": "hunting_ruleset",
@@ -3118,10 +3117,10 @@ def read_conf(config_file = False):
     global proxies
     vt_config = {'intelligence': False, 'apikey': '', 'type': False}
     paths = {
-        0:'.vtapi',
-        1:'vtapi.conf',
-        2:'~/.vtapi',
-        3:'~/vtapi.conf'
+        0: '.vtapi',
+        1: 'vtapi.conf',
+        2: '~/.vtapi',
+        3: '~/vtapi.conf'
     }
     help = '''
                      No API key provided or cannot read ~ /.vtapi. Specify an API key in vt.py or in ~ /.vtapi.
