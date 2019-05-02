@@ -107,8 +107,11 @@ def get_sizes(dictionary):
     key_s = 20
     value_s = 20
 
-    key_s = max([len(str(key)) for key in list(dictionary.keys())])
-    value_s = max([len(str(value)) for value in list(dictionary.values())])
+    try:
+        key_s = max([len(str(key)) for key in list(dictionary.keys())])
+        value_s = max([len(str(value)) for value in list(dictionary.values())])
+    except:
+         pass
 
     if value_s > 80:
         value_s = 80
