@@ -640,7 +640,7 @@ class vtAPI(PRINTER):
                     url = self.base.format('files/{}'.format(hashes_report))
 
                 jdata, response = get_response(url, params=self.params)
-                if 'next' in jdata.get('data', list())[0].get('links', dict()) and kwargs.get('search_intelligence_limit', 1) > 1:
+                if isinstance(jdata.get('data'), list) and 'next' in jdata.get('data', list())[0].get('links', dict()) and kwargs.get('search_intelligence_limit', 1) > 1:
                     info = self.__aux_search(jdata['data'][0]['links']['next'], kwargs['search_intelligence_limit'])
                     jdata['data'] += info
 
