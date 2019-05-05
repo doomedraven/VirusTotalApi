@@ -253,7 +253,8 @@ def is_file(value):
         sys.exit()
 
 def jsondump(jdata, sha1):
-
+    if os.path.exists(sha1):
+        sha1 = hashlib.sha256(open(sha1, "rb").read()).hexdigest()
     jsondumpfile = open('VTDL_{name}.json'.format(name=sha1), 'w')
     json.dump(jdata, jsondumpfile, indent=4)
     jsondumpfile.close()
