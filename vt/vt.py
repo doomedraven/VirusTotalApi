@@ -644,8 +644,14 @@ class vtAPI(PRINTER):
                     url = self.base.format('files/{}'.format(hashes_report))
 
                 jdata, response = get_response(url, params=self.params)
-                if isinstance(jdata.get('data'), list) and 'next' in jdata.get('data', list())[0].get('links', dict()) and kwargs.get('search_intelligence_limit', 1) > 1:
-                    info = self.__aux_search(jdata['data'][0]['links']['next'], kwargs['search_intelligence_limit'])
+                tmp_url = ""
+                if jdata.get('links', {}).get('next', ""):
+                    tmp_url = jdata['links']['next']
+                elif isinstance(jdata.get('data'), list) and 'next' in jdata.get('data', list())[0].get('links', dict()):
+                    tmp_url = jdata['data'][0]['links']['next']
+
+                if kwargs.get('search_intelligence_limit', 1) > 1:
+                    info = self.__aux_search(tmp_url, kwargs['search_intelligence_limit'])
                     jdata['data'] += info
 
                 if kwargs.get('return_raw'):
