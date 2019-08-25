@@ -560,7 +560,7 @@ class vtAPI(PRINTER):
                     count += 1
                     if jdata and 'data' in jdata:
                         info += jdata['data']
-                    if jdata['links']['next'] != response.url:
+                    if response and jdata.get('links', {}).get('next', '') != response.url:
                         url = jdata['links']['next']
                     else:
                         break
@@ -688,7 +688,7 @@ class vtAPI(PRINTER):
                         return_json['hashes'] = [block['attributes']['sha256'] for block in jdata['data']]
                     else:
                             print('[+] Matched hash(es):')
-                            for block in jdata['data']:
+                            for block in filter(None, jdata['data']):
                                 print('{} - FS:{} - LS:{}'.format(block['attributes']['sha256'], \
                                     datetime_from_timestamp(block['attributes']['first_submission_date']), \
                                     datetime_from_timestamp(block['attributes']['last_analysis_date']))
@@ -2272,8 +2272,6 @@ class vtAPI(PRINTER):
             else:
                 print('\n[!] Support only get/add comments action \n')
                 return
-        #import code
-        #code.interact(local=dict(globals(), **locals()))
         if kwargs.get('return_raw'):
             return jdata
 
