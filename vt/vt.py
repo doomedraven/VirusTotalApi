@@ -3221,7 +3221,7 @@ def main():
 
     opt.add_argument('-w', '--walk', action='store_true', default=False, help='Work with domain-info, will walk throuth all detected ips and get information, can be provided ip parameters to get only specific information')
     opt.add_argument('-s', '--search', action='store_true',  help='A md5/sha1/sha256 hash for which you want to retrieve the most recent report. You may also specify a scan_id (sha256-timestamp as returned by the scan API) to access a specific report. You can also specify a space separated list made up of a combination of hashes and scan_ids Public API up to 4 items/Private API up to 25 items, this allows you to perform a batch request with one single call.')
-    opt.add_argument('-si', '--search-intelligence', action='store_true', help='Search query, help can be found here - https://www.virustotal.com/intelligence/help/')
+    opt.add_argument('-si', '--search-intelligence', action='store_true', help='Search query, help can be found here - https://www.virustotal.com/intelligence/help/, can be combined with -dl option to download all matched hashes')
     opt.add_argument('-sil', '--search-intelligence-limit', action='store', default=1, type=int, help='limit search intelligence paging, 300 hashes per page, default 1 page')
     opt.add_argument('-et', '--email-template', action='store_true', help='Table format template for email')
 
@@ -3317,7 +3317,7 @@ def main():
 
     if vt_config.get('api_type') or vt_config.get('intelligence'):
         downloads = opt.add_argument_group('Download options')
-        downloads.add_argument('-dl', '--download',  dest='download', action='store_const', const='file', default=False, help='The md5/sha1/sha256 hash of the file you want to download or txt file with .txt extension, with hashes, or hash and type, one by line, for example: hash,pcap or only hash. Will save with hash as name, can be space separated list of hashes to download')
+        downloads.add_argument('-dl', '--download',  dest='download', action='store_const', const='file', default=False, help='The md5/sha1/sha256 hash of the file(s) you want to download. Can be space separated list of hashes to download, will save with hash as name. Alternatively provide txt file with .txt extension, with hashes, or hash and type, one by line, for example: hash,pcap or only hash. When paired with the search-intelligence option, downloads hashes returned from the search.')
         downloads.add_argument('-nm', '--name',  action='store', default="", help='Name with which file will saved when download it')
         downloads.add_argument('-dt', '--download-threads',  action='store', default=5, type=int, help='Number of simultaneous downloaders')
 
