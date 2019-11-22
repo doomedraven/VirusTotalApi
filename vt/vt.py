@@ -701,7 +701,8 @@ class vtAPI(PRINTER):
                                 kwargs.update({'value': block['attributes']['sha256'], 'download':'file'})
                                 self.download(**kwargs)
                 else:
-                    self._parse_aux(jdata['data']['attributes'], **kwargs)
+                    if jdata.get('data', {}).get('attributes', {}):
+                        self._parse_aux(jdata['data']['attributes'], **kwargs)
                 if kwargs.get('allinfo'):
                     pass
                     #ToDo remove
