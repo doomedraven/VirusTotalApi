@@ -409,8 +409,7 @@ def static_var(varname, value):
 @static_var("counter", 0)
 # Track when the first request was sent
 @static_var("start_time", 0)
-def get_response(url, method="get", **kwargs):
-
+def get_response(url, apikey="", method="get", **kwargs):
     # Set on first request
     if get_response.start_time == 0:
         get_response.start_time = time.time()
@@ -424,6 +423,7 @@ def get_response(url, method="get", **kwargs):
     kwargs["headers"] = {"x-apikey": apikey}
     while True:
         try:
+            print(kwargs)
             response = getattr(requests, method)(url, **kwargs)
         except requests.exceptions.ConnectionError:
             print('\n[!] Some network connection happend, check your internet conection, or it can be VT API server side issue\n')
@@ -540,11 +540,11 @@ class PRINTER(object):
 
 class vtAPI(PRINTER):
 
-    def __init__(self):
-
+    def __init__(self, apikey=False):
         super(PRINTER, self).__init__()
         self.params = dict()
         self.base = 'https://www.virustotal.com/api/v3/{0}'
+        self.apikey = apikey
 
     def __aux_search(self, url, page_limit):
         """
@@ -556,7 +556,7 @@ class vtAPI(PRINTER):
             try:
                 print("[+] Getting page {} result".format(count))
                 if page_limit >= count:
-                    jdata, response = get_response(url, params=self.params)
+                    jdata, response = get_response(url, apikey=self.apikey, params=self.params)
                     count += 1
                     if jdata and 'data' in jdata:
                         info += jdata['data']
@@ -642,8 +642,7 @@ class vtAPI(PRINTER):
                 else:
                     self.params['resource'] = hashes_report
                     url = self.base.format('files/{}'.format(hashes_report))
-
-                jdata, response = get_response(url, params=self.params)
+                jdata, response = get_response(url, apikey=self.apikey, params=self.params)
                 tmp_url = ""
                 if jdata.get('links', {}).get('next', ""):
                     tmp_url = jdata['links']['next']
@@ -685,21 +684,21 @@ class vtAPI(PRINTER):
                 if kwargs.get('search_intelligence') or 'search_intelligence' in args:
 
                     if kwargs.get('return_json') and (kwargs.get('hashes') or 'hashes' in args):
-                        return_json['hashes'] = [block['attributes']['sha256'] for block in jdata['data']]
+                        return_json['hashes'] = [block['attributes']['sha256'] for block in jdata.get('data', [])]
                     else:
-                            print('[+] Matched hash(es):')
-                            for block in filter(None, jdata['data']):
-                                print('{} - FS:{} - LS:{}'.format(block['attributes']['sha256'], \
-                                    datetime_from_timestamp(block['attributes']['first_submission_date']), \
-                                    datetime_from_timestamp(block['attributes']['last_analysis_date']))
-                                )
-                                if kwargs.get('verbose') or kwargs.get('allinfo'):
-                                    self._parse_aux(block['attributes'], **kwargs)
-                                    print("\n\n")
+                        print('[+] Matched hash(es):')
+                        for block in filter(None, jdata['data']):
+                            print('{} - FS:{} - LS:{}'.format(block['attributes']['sha256'], \
+                                datetime_from_timestamp(block['attributes']['first_submission_date']), \
+                                datetime_from_timestamp(block['attributes']['last_analysis_date']))
+                            )
+                            if kwargs.get('verbose') or kwargs.get('allinfo'):
+                                self._parse_aux(block['attributes'], **kwargs)
+                                print("\n\n")
 
-                            if kwargs.get('download'):
-                                kwargs.update({'value': block['attributes']['sha256'], 'download':'file'})
-                                self.download(**kwargs)
+                        if kwargs.get('download'):
+                            kwargs.update({'value': block['attributes']['sha256'], 'download':'file'})
+                            self.download(**kwargs)
                 else:
                     if jdata.get('data', {}).get('attributes', {}):
                         self._parse_aux(jdata['data']['attributes'], **kwargs)
@@ -1518,7 +1517,7 @@ class vtAPI(PRINTER):
                 hash_part = hashlib.md5(open(hash_part, 'rb').read()).hexdigest()
 
             url = self.base.format('files/{id}/analyse'.foramt(id = hash_part))
-            jdatas, response = get_response(url, method='post')
+            jdatas, response = get_response(url, apikey=self.apikey, method='post')
 
             if isinstance(jdatas, list) and not filter(None, jdatas):
                 print('Nothing found')
@@ -1765,7 +1764,7 @@ class vtAPI(PRINTER):
                 self.params['scan'] = kwargs.get('action')
                 url = self.base.format('urls/report')
 
-            jdata, response = get_response(url, params=self.params, method="post")
+            jdata, response = get_response(url, apikey=self.apikey, params=self.params, method="post")
 
             if kwargs.get('return_raw'):
                 return jdata
@@ -1865,7 +1864,7 @@ class vtAPI(PRINTER):
                     self.params["relationships"] = 'communicating_files,downloaded_files,graphs,referrer_files,urls'
                     method = "get"
 
-                jdata, response = get_response(url, method=method, params=self.params)
+                jdata, response = get_response(url, apikey=self.apikey, method=method, params=self.params)
                 #print(jdata)
                 jdatas.append((ip, jdata))
             if kwargs.get('return_raw'):
@@ -2009,7 +2008,7 @@ class vtAPI(PRINTER):
                     #url += '/' + kwargs['domain_get_relationships']
                     self.params["relationships"] = 'communicating_files,downloaded_files,graphs,referrer_files,resolutions,siblings,subdomains,urls'
                     method = "get"
-                jdata, response = get_response(url, method=method, params=self.params)
+                jdata, response = get_response(url, apikey=self.apikey, method=method, params=self.params)
                 jdatas.append((domain, jdata))
 
             if kwargs.get('return_raw'):
@@ -2198,7 +2197,7 @@ class vtAPI(PRINTER):
                 self.params['query'] = 'cluster:{0}'.format(kwargs.get('value')[0])
             else:
                 self.params['date'] = name
-            jdata, response = get_response(url, params=self.params)
+            jdata, response = get_response(url, apikey=self.apikey, params=self.params)
 
             if kwargs.get('return_raw'):
                 return jdata
@@ -2263,7 +2262,7 @@ class vtAPI(PRINTER):
             url = self.base.format('files/{id}/comments'.format(id = value[0]))
             if kwargs.get('action') == 'add':
                 self.params['comment'] = value[1]
-                jdata, response = get_response(url, params=self.params, method="post")
+                jdata, response = get_response(url, apikey=self.apikey, params=self.params, method="post")
 
             elif kwargs.get('action') == 'get':
                 #if value[0]:
@@ -2684,7 +2683,7 @@ class vtAPI(PRINTER):
                     self.params['allinfo'] = '1'
                 url = self.base.format('url/distribution')
 
-            jdata, response = get_response(url, params=self.params)
+            jdata, response = get_response(url, apikey=self.apikey, params=self.params)
 
             if kwargs.get('return_raw'):
                 return jdata
@@ -2770,7 +2769,7 @@ class vtAPI(PRINTER):
 
     # ToDo in search intel?
     def behaviour(self, *args,  **kwargs):
-        # ToDo
+        # ToDo rewrite as vt apiv3 changes it completelly
         """
          u'behavior.processtree',
          u'info.started',
@@ -2790,10 +2789,9 @@ class vtAPI(PRINTER):
             kwargs['dump'] = False
 
         else:
-            self.params['hash'] = kwargs.get('value')[0]
-            url = self.base.format('file/behaviour')
-
-            jdata, response = get_response(url, params=self.params)
+            sha256 = kwargs.get('value')[0]
+            url = self.base.format('files/{}/behaviours'.format(sha256))
+            jdata, response = get_response(url, apikey=self.apikey, params=self.params)
             if kwargs.get('return_raw'):
                 return jdata
 
@@ -2937,7 +2935,7 @@ class vtAPI(PRINTER):
                                 self.simple_print(jdata['behavior']['summary'], [key])
 
         if kwargs.get('dump') is True:
-            md5_hash = hashlib.md5(name).hexdigest()
+            md5_hash = hashlib.md5(name.encode("utf-8")).hexdigest()
             jsondump(jdata, md5_hash)
 
         if kwargs.get('return_json'):
@@ -2994,7 +2992,7 @@ class vtAPI(PRINTER):
             else:
                 method = 'post'
 
-        jdata, response = get_response(url, method=method, data=data)
+        jdata, response = get_response(url, apikey=self.apikey, method=method, data=data)
 
         if kwargs.get('return_raw'):
             return jdata
@@ -3196,7 +3194,6 @@ def read_conf(config_file = False):
     return vt_config
 
 def main():
-    global apikey
     vt_config = read_conf()
 
     if vt_config.get('timeout'):
@@ -3359,7 +3356,7 @@ def main():
 
     options = vars(options)
     apikey = vt_config.get('apikey')
-    vt = vtAPI()
+    vt = vtAPI(apikey)
 
     options.update(vt_config)
 
