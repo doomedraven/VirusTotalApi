@@ -2812,7 +2812,6 @@ class vtAPI(PRINTER):
                 files_copied <files_copied object> files copied or moved to a new location.
                 files_dropped <DroppedFile array> interesting files written to disk during execution.
                 hosts_file <string> The hosts file field stores the content of the local hostname-ip mapping hosts file IF AND ONLY IF the file was modified, else this field is not populated.
-                processes_tree <Process Object>
                 permissions_checked <PermissionCheck object array> Android permissions that the app checks to see if they are granted.
                 tags <BehaviourTag array> labels summarizing key behavioural observations.
                 registry_keys_set <KeyValue object array> keys and values of registry keys that are set.
@@ -2879,80 +2878,33 @@ class vtAPI(PRINTER):
             )
             self.dict_list_print(sandbox, dict_keys)
 
-        """
         if (kwargs.get('behavior_process') or 'behavior_process' in args) or kwargs.get('verbose'):
-            if jdata.get('behavior'):
-                if kwargs.get('return_json'):
-                    return_json.update({'processes': jdata['behavior']['processes']})
-                else:
-                    print('\n[+] Behavior')
-                    print('\n[+] Processes')
-                    for process_id in jdata['behavior']['processes']:
+            if kwargs.get('return_json'):
+                return_json.update({'processes': jdata['behavior']['processes']})
+            else:
+                #simplify it
+                print('\n[+] Behavior - Processes')
+                print('\n[+] Process Tree\n')
+                if sandbox.get('processes_tree'):
+                    for tree in sandbox['processes_tree']:
+                        print("Name: ", tree["name"])
+                        print("Process ID: ", tree["process_id"])
+                        for child in tree.get("children", {}):
 
-                        plist = []
+                            indent="\t"
+                            print(indent, "Children:")
+                            print(indent, "Name: ", child["name"])
+                            print(indent, "Process ID: ", child["process_id"])
+                            self.dict_print(child, "children")
+                            self.dict_list_print(child, "children")
 
-                        simple_list = (
-                            'parent_id',
-                            'process_id',
-                            'process_name'
-                        )
-                        self.simple_print(process_id, simple_list)
+                            for block in child.get("children", []) or []:
+                                indent+="\t"
+                                print(indent, "Children:")
+                                print(indent, "Name: ", block["name"])
+                                print(indent, "Process ID: ",block["process_id"])
+                            print('\n')
 
-                        if process_id.get('first_seen'):
-                            print('First Seen : {0}'.format(datetime.strptime(process_id['first_seen'][:14], '%Y%m%d%H%M%S').strftime('%Y:%m:%d %H:%M:%S')))
-
-                        if process_id.get('calls'):
-                            for process_part in process_id['calls']:
-                                plist = [[]]
-                                for key in process_part:
-                                    if isinstance(process_part[key], list):
-                                        if process_part[key] != [] and isinstance(process_part[key][0], dict):
-                                            temp_list = []
-                                            for part in process_part[key]:
-                                                temp_list.append('\n'.join(['{key_temp}:{value}\n'.format(key_temp=key_temp, value=part[key_temp]) for key_temp in list(part.keys())]))
-                                            plist.append([key, ''.join(temp_list)])
-                                            del temp_list
-                                        else:
-                                            plist.append([key, '\n'.join(process_part[key])])
-
-                                    elif isinstance(process_part[key], dict):
-                                        temp_list = []
-                                        for part in process_part[key]:
-                                            temp_list += ['{key_temp}:{value}\n'.format(key_temp=key_temp, value=part[key_temp]) for key_temp in list(part.keys())]
-                                        plist.append([key, ''.join(temp_list)])
-                                        del temp_list
-                                    else:
-                                        plist.append([key, process_part[key]])
-                                pretty_print_special(plist, ['Name', 'Value'], [10, 50], False, kwargs.get('email_template'))
-                                del plist
-
-                            print('\n' + '=' * 20 + ' FIN ' + '=' * 20)
-
-                    print('\n[+] Process Tree\n')
-                    if jdata.get('behavior') and jdata['behavior'].get('processtree'):
-                        for tree in jdata['behavior']['processtree']:
-                            for key in tree.keys():
-                                print('\t{key}:{value}'.format(key=key, value=tree[key]))
-                        print('\n')
-
-        if (kwargs.get('behavior_summary') or 'behavior_summary' in args) or kwargs.get('verbose'):
-            if jdata.get('behavior') and jdata['behavior'].get('summary'):
-
-                simple_tt_list = (
-                    'files',
-                    'keys',
-                    'mutexes'
-                )
-
-                for key in simple_tt_list:
-                    if jdata['behavior']['summary'].get(key):
-                        if kwargs.get('return_json'):
-                                return_json.update({key:  jdata['behavior']['summary'][key]})
-                        else:
-                            if jdata['behavior']['summary']['files']:
-                                self.simple_print(jdata['behavior']['summary'], [key])
-
-        """
         if kwargs.get('dump') is True:
             md5_hash = hashlib.md5(name.encode("utf-8")).hexdigest()
             jsondump(jdata, md5_hash)
