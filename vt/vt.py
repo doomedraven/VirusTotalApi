@@ -17,7 +17,7 @@ from __future__ import print_function
 # https://developers.virustotal.com/v3.0/reference#overview
 
 __author__ = 'Andriy Brukhovetskyy - DoomedRaven'
-__version__ = '4.0.0.0a3'
+__version__ = '4.0.0.0a4'
 __license__ = 'For fun :)'
 
 import os
@@ -2769,99 +2769,117 @@ class vtAPI(PRINTER):
 
     # ToDo in search intel?
     def behaviour(self, *args,  **kwargs):
-        # ToDo rewrite as vt apiv3 changes it completelly
-        """
-         u'behavior.processtree',
-         u'info.started',
-         u'info.version',
-         u'network.dns',
-         u'network.hosts',
-         u'network.http',
-         u'network.tcp',
-         u'network.udp']
-        """
+        #https://developers.virustotal.com/v3.0/reference#file-behaviour-summary
 
         return_json = dict()
         result, name = is_file(kwargs.get('value')[0])
-
         if result:
             jdata = load_file(name)
             kwargs['dump'] = False
-
         else:
             sha256 = kwargs.get('value')[0]
             url = self.base.format('files/{}/behaviours'.format(sha256))
-            jdata, response = get_response(url, apikey=self.apikey, params=self.params)
+            jdata, _ = get_response(url, apikey=self.apikey, params=self.params)
             if kwargs.get('return_raw'):
                 return jdata
 
         if _check_error(jdata):
             return
 
-        if jdata.get('info') and (kwargs.get('info') or 'info' in args):
-            if kwargs.get('return_json'):
-                return_json.update({'info': jdata['info']})
-            else:
-                print('\nInfo\n')
-                pretty_print(jdata['info'], ['started', 'ended', 'duration', 'version'])
+        if not jdata.get("data"):
+            return
 
+        for sandbox in jdata["data"]:
+
+            #All sandbox details
+            if sandbox.get('attributes') and (kwargs.get('attributes') or 'attributes' in args):
+                if kwargs.get('return_json'):
+                    return_json.update({'attributes': sandbox['attributes']})
+
+            sandbox = sandbox.get("attributes")
+            if not sandbox:
+                continue
+
+            print("[+] Sandox: {} - Verdict: {}% - Analysis date: {}".format(
+                sandbox.get("sandbox_name"),
+                sandbox.get("verdict_confidence") or "-",
+                datetime_from_timestamp(sandbox["analysis_date"]),
+
+            ))
+
+            #ToDo
+            """
+                files_copied <files_copied object> files copied or moved to a new location.
+                files_dropped <DroppedFile array> interesting files written to disk during execution.
+                hosts_file <string> The hosts file field stores the content of the local hostname-ip mapping hosts file IF AND ONLY IF the file was modified, else this field is not populated.
+                processes_tree <Process Object>
+                permissions_checked <PermissionCheck object array> Android permissions that the app checks to see if they are granted.
+                tags <BehaviourTag array> labels summarizing key behavioural observations.
+                registry_keys_set <KeyValue object array> keys and values of registry keys that are set.
+                system_property_sets <KeyValue object array> keys and values set in Android's system properties dataset.
+                shared_preferences_sets <KeyValue object array> entries written in Android's shared preferences.
+                content_model_sets <KeyValue object array> content model entries performed by an Android app.
+                sms_sent <Sms array> list of SMSs sent during the execution of the file under study.
+                verdicts <VerdictTags> maliciousness classification for the file under study based on its behaviour.
+            """
+
+            simple_list = (
+                "files_opened",
+                "files_written",
+                "files_deleted",
+                "files_attribute_changed",
+                "processes_terminated",
+                "processes_killed",
+                "processes_injected",
+                "command_executions",
+                "services_opened",
+                "services_created",
+                "services_started",
+                "services_stopped",
+                "services_deleted",
+                "services_bound",
+                "windows_searched",
+                "windows_hidden",
+                "permissions_requested",
+                "mutexes_opened",
+                "mutexes_created",
+                "signals_observed",
+                "signals_hooked",
+                "modules_loaded",
+                "calls_highlighted",
+                "invokes",
+                "crypto_algorithms_observed",
+                "crypto_keys",
+                "crypto_plain_text",
+                "text_decoded",
+                "text_highlighted",
+                "databases_opened",
+                "databases_deleted",
+                "registry_keys_opened",
+                "registry_keys_deleted",
+                "system_property_lookups",
+                "shared_preferences_lookups",
+                "content_model_observers",
+                "activities_started",
+                "ja3_digests",
+            )
+
+        # make this printed by parts with keys like files, networking, crypto, mutexes, etc
+        if kwargs.get('return_json'):
+            [return_json.update({key: sandbox}) for key in simple_list if kwargs.get(key) or key in args]
+        if kwargs.get("verbose"):
+            self.simple_print(sandbox, simple_list)
+
+        #list_dict processes_tree
         if (kwargs.get('behavior_network') or 'behavior_network' in args) or kwargs.get('verbose'):
+            dict_keys = (
+                "http_conversations",
+                "dns_lookups",
+                "ip_traffic",
+            )
+            self.dict_list_print(sandbox, dict_keys)
 
-            if jdata.get('network'):
-                print('\nHTTP requests\n')
-                if 'behavior-network' in jdata and 'http' in jdata.get('network'):
-                    if kwargs.get('return_json'):
-                        return_json.update({'http':jdata['network']['http']})
-                    else:
-                        simple_list = (
-                            'uri',
-                            'host',
-                            'port',
-                            'path',
-                            'method',
-                            'user-agent',
-                            'version',
-                            'data'
-                        )
-
-                        for http in jdata['network']['http']:
-                            self.simple_print(http, simple_list)
-                            # if http.get('data')    : print 'data       : {0}'.format(http['data'].replace('\r\n\r\n', '\n\t').replace('\r\n','\n\t\t'))
-                            if http.get('body'):
-                                print('\tbody hex encoded:\n\t  {}\n'.format(http['body'].encode('hex')))
-
-                if jdata['network'].get('hosts'):
-                    if kwargs.get('return_json'):
-                        return_json.update({'hosts': jdata['network']['hosts']})
-                    else:
-                        pretty_print(jdata['network']['hosts'], ['hosts'], False, False, kwargs.get('email_template'))
-
-                if jdata['network'].get('dns'):
-                    if kwargs.get('return_json'):
-                        return_json.update({'dns': jdata['network']['dns']})
-                    else:
-                        print('\nDNS requests\n')
-                        pretty_print(jdata['network']['dns'], ['ip', 'hostname'], False, False, kwargs.get('email_template'))
-
-                simple_list = (
-                    'tcp',
-                    'upd'
-                )
-                for key in simple_list:
-                    if jdata['network'].get(key):
-                        if kwargs.get('return_json'):
-                            return_json.update({key: jdata['network'][key]})
-                        else:
-                            print('\n{0} Connections'.format(key.upper()))
-
-                            unique = []
-
-                            for block in jdata['network'][key]:
-                                if not [block['src'],  block['dst'], block['sport'], block['dport']] in unique:
-                                    unique.append([block['src'], block['dst'], block['sport'], block['dport']])
-                            pretty_print_special(unique,   ['src', 'dst', 'sport', 'dport'], False, False, kwargs.get('email_template'))
-                            del unique
-
+        """
         if (kwargs.get('behavior_process') or 'behavior_process' in args) or kwargs.get('verbose'):
             if jdata.get('behavior'):
                 if kwargs.get('return_json'):
@@ -2934,6 +2952,7 @@ class vtAPI(PRINTER):
                             if jdata['behavior']['summary']['files']:
                                 self.simple_print(jdata['behavior']['summary'], [key])
 
+        """
         if kwargs.get('dump') is True:
             md5_hash = hashlib.md5(name.encode("utf-8")).hexdigest()
             jsondump(jdata, md5_hash)
