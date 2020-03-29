@@ -1652,9 +1652,9 @@ class vtAPI(PRINTER):
         Allows to send a file to be analysed by VirusTotal.
         Before performing your submissions we encourage you to retrieve the latest report on the files,
         if it is recent enough you might want to save time and bandwidth by making use of it. File size limit is 32MB,
-        in order to submmit files up to 200MB you must request an special upload URL.
+        in order to submit files up to 200MB you must request an special upload URL.
 
-        Before send to scan, file will be checked if not scanned before, for save bandwich and VT resources :)
+        Before send to scan, file will be checked if not scanned before, for save bandwidth and VT resources :)
         """
 
         result = False
@@ -1704,7 +1704,7 @@ class vtAPI(PRINTER):
                         print("[+] Scan ID: {}".format(jdata["data"]["id"]))
 
                     except UnicodeDecodeError:
-                        print('\n[!] Sorry filaname is not utf-8 format, other format not suported at the moment')
+                        print('\n[!] Sorry filename is not utf-8 format, other format not supported at the moment')
                         print('[!] Ignored file: {file}\n'.format(file=submit_file))
 
             elif not result and kwargs.get('scan') == False:
@@ -2182,7 +2182,7 @@ class vtAPI(PRINTER):
 
         All of the API responses are JSON objects, if no clusters were identified for the given
         time frame, this JSON will have a response_code property equal to 0, if there was some
-        sort of error with your query this code will be set to -1, if your query succeded and
+        sort of error with your query this code will be set to -1, if your query succeeded and
         file similarity clusters were found it will have a value of 1 and the rest of the JSON
         properties will contain the clustering information.
         """
@@ -3177,9 +3177,9 @@ def main():
     opt.add_argument('value', nargs='*', help='Enter the Hash, Path to File(s) or Url(s)')
     opt.add_argument('-fs', '--file-search', action='store_true', help='File(s) search, this option, don\'t upload file to VirusTotal, just search by hash, support linux name wildcard, example: /home/user/*malware*, if file was scanned, you will see scan info, for full scan report use verbose mode, and dump if you want save already scanned samples')
     opt.add_argument('-f',  '--file-scan', action='store_true', dest='files',  help='File(s) scan, support linux name wildcard, example: /home/user/*malware*, if file was scanned, you will see scan info, for full scan report use verbose mode, and dump if you want save already scanned samples')
-    opt.add_argument('-fr',  '--file-scan-recursive', action='store_true', dest='files',  help='Recursive dir walk, use this insted of --file-scan if you want recursive')
+    opt.add_argument('-fr',  '--file-scan-recursive', action='store_true', dest='files',  help='Recursive dir walk, use this instead of --file-scan if you want recursive')
     opt.add_argument('-u',  '--url-scan', action='store_true', help='Url scan, support space separated list, Max 4 urls (or 25 if you have private api), but you can provide more urls, for example with public api,  5 url - this will do 2 requests first with 4 url and other one with only 1, or you can specify file filename with one url per line')
-    opt.add_argument('-ur', '--url-report', action='store_true', help='Url(s) report, support space separated list, Max 4 (or 25 if you have private api) urls, you can use --url-report --url-scan options for analysing url(s) if they are not in VT data base, read previev description about more then max limits or file with urls')
+    opt.add_argument('-ur', '--url-report', action='store_true', help='Url(s) report, support space separated list, Max 4 (or 25 if you have private api) urls, you can use --url-report --url-scan options for analyzing url(s) if they are not in VT data base, read preview description about more then max limits or file with urls')
     opt.add_argument('-d', '--domain-info',   action='store_true', dest='domain', help='Retrieves a report on a given domain. It will retrieve all relationships data')
     opt.add_argument('-dpc', '--domain-post-comments', action='store', help='Add comment(s) for an domain name')
     opt.add_argument('-dgc', '--domain-get-comments', action='store_true', help='Get comment(s) for an domain name')
@@ -3188,7 +3188,7 @@ def main():
     opt.add_argument('-ipc', '--ip-post-comments', action='store', help='Add comment(s) for an IP address')
     opt.add_argument('-igc', '--ip-get-comments', action='store_true', help='Get comment(s) for an IP address')
 
-    opt.add_argument('-w', '--walk', action='store_true', default=False, help='Work with domain-info, will walk throuth all detected ips and get information, can be provided ip parameters to get only specific information')
+    opt.add_argument('-w', '--walk', action='store_true', default=False, help='Work with domain-info, will walk through all detected ips and get information, can be provided ip parameters to get only specific information')
     opt.add_argument('-s', '--search', action='store_true',  help='A md5/sha1/sha256 hash for which you want to retrieve the most recent report. You may also specify a scan_id (sha256-timestamp as returned by the scan API) to access a specific report. You can also specify a space separated list made up of a combination of hashes and scan_ids Public API up to 4 items/Private API up to 25 items, this allows you to perform a batch request with one single call.')
     opt.add_argument('-si', '--search-intelligence', action='store_true', help='Search query, help can be found here - https://www.virustotal.com/intelligence/help/, can be combined with -dl option to download all matched hashes')
     opt.add_argument('-sil', '--search-intelligence-limit', action='store', default=1, type=int, help='limit search intelligence paging, 300 hashes per page, default 1 page')
@@ -3198,7 +3198,7 @@ def main():
         allinfo_opt = opt.add_argument_group('All information related')
         allinfo_opt.add_argument('-rai', '--report-all-info', action='store_true', help='If specified and set to one, the call will return additional info, other than the antivirus results, on the file being queried. This additional info includes the output of several tools acting on the file (PDFiD, ExifTool, sigcheck, TrID, etc.), metadata regarding VirusTotal submissions (number of unique sources that have sent the file in the past, first seen date, last seen date, etc.), and the output of in-house technologies such as a behavioural sandbox.')
         allinfo_opt.add_argument('-itu', '--ITW-urls', action='store_true', help='In the wild urls')
-        allinfo_opt.add_argument('-cw', '--compressedview', action='store_true', help='Contains information about extensions, file_types, tags, lowest and highest datetime, num children detected, type, uncompressed_size, vhash, childrens')
+        allinfo_opt.add_argument('-cw', '--compressedview', action='store_true', help='Contains information about extensions, file_types, tags, lowest and highest datetime, num children detected, type, uncompressed_size, vhash, children')
         allinfo_opt.add_argument('-dep', '--detailed-email-parents', action='store_true', help='Contains information about emails, as Subject, sender, receiver(s), full email, and email hash to download it')
         allinfo_opt.add_argument('-eo', '--email-original', default=False, action='store_true', help='Will retreive original email and process it')
         allinfo_opt.add_argument('-snr', '--snort', action='store_true', help='Get Snort results')
@@ -3216,10 +3216,10 @@ def main():
     if vt_config.get('api_type'):
         opt.add_argument('--get-comments-before', action='store', dest='date', default=False, help='A datetime token that allows you to iterate over all comments on a specific item whenever it has been commented on more than 25 times. Token format 20120725170000 or 2012-07-25 17 00 00 or 2012-07-25 17:00:00')
     opt.add_argument('-v', '--verbose', action='store_true', dest='verbose', help='Turn on verbosity of VT reports')
-    opt.add_argument('-j', '--dump',    action='store_true', help='Dumps the full VT report to file (VTDL{md5}.json), if you (re)scan many files/urls, their json data will be dumped to separetad files')
+    opt.add_argument('-j', '--dump',    action='store_true', help='Dumps the full VT report to file (VTDL{md5}.json), if you (re)scan many files/urls, their json data will be dumped to separate files')
     opt.add_argument('--csv', action='store_true', default = False, help='Dumps the AV\'s detections to file (VTDL{scan_id}.csv)')
     opt.add_argument('-rr', '--return-raw', action='store_true', default = False, help='Return raw json, in case if used as library and want parse in other way')
-    opt.add_argument('-rj', '--return-json', action='store_true', default = False, help='Return json with parts activated, for example -p for pasive dns, etc')
+    opt.add_argument('-rj', '--return-json', action='store_true', default = False, help='Return json with parts activated, for example -p for passive dns, etc')
     opt.add_argument('-V', '--version', action='store_true', default = False,  help='Show version and exit')
 
     rescan = opt.add_argument_group('Rescan options')
@@ -3227,7 +3227,7 @@ def main():
     if vt_config.get('api_type'):
         rescan.add_argument('--delete',  action='store_true',help='A md5/sha1/sha256 hash for which you want to delete the scheduled scan')
         rescan.add_argument('--date', action='store', dest='date',help='A Date in one of this formats (example: 20120725170000 or 2012-07-25 17 00 00 or 2012-07-25 17:00:00) in which the rescan should be performed. If not specified the rescan will be performed immediately.')
-        rescan.add_argument('--period', action='store',help='Period in days in which the file should be rescanned. If this argument is provided the file will be rescanned periodically every period days, if not, the rescan is performed once and not repated again.')
+        rescan.add_argument('--period', action='store',help='Period in days in which the file should be rescanned. If this argument is provided the file will be rescanned periodically every period days, if not, the rescan is performed once and not repeated again.')
         rescan.add_argument('--repeat', action='store',help='Used in conjunction with period to specify the number of times the file should be rescanned. If this argument is provided the file will be rescanned the given amount of times, if not, the file will be rescanned indefinitely.')
 
     if vt_config.get('api_type'):
@@ -3304,7 +3304,7 @@ def main():
         dist.add_argument('--after', action='store', help='File/Url option. Retrieve files/urls received after the given timestamp, in timestamp ascending order.')
         dist.add_argument('--reports', action='store_true', default=False, help='Include the files\' antivirus results in the response. Possible values are \'true\' or \'false\' (default value is \'false\').')
         dist.add_argument('--limit', action='store', help='File/Url option. Retrieve limit file items at most (default: 1000).')
-        dist.add_argument('--allinfo', action='store_true', help='will include the results for each particular URL scan (in exactly the same format as the URL scan retrieving API). If the parameter is not specified, each item returned will onlycontain the scanned URL and its detection ratio.')
+        dist.add_argument('--allinfo', action='store_true', help='will include the results for each particular URL scan (in exactly the same format as the URL scan retrieving API). If the parameter is not specified, each item returned will only contain the scanned URL and its detection ratio.')
 
     hunting_opt = opt.add_argument_group('Hunting options')
     hunting_opt.add_argument('-hra', '--hunting-rulesets', action='store_true', default=False, help='Get all hunting rules from your profile')

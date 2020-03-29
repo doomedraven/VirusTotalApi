@@ -4,7 +4,7 @@ VirusTotal public and private APIv2 Full support - VT APIv3 on the way :)
 This script was made public into the official VT API documentation page.
 https://www.virustotal.com/en/documentation/public-api/
 
-Before using the tool you must set your api key in one of this file or you can start without creating it and you will be promted to provide the data:
+Before using the tool you must set your api key in one of this file or you can start without creating it and you will be prompted to provide the data:
 * Home Directory:
     * __~.vtapi__, __~vtapi.conf__
 * or current directory where vt script placed
@@ -19,11 +19,11 @@ intelligence=False
 #coma separated engine list, can be empty
 engines=
 timeout=60
-# as for weblogin, this only required for rule managment
+# as for weblogin, this only required for rule management
 username=
 password=
 ```
-* your type of api access, if private: type=private, if public, you can leave it empty, it will be automatically reconized as public
+* your type of api access, if private: type=private, if public, you can leave it empty, it will be automatically recognized as public
 * if you have access to VT Intelligence, you need set intelligence=True
 
 **Dependencies:**
@@ -43,7 +43,7 @@ pip install -r requirements.txt
 ### Example of usage as library can be found [here](https://github.com/doomedraven/VirusTotalApi/wiki)
 
 
-Few public API functions getted from Chris Clark script<br />
+Few public API functions taken from Chris Clark script<br />
 And finally has been added full public and private API support by Andriy Brukhovetskyy (doomedraven)<br />
 
 
@@ -96,7 +96,7 @@ optional arguments:
                         see scan info, for full scan report use verbose mode,
                         and dump if you want save already scanned samples
   -fr, --file-scan-recursive
-                        Recursive dir walk, use this insted of --file-scan if
+                        Recursive dir walk, use this instead of --file-scan if
                         you want recursive
   -u, --url-scan        Url scan, support space separated list, Max 4 urls (or
                         25 if you have private api), but you can provide more
@@ -106,15 +106,15 @@ optional arguments:
                         line
   -ur, --url-report     Url(s) report, support space separated list, Max 4 (or
                         25 if you have private api) urls, you can use --url-
-                        report --url-scan options for analysing url(s) if they
-                        are not in VT data base, read previev description
+                        report --url-scan options for analyzing url(s) if they
+                        are not in VT data base, read preview description
                         about more then max limits or file with urls
   -d, --domain-info     Retrieves a report on a given domain (PRIVATE API
                         ONLY! including the information recorded by
                         VirusTotal's Passive DNS infrastructure)
   -i, --ip-info         A valid IPv4 address in dotted quad notation, for the
                         time being only IPv4 addresses are supported.
-  -w, --walk            Work with domain-info, will walk throuth all detected
+  -w, --walk            Work with domain-info, will walk through all detected
                         ips and get information, can be provided ip parameters
                         to get only specific information
   -s, --search          A md5/sha1/sha256 hash for which you want to retrieve
@@ -145,12 +145,12 @@ optional arguments:
   -v, --verbose         Turn on verbosity of VT reports
   -j, --dump            Dumps the full VT report to file (VTDL{md5}.json), if
                         you (re)scan many files/urls, their json data will be
-                        dumped to separetad files
+                        dumped to separated files
   --csv                 Dumps the AV's detections to file (VTDL{scan_id}.csv)
   -rr, --return-raw     Return raw json, in case if used as library and want
                         parse in other way
   -rj, --return-json    Return json with parts activated, for example -p for
-                        pasive dns, etc
+                        passive dns, etc
   -V, --version         Show version and exit
 
 All information related:
@@ -168,12 +168,12 @@ All information related:
   -cw, --compressedview
                         Contains information about extensions, file_types,
                         tags, lowest and highest datetime, num children
-                        detected, type, uncompressed_size, vhash, childrens
+                        detected, type, uncompressed_size, vhash, children
   -dep, --detailed-email-parents
                         Contains information about emails, as Subject, sender,
                         receiver(s), full email, and email hash to download it
   -eo, --email-original
-                        Will retreive original email and process it
+                        Will retrieve original email and process it
   -snr, --snort         Get Snort results
   -srct, --suricata     Get Suricata results
   -tir, --traffic-inspection
@@ -204,7 +204,7 @@ Rescan options:
   --period PERIOD       Period in days in which the file should be rescanned.
                         If this argument is provided the file will be
                         rescanned periodically every period days, if not, the
-                        rescan is performed once and not repated again.
+                        rescan is performed once and not repeated again.
   --repeat REPEAT       Used in conjunction with period to specify the number
                         of times the file should be rescanned. If this
                         argument is provided the file will be rescanned the
@@ -339,11 +339,11 @@ Distribution options:
   --allinfo             will include the results for each particular URL scan
                         (in exactly the same format as the URL scan retrieving
                         API). If the parameter is not specified, each item
-                        returned will onlycontain the scanned URL and its
+                        returned will only contain the scanned URL and its
                         detection ratio.
 
-Rules managment options:
-  --rules               Manage VTI hunting rules, REQUIRED for rules managment
+Rules management options:
+  --rules               Manage VTI hunting rules, REQUIRED for rules management
   --list                List names/ids of Yara rules stored on VT
   --create FILE         Add a Yara rule to VT (File Name used as RuleName
   --update FILE         Update a Yara rule on VT (File Name used as RuleName
