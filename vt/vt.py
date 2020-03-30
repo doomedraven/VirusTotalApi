@@ -1559,7 +1559,7 @@ class vtAPI(PRINTER):
                     print('[-] Not PE file')
                     return
 
-                print("\nName: {0}".format(file.split(b"/")[-1]))
+                print("\nName: {0}".format(file.split("/")[-1]))
 
                 print("\n[+] Hashes")
                 print("MD5: {0}".format(pe.sections[0].get_hash_md5()))
