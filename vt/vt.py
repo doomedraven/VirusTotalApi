@@ -2376,7 +2376,7 @@ class vtAPI(PRINTER):
                                     print('[-] Hash not found in url')
 
                         url = "https://www.virustotal.com/api/v3/files/{id}/download".format(id = f_hash)
-                        jdata, response = get_response(url)
+                        jdata, response = get_response(url, apikey=self.apikey)
                         if response:
                             if response.status_code == 404:
                                     print('\n[!] File not found - {0}\n'.format(f_hash))
