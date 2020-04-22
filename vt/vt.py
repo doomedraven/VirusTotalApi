@@ -83,6 +83,7 @@ apikey = ""
 req_timeout = 60
 re_compile_orig = re.compile
 proxies = {}
+ssl_verify = True
 if os.getenv("PROXY"):
     proxies = {
         "http": os.getenv("PROXY"),
@@ -421,9 +422,10 @@ def get_response(url, apikey="", method="get", **kwargs):
     response = ''
     kwargs['timeout'] = req_timeout
     kwargs["headers"] = {"x-apikey": apikey}
+    kwargs["proxies"] = proxies
+    kwargs["verify"] = ssl_verify
     while True:
         try:
-            print(kwargs)
             response = getattr(requests, method)(url, **kwargs)
         except requests.exceptions.ConnectionError:
             print('\n[!] Some network connection happend, check your internet conection, or it can be VT API server side issue\n')
@@ -3093,6 +3095,7 @@ daily_limit=100
 
 def read_conf(config_file = False):
     global proxies
+    global ssl_verify
     vt_config = {'intelligence': False, 'apikey': '', 'type': False}
     paths = {
         0: '.vtapi',
@@ -3146,6 +3149,11 @@ def read_conf(config_file = False):
             "http": vt_config["proxy"],
             "https": vt_config["proxy"]
         }
+    if "ssl_verify" in vt_config and vt_config["ssl_verify"]:
+        if "false" or "False" in vt_config["ssl_verify"]:
+           ssl_verify = False
+        else:
+           ssl_verify = True
     for key in vt_config:
         #backward compartibility
         if key == 'type':
