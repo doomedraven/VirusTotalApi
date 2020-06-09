@@ -698,9 +698,9 @@ class vtAPI(PRINTER):
                                 self._parse_aux(block['attributes'], **kwargs)
                                 print("\n\n")
 
-                            if kwargs.get('download'):
-                                kwargs.update({'value': block['attributes']['sha256'], 'download':'file'})
-                                self.download(**kwargs)
+                        if kwargs.get('download'):
+                            kwargs.update({'value': [block['attributes']['sha256'] for block in jdata.get('data', [])], 'download':'file'})
+                            self.download(**kwargs)
                 else:
                     if jdata.get('data', {}).get('attributes', {}):
                         self._parse_aux(jdata['data']['attributes'], **kwargs)
