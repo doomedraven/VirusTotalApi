@@ -3154,7 +3154,7 @@ def read_conf(config_file = False):
            ssl_verify = False
         else:
            ssl_verify = True
-    for key in vt_config:
+    for key in list(vt_config):
         #backward compartibility
         if key == 'type':
             if vt_config[key].lower() == 'private':
