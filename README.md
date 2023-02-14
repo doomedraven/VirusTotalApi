@@ -1,8 +1,7 @@
-VirusTotal public and private APIv2 Full support - VT APIv3 on the way :)
+VirusTotal public and private APIv2 Full support - VT APIv3
 ===================
 
-This script was made public into the official VT API documentation page.
-https://www.virustotal.com/en/documentation/public-api/
+* __My pypi VT package was transfered to VirusTotal ownership__
 
 Before using the tool you must set your api key in one of this file or you can start without creating it and you will be prompted to provide the data:
 * Home Directory:
@@ -358,44 +357,3 @@ Rules management options:
   --disable DISABLE     Disable a Yara rule from VT (By Name)
   --enable ENABLE       Enable a Yara rule from VT (By Name)
 ```
-
-
-### Mention of tool:
- * by @seifreed - [Hunting .NET malware](https://medium.com/@seifreed/hunting-net-malware-40235e11dc05#.tzavobki0)
- * [Security Automation with Ansible 2: Leverage Ansible 2 to automate complex](https://www.amazon.com/Security-Automation-Ansible-Leverage-application/dp/1788394518)
-
-
-## Contributors
-
-### Code Contributors
-
-This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
-<a href="https://github.com/doomedraven/VirusTotalApi/graphs/contributors"><img src="https://opencollective.com/VirusTotalApi/contributors.svg?width=890&button=false" /></a>
-
-### Financial Contributors
-
-Become a financial contributor and help us sustain our community. [[Contribute](https://opencollective.com/VirusTotalApi/contribute)]
-
-#### Individuals
-
-<a href="https://opencollective.com/VirusTotalApi"><img src="https://opencollective.com/VirusTotalApi/individuals.svg?width=890"></a>
-
-#### Organizations
-
-Support this project with your organization. Your logo will show up here with a link to your website. [[Contribute](https://opencollective.com/VirusTotalApi/contribute)]
-
-<a href="https://opencollective.com/VirusTotalApi/organization/0/website"><img src="https://opencollective.com/VirusTotalApi/organization/0/avatar.svg"></a>
-<a href="https://opencollective.com/VirusTotalApi/organization/1/website"><img src="https://opencollective.com/VirusTotalApi/organization/1/avatar.svg"></a>
-<a href="https://opencollective.com/VirusTotalApi/organization/2/website"><img src="https://opencollective.com/VirusTotalApi/organization/2/avatar.svg"></a>
-<a href="https://opencollective.com/VirusTotalApi/organization/3/website"><img src="https://opencollective.com/VirusTotalApi/organization/3/avatar.svg"></a>
-<a href="https://opencollective.com/VirusTotalApi/organization/4/website"><img src="https://opencollective.com/VirusTotalApi/organization/4/avatar.svg"></a>
-<a href="https://opencollective.com/VirusTotalApi/organization/5/website"><img src="https://opencollective.com/VirusTotalApi/organization/5/avatar.svg"></a>
-<a href="https://opencollective.com/VirusTotalApi/organization/6/website"><img src="https://opencollective.com/VirusTotalApi/organization/6/avatar.svg"></a>
-<a href="https://opencollective.com/VirusTotalApi/organization/7/website"><img src="https://opencollective.com/VirusTotalApi/organization/7/avatar.svg"></a>
-<a href="https://opencollective.com/VirusTotalApi/organization/8/website"><img src="https://opencollective.com/VirusTotalApi/organization/8/avatar.svg"></a>
-<a href="https://opencollective.com/VirusTotalApi/organization/9/website"><img src="https://opencollective.com/VirusTotalApi/organization/9/avatar.svg"></a>
-
-## License
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdoomedraven%2FVirusTotalApi.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdoomedraven%2FVirusTotalApi?ref=badge_large)
-
-### Huge thanks to [jetbrains](https://www.jetbrains.com/) for opensource license!
