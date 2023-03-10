@@ -690,13 +690,23 @@ class vtAPI(PRINTER):
                     else:
                         print('[+] Matched hash(es):')
                         for block in filter(None, jdata['data']):
-                            print('{} - FS:{} - LS:{}'.format(block['attributes']['sha256'], \
-                                datetime_from_timestamp(block['attributes']['first_submission_date']), \
-                                datetime_from_timestamp(block['attributes']['last_analysis_date']))
-                            )
-                            if kwargs.get('verbose') or kwargs.get('allinfo'):
-                                self._parse_aux(block['attributes'], **kwargs)
-                                print("\n\n")
+                            # ToDo should check type instead of sha256
+                            if "sha256" not in block['attributes'] and block['type'] != "domain":
+                                continue
+
+                            if "sha256" in block['attributes']:
+                                try:
+                                    print('{} - FS:{} - LS:{}'.format(block['attributes'].get('sha256', ""), \
+                                        datetime_from_timestamp(block['attributes']['first_submission_date']), \
+                                        datetime_from_timestamp(block['attributes']['last_analysis_date']))
+                                    )
+                                    if kwargs.get('verbose') or kwargs.get('allinfo'):
+                                        self._parse_aux(block['attributes'], **kwargs)
+                                        print("\n\n")
+                                except Exception:
+                                    print(block)
+                            elif "domain" == block['type']:
+                                print(block['id'])
 
                         if kwargs.get('download'):
                             kwargs.update({'value': [block['attributes']['sha256'] for block in jdata.get('data', [])], 'download':'file'})
